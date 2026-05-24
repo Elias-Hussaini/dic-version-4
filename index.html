@@ -1,0 +1,1107 @@
+<!-- start html  -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Elias.Dictionary | دیکشنری هوشمند آلمانی-فارسی</title>
+    
+    
+    <link rel="manifest" href="manifest.json">
+    <!-- GoogleFontVazirmatn -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="styles-1.css">
+    <link rel="stylesheet" href="styles-2.css">
+    <link rel="stylesheet" href="styles-3.css">
+    <link rel="stylesheet" href="styles-4.css">
+    <link rel="stylesheet" href="styles-5.css">
+    <meta name="theme-color" content="#4361ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!--PWA-->
+    
+    <meta name="theme-color" content="#4361ee">
+    <link rel="icon" href="./icon-512.png">
+    <link rel="apple-touch-icon" href="./icon-512.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Elias.Dictionary">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-starturl" content="/">
+    <style>
+  
+</style>
+</head>
+<body>
+    
+   
+    <!--  منوی شناور -->
+ 
+    <div class="container">
+   
+<div id="loading-screen">
+    <div class="loading-content">
+        <div class="loading-ring">
+            <i class="fas fa-book-open"></i>
+            <div class="ring-outer"></div>
+            <div class="ring-inner"></div>
+            <div class="floating-icons">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-heart"></i>
+                <i class="fas fa-gem"></i>
+                <i class="fas fa-crown"></i>
+            </div>
+        </div>
+        
+        <h1 class="loading-title">Elias.Dictionary</h1>
+        <p class="loading-subtitle">دیکشنری هوشمند آلمانی - فارسی</p>
+        
+        <div class="loading-progress-container">
+            <div class="loading-progress-bg">
+                <div class="loading-progress-fill"></div>
+            </div>
+        </div>
+        
+        <div class="loading-words">
+            <div class="loading-word">📚 در حال بارگذاری لغات...</div>
+            <div class="loading-word">🤖 راه‌اندازی هوش مصنوعی...</div>
+            <div class="loading-word">✨ آماده‌سازی تمرین‌ها...</div>
+        </div>
+        
+        <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
+</div>
+        <!-- محتوای اصلی - تمام عرض -->
+        <div class="main-content" id="mainContent">
+            
+            <!-- بخش 1: جستجو (پیش‌فرض فعال)  -->
+            <div id="search-section" class="content-section active">
+                <div class="word-card">
+                    
+                    <div class="section-header">
+                        <h2><i class="fas fa-search" style="color: var(--primary);"></i> جستجوی پیشرفته لغات</h2>
+                    </div>
+                    
+                    <div class="search-box">
+                        <input type="text" id="search-input" class="form-control" placeholder="لغت آلمانی یا فارسی را جستجو کنید..." autofocus>
+                        <button id="search-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> جستجو
+                        </button>
+                    </div>
+                    
+                    <div id="search-results-container">
+                        
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <h3>به Elias.Dictionary خوش آمدید!</h3>
+                            <p>بیش از ۱۰۰۰ لغت آلمانی با ترجمه فارسی، مثال، تلفظ و تمرین هوشمند</p>
+                            <div class="empty-state-features">
+                                <span><i class="fas fa-robot"></i> دستیار AI</span>
+                                <span><i class="fas fa-language"></i> مترجم آنلاین</span>
+                                <span><i class="fas fa-music"></i> موسیقی زمینه</span>
+                                <span><i class="fas fa-chart-line"></i> آمار پیشرفت</span>
+                            </div>
+                            <div class="empty-state-hint">
+                                <i class="fas fa-arrow-circle-left"></i>
+                                <span>دکمه کتاب در گوشه سمت چپ پایین - منوی اصلی</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        <!-- بخش 2: اضافه کردن لغت پیشرفته نسخه 2.0 -->
+<div id="add-word-section" class="content-section">
+    <div class="word-card add-word-card">
+        <div class="section-header">
+            <h2><i class="fas fa-plus-circle"></i> افزودن لغت جدید</h2>
+            <div class="header-badges">
+                <span class="badge" id="word-type-badge">📘 اسم</span>
+                <span class="badge info-badge" id="field-count-badge">۰ فیلد تکمیل شده</span>
+            </div>
+        </div>
+
+        <!-- ردیف اول: لغت آلمانی و معنی -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-language"></i> لغت آلمانی
+                    <span class="required">*</span>
+                </label>
+                <input type="text" id="german-word" class="form-control modern-input" 
+                       placeholder="مثال: der Hund, lernen, schön" autocomplete="off">
+                <div class="input-hint">
+                    <i class="fas fa-info-circle"></i> با حرف بزرگ برای اسم، کوچک برای فعل/صفت
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-pencil-alt"></i> معنی فارسی
+                    <span class="required">*</span>
+                </label>
+                <input type="text" id="persian-meaning" class="form-control modern-input" 
+                       placeholder="مثال: سگ، یاد گرفتن، زیبا" autocomplete="off">
+            </div>
+        </div>
+
+        <!-- انتخاب نوع کلمه با کارت‌های زیبا -->
+        <div class="form-group">
+            <label class="form-label"><i class="fas fa-tag"></i> نوع کلمه</label>
+            <div class="type-cards">
+                <div class="type-card active" data-type="noun">
+                    <i class="fas fa-book"></i>
+                    <span>اسم</span>
+                    <small>Nomen</small>
+                </div>
+                <div class="type-card" data-type="verb">
+                    <i class="fas fa-running"></i>
+                    <span>فعل</span>
+                    <small>Verb</small>
+                </div>
+                <div class="type-card" data-type="adjective">
+                    <i class="fas fa-palette"></i>
+                    <span>صفت</span>
+                    <small>Adjektiv</small>
+                </div>
+                <div class="type-card" data-type="adverb">
+                    <i class="fas fa-clock"></i>
+                    <span>قید</span>
+                    <small>Adverb</small>
+                </div>
+                <div class="type-card" data-type="preposition">
+                    <i class="fas fa-link"></i>
+                    <span>حرف اضافه</span>
+                    <small>Präposition</small>
+                </div>
+                <div class="type-card" data-type="other">
+                    <i class="fas fa-ellipsis-h"></i>
+                    <span>سایر</span>
+                    <small>Andere</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== بخش‌های تخصصی ========== -->
+
+        <!-- 📘 بخش اسم (Noun) -->
+        <div id="noun-fields" class="type-fields-card active">
+            <div class="fields-header">
+                <i class="fas fa-venus-mars"></i>
+                <span>اطلاعات اسم</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">جنسیت</label>
+                    <div class="gender-selector">
+                        <button type="button" class="gender-option masculine active" data-gender="masculine">
+                            <i class="fas fa-mars"></i> der <span>مذکر</span>
+                        </button>
+                        <button type="button" class="gender-option feminine" data-gender="feminine">
+                            <i class="fas fa-venus"></i> die <span>مونث</span>
+                        </button>
+                        <button type="button" class="gender-option neuter" data-gender="neuter">
+                            <i class="fas fa-genderless"></i> das <span>خنثی</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-copy"></i> جمع (Plural)
+                    </label>
+                    <input type="text" id="noun-plural" class="form-control modern-input" 
+                           placeholder="مثال: Hunde, Häuser, Autos">
+                    <div class="input-hint">پسوندهای رایج: -e, -er, -n, -s, -̈e</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ⚡ بخش فعل (Verb) -->
+        <div id="verb-fields" class="type-fields-card" style="display: none;">
+            <div class="fields-header">
+                <i class="fas fa-table"></i>
+                <span>صرف فعل</span>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Präsens (حال ساده)</label>
+                    <input type="text" id="verb-present" class="form-control modern-input" 
+                           placeholder="مثال: ich lerne, du lernst, er lernt...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Präteritum (گذشته ساده)</label>
+                    <input type="text" id="verb-past" class="form-control modern-input" 
+                           placeholder="مثال: ich lernte, du lerntest...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Perfekt (گذشته کامل)</label>
+                    <input type="text" id="verb-perfect" class="form-control modern-input" 
+                           placeholder="مثال: habe gelernt, bin gegangen">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Futur I (آینده)</label>
+                    <input type="text" id="verb-future" class="form-control modern-input" 
+                           placeholder="مثال: werde lernen">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Konjunktiv II (التزامی)</label>
+                    <input type="text" id="verb-konjunktiv" class="form-control modern-input" 
+                           placeholder="مثال: würde lernen, hätte">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">فعل کمکی (Hilfsverb)</label>
+                    <div class="helper-selector">
+                        <label class="helper-option">
+                            <input type="radio" name="verb-helper" value="haben" checked> haben
+                        </label>
+                        <label class="helper-option">
+                            <input type="radio" name="verb-helper" value="sein"> sein
+                        </label>
+                        <label class="helper-option">
+                            <input type="radio" name="verb-helper" value="both"> both
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-link"></i> جداشدنی (trennbar)
+                    </label>
+                    <div class="checkbox-wrapper">
+                        <label class="switch">
+                            <input type="checkbox" id="verb-separable">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="checkbox-label">بله، این فعل جداشدنی است</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✨ بخش صفت (Adjective) -->
+        <div id="adjective-fields" class="type-fields-card" style="display: none;">
+            <div class="fields-header">
+                <i class="fas fa-chart-line"></i>
+                <span>حالت‌های صفت</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-level-up-alt"></i> Komparativ (برتر)
+                    </label>
+                    <input type="text" id="adj-komparativ" class="form-control modern-input" 
+                           placeholder="مثال: schöner, größer, besser">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-crown"></i> Superlativ (برترین)
+                    </label>
+                    <input type="text" id="adj-superlativ" class="form-control modern-input" 
+                           placeholder="مثال: am schönsten, größte, beste">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-exchange-alt"></i> متضاد (Antonym)
+                </label>
+                <input type="text" id="adj-antonym" class="form-control modern-input" 
+                       placeholder="مثال: groß → klein, schön → hässlich">
+            </div>
+        </div>
+
+        <!-- 🔗 بخش حرف اضافه (Preposition) -->
+        <div id="preposition-fields" class="type-fields-card" style="display: none;">
+            <div class="fields-header">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>حالت حرف اضافه</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">حالت (Kasus)</label>
+                    <select id="prep-case" class="form-control modern-input">
+                        <option value="Akkusativ">Akkusativ (مفعولی)</option>
+                        <option value="Dativ">Dativ (ملکی/مکانی)</option>
+                        <option value="Genitiv">Genitiv (اضافی)</option>
+                        <option value="Wechsel">Wechsel (دو حالته)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">معانی مختلف</label>
+                    <input type="text" id="prep-meanings" class="form-control modern-input" 
+                           placeholder="مثال: برای، به خاطر، از طریق">
+                </div>
+            </div>
+        </div>
+
+        <!-- 📝 مثال و تلفظ -->
+        <div class="common-fields">
+            <div class="fields-header">
+                <i class="fas fa-quote-right"></i>
+                <span>مثال و تلفظ</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">مثال (آلمانی)</label>
+                    <textarea id="example" class="form-control modern-input" rows="2" 
+                              placeholder="مثال آلمانی..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ترجمه مثال</label>
+                    <textarea id="example-translation" class="form-control modern-input" rows="2" 
+                              placeholder="ترجمه فارسی..."></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-volume-up"></i> تلفظ (راهنما)
+                    </label>
+                    <input type="text" id="pronunciation" class="form-control modern-input" 
+                           placeholder="مثال: [haʊs] برای Haus">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-tags"></i> برچسب‌ها (Tags)
+                    </label>
+                    <input type="text" id="word-tags" class="form-control modern-input" 
+                           placeholder="مثال: A1, Haushalt, Alltag (با کاما جدا کن)">
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه‌های عملیات -->
+        <div class="action-buttons-group">
+            <button id="save-word-btn" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> ذخیره لغت
+            </button>
+            <button id="clear-form-btn" class="btn btn-outline btn-lg">
+                <i class="fas fa-eraser"></i> پاک کردن فرم
+            </button>
+        </div>
+
+        <div class="keyboard-shortcuts">
+            <i class="fas fa-keyboard"></i>
+            <span>میانبر: Ctrl+Enter → ذخیره | Escape → پاک کردن فرم</span>
+        </div>
+    </div>
+</div>
+            <!-- بخش کارت هوشمند لکسی -->
+<div id="lexi-card-section" class="content-section">
+    <div class="word-card">
+        <div class="section-header">
+            <h2><i class="fas fa-id-card"></i> LexiCard | کارت هوشمند واژگان</h2>
+        </div>
+        
+        <div class="lexi-search-area">
+            <div class="search-box">
+                <input type="text" id="lexi-search-input" class="form-control" placeholder="نام لغت آلمانی را وارد کنید...">
+                <button id="lexi-search-btn" class="btn btn-primary">ساخت کارت</button>
+            </div>
+            <div id="lexi-suggestions" class="lexi-suggestions"></div>
+        </div>
+        
+        <div class="lexi-style-bar">
+            <button class="style-btn active" data-style="modern">مدرن</button>
+            <button class="style-btn" data-style="classic">کلاسیک</button>
+            <button class="style-btn" data-style="minimal">مینیمال</button>
+            <button class="style-btn" data-style="dark">دارک</button>
+        </div>
+        
+        <div id="lexi-card-preview">
+            <div class="lexi-preview-header">
+                <h3>پیش‌نمایش کارت</h3>
+                <div class="lexi-actions">
+                    <button id="download-lexi-card" class="btn btn-success">دانلود</button>
+                    <button id="print-lexi-card" class="btn btn-outline">چاپ</button>
+                </div>
+            </div>
+            <div id="lexi-card-container"></div>
+        </div>
+        
+        <div id="lexi-empty-state" class="empty-state">
+            <div class="empty-icon"><i class="fas fa-id-card"></i></div>
+            <h3>کارت هوشمند واژگان</h3>
+            <p>نام یک لغت آلمانی را جستجو کنید</p>
+        </div>
+    </div>
+</div>
+     <!--  بخش 3: مترجم آنلاین با ۳ سرویس  -->
+            <div id="translate-section" class="content-section">
+                <div class="word-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-language" style="color: var(--primary);"></i> مترجم آنلاین (Google + MyMemory + LibreTranslate)</h2>
+                    </div>
+                    
+                    <!-- انتخاب جهت ترجمه -->
+                    <div class="direction-selector">
+                        <div class="direction-option active" data-direction="de-fa">
+                            <div class="direction-icon">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <div class="direction-text">
+                                <span class="direction-title">آلمانی به فارسی</span>
+                                <span class="direction-subtitle">Deutsch → فارسی</span>
+                            </div>
+                            <div class="direction-check">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div class="direction-option" data-direction="fa-de">
+                            <div class="direction-icon">
+                                <i class="fas fa-arrow-left"></i>
+                            </div>
+                            <div class="direction-text">
+                                <span class="direction-title">فارسی به آلمانی</span>
+                                <span class="direction-subtitle">فارسی → Deutsch</span>
+                            </div>
+                            <div class="direction-check">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- وضعیت آنلاین/آفلاین -->
+                    <div id="online-status" class="online-status online">
+                        <i class="fas fa-wifi"></i> آنلاین - استفاده از سرویس‌های ترجمه
+                    </div>
+                    
+                    <!-- فیلد ورودی -->
+                    <div class="form-group">
+                        <label id="input-label">
+                            <i class="fas fa-keyboard"></i>
+                            <span id="input-title">متن آلمانی:</span>
+                        </label>
+                        <div class="input-with-clear">
+                            <textarea 
+                                id="translate-input" 
+                                class="form-control" 
+                                rows="3" 
+                                placeholder="متن آلمانی خود را وارد کنید..."
+                                dir="ltr"></textarea>
+                            <button class="clear-input" id="clear-input-btn" title="پاک کردن متن">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <small class="form-text">ترجمه خودکار با ۳ سرویس مختلف - سریع و دقیق</small>
+                    </div>
+                    
+                    <!-- نتیجه ترجمه -->
+                    <div class="form-group">
+                        <label id="output-label">
+                            <i class="fas fa-language"></i>
+                            <span id="output-title">ترجمه فارسی:</span>
+                        </label>
+                        <div id="translate-result" class="translate-result">
+                            <div class="empty-result">
+                                <div class="empty-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <p>نتیجه ترجمه اینجا نمایش داده می‌شود</p>
+                                <small>متن را وارد کنید - ترجمه خودکار انجام می‌شود</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- دکمه‌های عملیات -->
+                    <div class="translate-actions">
+                        <div class="action-group">
+                            <button class="action-btn voice-btn" id="speak-input" title="تلفظ متن مبدأ">
+                                <i class="fas fa-volume-up"></i>
+                                <span>تلفظ متن</span>
+                            </button>
+                            <button class="action-btn voice-btn" id="speak-output" title="تلفظ ترجمه">
+                                <i class="fas fa-volume-up"></i>
+                                <span>تلفظ ترجمه</span>
+                            </button>
+                        </div>
+                        <div class="action-group">
+                            <button class="action-btn copy-btn" id="copy-result" title="کپی ترجمه">
+                                <i class="fas fa-copy"></i>
+                                <span>کپی ترجمه</span>
+                            </button>
+                            <button class="action-btn save-btn" id="save-translation" title="ذخیره هوشمند در دیکشنری">
+                                <i class="fas fa-magic"></i>
+                                <span>ذخیره هوشمند</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- پیشنهادات مشابه از دیکشنری -->
+                    <div id="translate-suggestions" class="translate-suggestions">
+                        <div class="suggestions-header">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>لغات مشابه در دیکشنری شما</span>
+                        </div>
+                        <div class="suggestions-list" id="suggestions-list"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!--  بخش 4: AI چت با قابلیت تحلیل تصویر  -->
+            <div id="ai-chat-section" class="content-section">
+             
+                <div class="ai-chat-container">
+                    <div class="ai-chat-header">
+                        <div class="header-left">
+                            <div class="ai-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="header-info">
+                                <h3>دستیار هوش مصنوعی الیاس</h3>
+                                <p class="ai-subtitle">آموزش گرامر، واژگان، مکالمه و تحلیل تصویر</p>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="header-btn" id="voice-settings-btn" title="تنظیمات صدا">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                            <button class="header-btn" id="ai-theme-toggle" title="تغییر تم">
+                                <i class="fas fa-moon"></i>
+                            </button>
+                            <button class="header-btn" id="chat-history-btn" title="تاریخچه چت‌ها">
+                                <i class="fas fa-history"></i>
+                            </button>
+                            <button class="header-btn" id="new-chat-btn" title="چت جدید">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="header-btn delete-btn" id="clear-chat-history" title="پاک کردن چت">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-chat-main">
+                        <div class="chat-messages-container" id="chat-history"></div>
+                        
+                        <div class="quick-actions-section">
+                            <div class="section-title">
+                                <i class="fas fa-bolt"></i>
+                                <span>سوالات پرتکرار</span>
+                            </div>
+                            <div class="quick-actions-grid" id="quick-actions-grid"></div>
+                        </div>
+                        
+                        <div class="chat-input-section">
+                            <div class="model-selection-row">
+                                <div class="model-label">
+                                    <i class="fas fa-brain"></i>
+                                    <span>مدل هوش مصنوعی:</span>
+                                </div>
+                                <div class="model-select-wrapper">
+                                    <select id="ai-model-select" class="model-select">
+                                        <option value="elias-mini" selected>🤖 الیاس مینی (GPT-4o-mini)</option>
+                                        <option value="elias-pro">🚀 الیاس پرو (GPT-4o)</option>
+                                        <option value="elias-vision">👁️ الیاس بینا (تحلیل تصویر)</option>
+                                        <option value="elias-creative">🎨 الیاس خلاق (تولید تصویر)</option>
+                                    </select>
+                                    <div class="model-info-icon" title="تغییر مدل در تنظیمات">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                </div>
+                                <div class="model-status">
+                                    <span class="status-indicator online"></span>
+                                    <span class="status-text">آنلاین</span>
+                                </div>
+                            </div>
+                            
+                            <div class="main-input-area">
+                                <div class="input-wrapper">
+                                    <div class="input-actions-left">
+                                        <button class="input-action-btn" id="attach-file-btn" title="آپلود فایل (تصویر، PDF، متن)">
+                                            <i class="fas fa-paperclip"></i>
+                                        </button>
+                                        <button class="input-action-btn" id="upload-image-btn" title="تحلیل تصویر با AI">
+                                            <i class="fas fa-image"></i>
+                                        </button>
+                                        <button class="input-action-btn" id="generate-image-btn" title="تولید تصویر با AI">
+                                            <i class="fas fa-palette"></i>
+                                        </button>
+                                        <button class="input-action-btn voice-input-btn" id="voice-input-toggle" title="ورودی صوتی">
+                                            <i class="fas fa-microphone"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <textarea 
+                                        id="ai-chat-input" 
+                                        class="chat-input-textarea" 
+                                        placeholder="سوال خود را بپرسید..."
+                                        rows="1"></textarea>
+                                    
+                                    <div class="input-actions-right">
+                                        <button class="input-action-btn" id="clear-input-btn" title="پاک کردن متن">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button class="send-message-btn" id="send-ai-message" title="ارسال پیام">
+                                            <i class="fas fa-paper-plane"></i>
+                                            <span>ارسال</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="voice-input-status" id="voice-input-status" style="display: none;"></div>
+                                <div class="input-hints">
+                                    <span class="hint-item"><i class="fas fa-microphone"></i> ورودی صوتی</span>
+                                    <span class="hint-item"><i class="fas fa-image"></i> تحلیل تصویر</span>
+                                    <span class="hint-item"><i class="fas fa-palette"></i> تولید تصویر</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="voice-settings-panel" id="voice-settings-panel" style="display: none;"></div>
+                </div>
+                
+                <!-- input مخفی برای آپلود فایل -->
+                <input type="file" id="file-upload-input" style="display: none;" multiple>
+                <input type="file" id="image-upload-input" style="display: none;" accept="image/*">
+            </div>
+            
+            <!-- ========== بخش 5: علاقه‌مندی‌ها ========== -->
+            <div id="favorites-section" class="content-section">
+                <div class="word-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-star" style="color: #ffc107;"></i> لغات مورد علاقه</h2>
+                        <span id="favorites-count" class="badge">0</span>
+                    </div>
+                    <div id="favorites-container" class="word-list"></div>
+                </div>
+            </div>
+            
+            <!-- بخش 6: تمرین (۳ نوع تمرین) -->
+            <div id="practice-section" class="content-section">
+                <!-- محتوای کامل تمرین توسط JavaScript -->
+            </div>
+            
+            <!-- بخش 7: فلش کارت‌ها-->
+            <div id="flashcards-section" class="content-section">
+                <!-- محتوای کامل فلش کارت توسط JavaScript -->
+            </div>
+            
+            <!-- بخش 8: آزمون چندگزینه‌ای -->
+            <div id="quiz-section" class="content-section">
+        
+            </div>
+            
+<div id="word-list-section" class="content-section">
+    <div class="word-card">
+        <div class="section-header">
+            <h2><i class="fas fa-list" style="color: var(--primary);"></i> دیکشنری کامل آلمانی-فارسی</h2>
+            <div style="display: flex; gap: 10px;">
+                <span id="total-words-count" class="badge">0</span>
+            </div>
+        </div>
+        
+        <!-- دکمه سورت گرد در بالای لیست لغات -->
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+            <button id="floating-sort-btn" class="sort-circle-btn" title="مرتب‌سازی">
+                <i class="fas fa-sort-amount-down"></i>
+            </button>
+        </div>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">
+                <i class="fas fa-list-ul"></i> همه لغات
+            </button>
+            <button class="filter-btn" data-filter="favorites">
+                <i class="fas fa-star"></i> علاقه‌مندی‌ها
+            </button>
+            <button class="filter-btn" data-filter="nouns">
+                <i class="fas fa-tag"></i> اسم‌ها
+            </button>
+            <button class="filter-btn" data-filter="verbs">
+                <i class="fas fa-bolt"></i> فعل‌ها
+            </button>
+            <button class="filter-btn" data-filter="adjectives">
+                <i class="fas fa-palette"></i> صفت‌ها
+            </button>
+            <button class="filter-btn" data-filter="adverbs">
+                <i class="fas fa-clock"></i> قیدها
+            </button>
+        </div>
+        
+        <div id="word-list-container" class="word-list"></div>
+    </div>
+</div>
+
+<!-- مودال مرتب‌سازی (خارج از بخش) -->
+<div id="sort-modal" class="sort-modal" style="display: none;">
+    <div class="sort-modal-content">
+        <div class="sort-modal-header">
+            <span><i class="fas fa-sort"></i> مرتب‌سازی بر اساس</span>
+            <button id="close-sort-modal" class="sort-modal-close">&times;</button>
+        </div>
+        <div class="sort-modal-body">
+            <button class="sort-modal-option" data-sort="alphabetical">
+                <i class="fas fa-sort-alpha-down"></i> الفبایی (آلمانی)
+            </button>
+            <button class="sort-modal-option" data-sort="alphabetical-persian">
+                <i class="fas fa-sort-alpha-down"></i> الفبایی (فارسی)
+            </button>
+            <div class="sort-divider"></div>
+            <button class="sort-modal-option" data-sort="date-desc">
+                <i class="fas fa-calendar-plus"></i> جدیدترین
+            </button>
+            <button class="sort-modal-option" data-sort="date-asc">
+                <i class="fas fa-calendar-minus"></i> قدیمی‌ترین
+            </button>
+            <div class="sort-divider"></div>
+            <button class="sort-modal-option" data-sort="srs-level">
+                <i class="fas fa-brain"></i> سطح یادگیری (SRS)
+            </button>
+            <button class="sort-modal-option" data-sort="practice-count">
+                <i class="fas fa-chart-line"></i> بیشترین تمرین
+            </button>
+            <button class="sort-modal-option" data-sort="accuracy">
+                <i class="fas fa-star"></i> بیشترین دقت
+            </button>
+            <div class="sort-divider"></div>
+            <button class="sort-modal-option" data-sort="random">
+                <i class="fas fa-random"></i> تصادفی
+            </button>
+        </div>
+    </div>
+</div>   
+      <!--  بخش 10: پیشرفت و آمار  -->
+<div id="progress-section" class="content-section">
+    <div class="word-card">
+        <div class="section-header">
+            <h2><i class="fas fa-chart-line" style="color: #10b981;"></i> داشبورد پیشرفت یادگیری</h2>
+        </div>
+        
+        <div class="stats-grid" id="stats-grid"></div>
+        
+        <div class="progress-details">
+            <div class="progress-card">
+                <h3><i class="fas fa-calendar-alt"></i> فعالیت هفتگی</h3>
+                <div id="weekly-progress" class="weekly-progress"></div>
+            </div>
+            
+            <div class="progress-card">
+                <h3><i class="fas fa-trophy"></i> دستاوردها</h3>
+                <div id="achievements-list" class="achievements-list"></div>
+            </div>
+            
+            <div class="progress-card">
+                <h3><i class="fas fa-clock"></i> آخرین تمرین‌ها</h3>
+                <div id="recent-activity" class="recent-activity"></div>
+            </div>
+        </div>
+        
+        <!-- بخش انتخاب تاریخ سفارشی برای آمار -->
+        <div class="custom-stats-section" style="margin-top: 20px; padding: 15px; background: var(--gray-50); border-radius: 16px;">
+            <h4 style="margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-calendar-alt"></i> 
+                آمار در بازه دلخواه
+            </h4>
+            <div class="custom-date-stats" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                <div class="date-input-group" style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">از تاریخ:</label>
+                    <input type="date" id="custom-stats-start" class="form-control">
+                </div>
+                <div class="date-input-group" style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 13px;">تا تاریخ:</label>
+                    <input type="date" id="custom-stats-end" class="form-control">
+                </div>
+                <button id="apply-custom-stats" class="btn btn-primary" style="padding: 10px 20px;">
+                    <i class="fas fa-search"></i> نمایش آمار
+                </button>
+                <button id="reset-custom-stats" class="btn btn-outline" style="padding: 10px 20px;">
+                    <i class="fas fa-undo"></i> reset
+                </button>
+            </div>
+        </div>
+
+        <!-- کارت‌های آمار شخصی‌سازی شده -->
+        <div class="custom-stats-results" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;" id="custom-stats-results"></div>
+        
+    </div>
+</div>
+<div id="library-section" class="content-section">
+    <div class="word-card">
+        <div class="section-header">
+            <h2><i class="fas fa-book-open" style="color: var(--primary);"></i> کتابخانه شخصی</h2>
+            <button id="add-book-btn" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> افزودن کتاب جدید
+            </button>
+        </div>
+        
+        <div id="add-book-form" style="display: none; margin-bottom: 30px; padding: 20px; background: var(--gray-50); border-radius: 20px;">
+            <h3 style="margin-bottom: 15px;">➕ اطلاعات کتاب جدید</h3>
+            <div class="form-group">
+                <label>نام کتاب:</label>
+                <input type="text" id="book-title" class="form-control" placeholder="مثال: Deutsch lernen A1">
+            </div>
+            <div class="form-group">
+                <label>نویسنده:</label>
+                <input type="text" id="book-author" class="form-control" placeholder="مثال: Thomas Müller">
+            </div>
+            <div class="form-group">
+                <label>فایل PDF:</label>
+                <input type="file" id="book-pdf" accept=".pdf" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>جلد کتاب (اختیاری):</label>
+                <input type="file" id="book-cover" accept="image/*" class="form-control">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancel-book-btn" class="btn btn-outline">انصراف</button>
+                <button id="save-book-btn" class="btn btn-success">ذخیره کتاب</button>
+            </div>
+        </div>
+        
+        <div id="books-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;"></div>
+        <div id="empty-library" class="empty-state" style="display: none;">
+            <div class="empty-icon"><i class="fas fa-book-open"></i></div>
+            <h3>کتابخانه شما خالی است</h3>
+            <p>اولین کتاب خود را اضافه کنید</p>
+        </div>
+    </div>
+</div>
+<!-- مودال انتخاب لغات برای خروجی تصویری -->
+<div id="export-words-modal" class="export-modal" style="display: none;">
+    <div class="export-modal-content">
+        <div class="export-modal-header">
+            <h3><i class="fas fa-check-square"></i> انتخاب لغات برای خروجی تصویری</h3>
+            <button class="export-modal-close" id="close-export-modal">&times;</button>
+        </div>
+        <div class="export-modal-body">
+            <div class="export-actions">
+                <button id="select-all-words" class="btn btn-sm btn-outline">انتخاب همه</button>
+                <button id="deselect-all-words" class="btn btn-sm btn-outline">لغو همه</button>
+                <button id="select-weak-words" class="btn btn-sm btn-outline">لغات ضعیف (SRS 0-2)</button>
+                <div class="selected-count">تعداد انتخاب شده: <span id="selected-count">0</span></div>
+            </div>
+            <div id="export-words-list" class="export-words-list"></div>
+        </div>
+        <div class="export-modal-footer">
+            <button id="preview-export-btn" class="btn btn-primary">پیش‌نمایش عکس‌ها</button>
+            <button id="cancel-export-btn" class="btn btn-outline">انصراف</button>
+        </div>
+    </div>
+</div>
+
+<!-- مودال پیش‌نمایش -->
+<div id="preview-modal" class="export-modal" style="display: none;">
+    <div class="export-modal-content" style="max-width: 800px;">
+        <div class="export-modal-header">
+            <h3><i class="fas fa-eye"></i> پیش‌نمایش عکس‌ها</h3>
+            <button class="export-modal-close" id="close-preview-modal">&times;</button>
+        </div>
+        <div class="export-modal-body" id="preview-container" style="max-height: 500px; overflow-y: auto;">
+        </div>
+        <div class="export-modal-footer">
+            <button id="confirm-export-btn" class="btn btn-success">📥 تایید و دانلود همه عکس‌ها</button>
+            <button id="back-to-select-btn" class="btn btn-outline">بازگشت به انتخاب</button>
+        </div>
+    </div>
+</div>
+<!-- بخش 13: ابزارها -->
+<div id="tools-section" class="content-section">
+    <div class="word-card">
+        <div class="section-header">
+            <h2><i class="fas fa-tools"></i> ابزارهای زبان آلمانی</h2>
+            <div style="display: flex; gap: 10px;">
+                <span id="tools-verbs-count" class="badge" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">0 فعل</span>
+            </div>
+        </div>
+        
+        <div class="tools-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px;">
+            
+            <!-- کارت صرف افعال پیشرفته -->
+            <div class="tool-card" id="verb-conjugation-tool" style="background: var(--white); border-radius: 24px; border: 1px solid var(--gray-200); overflow: hidden; transition: all 0.3s ease;">
+                <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 20px; color: white;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-table-list" style="font-size: 28px;"></i>
+                        <div>
+                            <h3 style="margin: 0; font-size: 20px;">صرف افعال پیشرفته</h3>
+                            <p style="margin: 5px 0 0; opacity: 0.9; font-size: 13px;">صرف کامل + مثال + تمرین</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <!-- جستجو -->
+                    <div class="search-box" style="margin-bottom: 20px;">
+                        <input type="text" id="verb-search-input" class="form-control" placeholder="نام فعل آلمانی را وارد کنید... (مثال: machen, gehen, sein)" autocomplete="off">
+                        <button id="verb-search-btn" class="btn btn-primary">
+                             🔍 جستجو 
+                            </button>
+                    </div>
+                    
+                    <!-- فیلترها -->
+                    <div class="verb-filters" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <button class="filter-verb-btn active" data-filter="all">همه</button>
+                        <button class="filter-verb-btn" data-filter="regular">با قاعده</button>
+                        <button class="filter-verb-btn" data-filter="irregular">بی‌قاعده</button>
+                        <button class="filter-verb-btn" data-filter="A1">A1</button>
+                        <button class="filter-verb-btn" data-filter="A2">A2</button>
+                        <button class="filter-verb-btn" data-filter="B1">B1</button>
+                        <button class="filter-verb-btn" data-filter="B2">B2</button>
+                    </div>
+                    
+                    <!-- لیست پیشنهادات -->
+                    <div id="verb-suggestions" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; display: none;"></div>
+                    
+                    <!-- نتیجه صرف -->
+                    <div id="conjugation-result" style="display: none;">
+                        <div id="selected-verb-header" style="background: linear-gradient(135deg, var(--primary-light), var(--gray-50)); border-radius: 16px; padding: 15px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                                <div>
+                                    <h3 id="selected-verb-name" style="font-size: 28px; font-weight: 800; margin: 0; color: var(--primary);"></h3>
+                                    <span id="selected-verb-type" class="badge" style="margin-top: 8px; display: inline-block;"></span>
+                                    <span id="selected-verb-level" class="badge" style="margin-top: 8px; background: #6b7280;"></span>
+                                </div>
+                                <div class="verb-actions" style="display: flex; gap: 10px;">
+                                   <button id="speak-verb-btn" class="btn btn-outline btn-sm" title="تلفظ فعل">
+    🔊
+</button>
+<button id="practice-verb-btn" class="btn btn-success btn-sm" title="تمرین این فعل">
+    🎯
+</button>
+<button id="save-conjugation-btn" class="btn btn-outline btn-sm" title="ذخیره در دیکشنری">
+    💾
+</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- تب‌های زمان‌ها -->
+                        <div class="tense-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px;">
+                            <button class="tense-tab active" data-tense="present">📖 Präsens<br><small>حال ساده</small></button>
+                            <button class="tense-tab" data-tense="praeteritum">⏮️ Präteritum<br><small>گذشته ساده</small></button>
+                            <button class="tense-tab" data-tense="perfekt">✅ Perfekt<br><small>گذشته کامل</small></button>
+                            <button class="tense-tab" data-tense="futur">🔮 Futur I<br><small>آینده</small></button>
+                            <button class="tense-tab" data-tense="konjunktiv">🤔 Konjunktiv II<br><small>التزامی</small></button>
+                        </div>
+                        
+                        <!-- جدول صرف -->
+                        <div id="conjugation-table" style="background: var(--gray-50); border-radius: 20px; overflow: hidden;">
+                            <!-- محتوای جدول توسط JS پر می‌شود -->
+                        </div>
+                        
+                        <!-- مثال‌ها -->
+                        <div id="verb-examples" style="margin-top: 20px; padding: 15px; background: var(--primary-light); border-radius: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                <i class="fas fa-quote-right" style="color: var(--primary);"></i>
+                                <strong>مثال‌های کاربردی:</strong>
+                            </div>
+                            <div id="examples-list"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- حالت خالی -->
+                    <div id="verb-empty-state" class="empty-state" style="padding: 40px;">
+                        <div class="empty-icon"><i class="fas fa-search"></i></div>
+                        <h3>جستجوی فعل</h3>
+                        <p>نام فعل آلمانی را وارد کنید تا صرف کامل آن را ببینید</p>
+                        <small>مثال: machen, gehen, sein, haben, werden, können...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+            <!-- بخش 11: تنظیمات کامل  -->
+            <div id="settings-section" class="content-section">
+                <!-- محتوای کامل تنظیمات توسط JavaScript -->
+                 
+            </div>
+            
+            <!--  بخش 12: موسیقی (مخفی - در تنظیمات) -->
+            <div id="music-section" style="display: none;"></div>
+            
+        </div> <!-- پایان main-content -->
+    </div> <!-- پایان container -->
+
+    <!--  مودال تاریخچه چت  -->
+    <div id="chat-history-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-history"></i> تاریخچه چت‌ها</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="chat-sessions-list"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="close-modal-btn">بستن</button>
+            </div>
+        </div>
+    </div>
+    
+    <!--  مودال صرف فعل  -->
+    <div id="verb-conjugation-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-table"></i> صرف فعل در آلمانی</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="conjugation-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="save-verb-forms-btn">ذخیره</button>
+                <button class="btn btn-outline" id="cancel-verb-btn">انصراف</button>
+            </div>
+        </div>
+    </div>
+    
+        <script src="html2canvas.min.js"></script>
+ 
+<!-- دیتابیس‌ها اول -->
+<script src="verb-prepositions-db.js"></script>
+<script src="verb-conjugation-data.js"></script>
+
+<script src="https://js.puter.com/v2/"></script>
+
+<!-- کانفیگ‌ها -->
+<script src="language-config.js"></script>
+<script src="language-loader.js"></script>
+
+<!-- منو و اسکریپت اصلی -->
+<script src="floating-menu-system.js"></script>
+<script src="scripts.js"></script>
+
+<!-- اسکریپت افعال (بعد از دیتابیسش) -->
+
+
+<!-- سایر -->
+<script src="responsive.js"></script>
+    
+  
+   
+    
+    <!-- کانتینر نوتیفیکیشن -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- پلیر موسیقی مخفی -->
+    <audio id="music-player" style="display: none;"></audio>
+ 
+<!-- دکمه سورت - بالای دکمه کتاب -->
+<button id="sort-floating-btn" class="sort-floating-btn" style="display: none;" title="مرتب‌سازی لغات">
+    <i class="fas fa-sort-amount-down"></i>
+</button>
+<!-- آیکون شناور موسیقی -->
+<div id="music-floating-icon" class="music-floating-icon" style="display: none;">
+    <i class="fas fa-music"></i>
+</div>
+
+
+
+</body>
+</html>
+<!-- end html  -->

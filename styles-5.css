@@ -1,0 +1,4712 @@
+
+/* ================================================
+   رفع کامل مشکل آیکون‌های FontAwesome در کل برنامه
+   ================================================ */
+
+/* 1. اطمینان از فونت صحیح برای همه آیکون‌ها */
+i, 
+.fas, 
+.far, 
+.fab, 
+.fad,
+[class*=" fa-"],
+[class^="fa-"],
+.gender-btn i,
+.gender-option-btn i,
+.action-btn i,
+.btn i,
+.header-btn i,
+.music-btn i,
+.player-icon-btn i,
+.quiz-option-btn i,
+.match-card i,
+.tense-tab i,
+.suggestion-item i,
+.toast i,
+.modal-header i,
+.section-header i,
+.settings-group i,
+.practice-icon i,
+.upload-area i,
+.floating-menu-item i,
+.sort-modal-option i,
+.lexi-icon-box i,
+.verb-forms i {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "Font Awesome 5 Pro", "FontAwesome" !important;
+    display: inline-block !important;
+    font-style: normal !important;
+    font-weight: 900 !important;
+}
+
+/* 2. سایز استاندارد آیکون‌ها */
+i, .fas, .far, .fab {
+    font-size: inherit;
+}
+
+/* 3. فاصله آیکون از متن */
+i + span, 
+.fas + span, 
+.far + span {
+    margin-left: 6px;
+}
+
+/* 4. در حالت RTL */
+[dir="rtl"] i + span,
+[dir="rtl"] .fas + span {
+    margin-left: 0;
+    margin-right: 6px;
+}
+
+/* 5. آیکون‌های خاص جنسیت */
+.fa-mars, .fa-venus, .fa-genderless,
+.fa-male, .fa-female, .fa-transgender {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "FontAwesome" !important;
+}
+
+/* 6. آیکون‌های چشم */
+.fa-eye, .fa-eye-slash {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "FontAwesome" !important;
+}
+
+/* 7. آیکون‌های دکمه‌های موسیقی */
+.fa-play, .fa-pause, .fa-stop, .fa-backward, .fa-forward,
+.fa-volume-up, .fa-volume-down, .fa-music, .fa-headphones {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "FontAwesome" !important;
+}
+
+/* 8. آیکون‌های منوی شناور */
+.floating-menu-item .menu-item-icon {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "FontAwesome" !important;
+}
+.delete-book-btn:hover {
+    color: var(--danger);
+}
+/* همه آیکون‌های بخش تمرین */
+.practice-customization i,
+.range-option i,
+.count-option i,
+.order-option i {
+    font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "FontAwesome" !important;
+}
+
+/* فرم افزودن کتاب */
+#add-book-form {
+    background: var(--gray-50);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid var(--gray-200);
+}
+
+/* ========== دارک مود ========== */
+.dark-mode .book-card {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .book-info h3 {
+    color: var(--text-primary);
+}
+
+.dark-mode #add-book-form {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .book-meta span {
+    color: var(--text-tertiary);
+}
+
+/* ========== ریسپانسیو ========== */
+@media (max-width: 768px) {
+    .books-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .book-card {
+        max-width: 100%;
+    }
+    
+    #add-book-form .action-buttons {
+        flex-direction: column;
+    }
+    
+    #add-book-form .action-buttons button {
+        width: 100%;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+/* استایل مودال قفل */
+#lock-modal .modal-content {
+    animation: slideUp 0.3s ease;
+}
+
+#lock-modal input {
+    font-family: monospace;
+    letter-spacing: 2px;
+}
+/* ================================================
+   ابزار صرف افعال - استایل کامل
+   ================================================ */
+
+.tool-card {
+    transition: all 0.3s ease;
+}
+
+.tool-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+}
+
+.filter-verb-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--gray-200);
+    border-radius: 30px;
+    background: var(--white);
+    color: var(--gray-700);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-verb-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+
+.verb-suggestion-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--gray-200);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.verb-suggestion-item:hover {
+    background: var(--primary-light);
+    transform: translateX(-5px);
+}
+
+.verb-suggestion-word {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--gray-800);
+}
+
+.verb-suggestion-type {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.verb-suggestion-type.regular {
+    background: #10b981;
+    color: white;
+}
+
+.verb-suggestion-type.irregular {
+    background: #f59e0b;
+    color: white;
+}
+
+.tense-tab {
+    padding: 12px 18px;
+    border: 2px solid var(--gray-200);
+    border-radius: 16px;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tense-tab.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+
+.conjugation-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.conjugation-row:last-child {
+    border-bottom: none;
+}
+
+.conjugation-person {
+    padding: 12px 15px;
+    font-weight: 700;
+    background: var(--gray-100);
+    border-left: 1px solid var(--gray-200);
+}
+
+.conjugation-form {
+    padding: 12px 15px;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.example-item {
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.1);
+}
+
+.example-item:last-child {
+    border-bottom: none;
+}
+
+.example-german {
+    font-weight: 600;
+    color: var(--gray-800);
+    direction: ltr;
+    text-align: left;
+}
+
+.example-persian {
+    font-size: 13px;
+    color: var(--gray-600);
+    margin-top: 5px;
+}
+
+/* دارک مود */
+.dark-mode .filter-verb-btn {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .verb-suggestion-item {
+    border-bottom-color: var(--border-primary);
+}
+
+.dark-mode .verb-suggestion-word {
+    color: var(--text-primary);
+}
+
+.dark-mode .tense-tab {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .conjugation-row {
+    border-bottom-color: var(--border-primary);
+}
+
+.dark-mode .conjugation-person {
+    background: var(--bg-tertiary);
+    border-left-color: var(--border-primary);
+}
+
+.dark-mode .example-german {
+    color: var(--text-primary);
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .conjugation-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .conjugation-person {
+        border-left: none;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .tense-tab {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .verb-filters {
+        justify-content: center;
+    }
+    
+    .filter-verb-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+/* ================================================
+   فونت ابزار صرف افعال
+   ================================================ */
+
+#tools-section,
+#tools-section *,
+.verb-suggestion-word,
+.verb-suggestion-type,
+.tense-tab,
+.conjugation-person,
+.conjugation-form,
+.example-german,
+.example-persian,
+.filter-verb-btn,
+#selected-verb-name,
+#selected-verb-type,
+#selected-verb-level {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', 'Segoe UI', Tahoma, sans-serif !important;
+}
+
+/* کلمه آلمانی (با فونت معمولی برای حروف لاتین) */
+.verb-suggestion-word,
+#selected-verb-name,
+.example-german,
+.conjugation-form {
+    font-family: 'Segoe UI', 'Vazirmatn', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 600 !important;
+}
+
+/* متن فارسی */
+.example-persian,
+.conjugation-person,
+.filter-verb-btn span {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', Tahoma, sans-serif !important;
+}
+
+/* تب‌ها */
+.tense-tab {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+    font-weight: 500 !important;
+}
+
+/* دکمه‌ها */
+#tools-section .btn {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+
+/* اینپوت جستجو */
+#verb-search-input {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif !important;
+}
+
+/* placeholder */
+#verb-search-input::placeholder {
+    font-family: 'Vazirmatn', sans-serif !important;
+}
+/* ================================================
+   استایل مثال‌ها در دارک مود
+   ================================================ */
+
+.dark-mode #verb-examples {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+}
+
+.dark-mode #verb-examples .fa-quote-right {
+    color: #60a5fa !important;
+}
+
+.dark-mode #verb-examples strong {
+    color: #e2e8f0 !important;
+}
+
+.dark-mode .example-item {
+    border-bottom: 1px solid #334155 !important;
+}
+
+.dark-mode .example-german {
+    color: #f1f5f9 !important;
+    font-weight: 600 !important;
+}
+
+.dark-mode .example-persian {
+    color: #94a3b8 !important;
+}
+
+.dark-mode .speak-example-btn {
+    background: #334155 !important;
+    border: 1px solid #475569 !important;
+    color: #cbd5e1 !important;
+}
+
+.dark-mode .speak-example-btn:hover {
+    background: #3b82f6 !important;
+    border-color: #60a5fa !important;
+    color: white !important;
+}
+/* ================================================
+   LexiCard استایل‌های
+   ================================================ */
+
+/* بخش جستجو */
+.lexi-search-area {
+    position: relative;
+}
+
+.lexi-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: var(--shadow-lg);
+    margin-top: 8px;
+    display: none;
+}
+
+.lexi-suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lexi-suggestion-item:hover {
+    background: var(--primary-light);
+}
+
+.lexi-suggestion-word {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--gray-800);
+}
+
+.lexi-suggestion-meaning {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.lexi-suggestion-type {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+/* نوار استایل */
+.lexi-style-bar {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+}
+
+.style-btn {
+    padding: 8px 24px;
+    border: 2px solid var(--gray-200);
+    border-radius: 40px;
+    background: var(--white);
+    color: var(--gray-700);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.style-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.style-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+
+/* پیش‌نمایش کارت */
+#lexi-card-preview {
+    display: none;
+    margin-top: 25px;
+}
+
+.lexi-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--gray-200);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.lexi-preview-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 18px;
+}
+
+.lexi-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* ========== استایل‌های کارت ========== */
+
+/* استایل مدرن */
+.lexi-card-modern {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 28px;
+    padding: 35px;
+    max-width: 500px;
+    margin: 0 auto;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.lexi-card-modern .lexi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    position: relative;
+    z-index: 2;
+}
+
+.lexi-card-modern .lexi-word {
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.lexi-card-modern .lexi-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lexi-card-modern .lexi-gender-badge {
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.2);
+}
+
+.lexi-card-modern .lexi-type-badge {
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+}
+
+.lexi-card-modern .lexi-icon-box {
+    width: 65px;
+    height: 65px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.lexi-card-modern .lexi-meaning-box {
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    position: relative;
+    z-index: 2;
+}
+
+.lexi-card-modern .lexi-meaning-label {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.lexi-card-modern .lexi-meaning-text {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.lexi-card-modern .lexi-examples {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    position: relative;
+    z-index: 2;
+}
+
+.lexi-card-modern .lexi-example-item {
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.lexi-card-modern .lexi-example-german {
+    font-size: 13px;
+    font-weight: 500;
+    direction: ltr;
+    text-align: left;
+}
+
+.lexi-card-modern .lexi-example-persian {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-top: 5px;
+}
+
+.lexi-card-modern .lexi-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.6;
+    position: relative;
+    z-index: 2;
+}
+
+/* استایل کلاسیک */
+.lexi-card-classic {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    margin: 0 auto;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.lexi-card-classic .lexi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+}
+
+.lexi-card-classic .lexi-word {
+    font-size: 38px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.lexi-card-classic .lexi-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lexi-card-classic .lexi-gender-badge {
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+.lexi-card-classic .lexi-type-badge {
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.lexi-card-classic .lexi-icon-box {
+    width: 60px;
+    height: 60px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.lexi-card-classic .lexi-meaning-box {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.lexi-card-classic .lexi-meaning-label {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.lexi-card-classic .lexi-meaning-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.lexi-card-classic .lexi-examples {
+    margin: 20px 0;
+}
+
+.lexi-card-classic .lexi-example-item {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.lexi-card-classic .lexi-example-german {
+    font-size: 13px;
+    font-weight: 600;
+    direction: ltr;
+    text-align: left;
+}
+
+.lexi-card-classic .lexi-example-persian {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 5px;
+}
+
+.lexi-card-classic .lexi-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+/* استایل مینیمال */
+.lexi-card-minimal {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 30px;
+    max-width: 500px;
+    margin: 0 auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.lexi-card-minimal .lexi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--gray-100);
+}
+
+.lexi-card-minimal .lexi-word {
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.lexi-card-minimal .lexi-icon-box {
+    width: 55px;
+    height: 55px;
+    background: var(--gray-50);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.lexi-card-minimal .lexi-meaning-box {
+    padding: 0 0 20px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.lexi-card-minimal .lexi-meaning-text {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.lexi-card-minimal .lexi-examples {
+    margin: 15px 0;
+}
+
+.lexi-card-minimal .lexi-example-item {
+    background: var(--gray-50);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.lexi-card-minimal .lexi-example-german {
+    font-size: 14px;
+    font-weight: 600;
+    direction: ltr;
+    text-align: left;
+    color: var(--gray-800);
+}
+
+.lexi-card-minimal .lexi-example-persian {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-top: 6px;
+}
+
+.lexi-card-minimal .lexi-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--gray-100);
+    font-size: 11px;
+    color: var(--gray-400);
+    display: flex;
+    justify-content: space-between;
+}
+
+/* استایل دارک */
+.lexi-card-dark {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-radius: 28px;
+    padding: 35px;
+    max-width: 500px;
+    margin: 0 auto;
+    color: white;
+}
+
+.lexi-card-dark .lexi-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+}
+
+.lexi-card-dark .lexi-word {
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.lexi-card-dark .lexi-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.lexi-card-dark .lexi-gender-badge {
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.lexi-card-dark .lexi-type-badge {
+    padding: 5px 14px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.15);
+}
+
+.lexi-card-dark .lexi-icon-box {
+    width: 65px;
+    height: 65px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.lexi-card-dark .lexi-meaning-box {
+    background: rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.lexi-card-dark .lexi-meaning-label {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.lexi-card-dark .lexi-meaning-text {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.lexi-card-dark .lexi-examples {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.lexi-card-dark .lexi-example-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.lexi-card-dark .lexi-example-german {
+    font-size: 13px;
+    font-weight: 500;
+    direction: ltr;
+    text-align: left;
+}
+
+.lexi-card-dark .lexi-example-persian {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-top: 5px;
+}
+
+.lexi-card-dark .lexi-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    opacity: 0.5;
+}
+
+/* ========== حالت خالی ========== */
+#lexi-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+#lexi-empty-state .empty-icon {
+    font-size: 70px;
+    color: var(--gray-300);
+    margin-bottom: 20px;
+}
+
+#lexi-empty-state h3 {
+    font-size: 22px;
+    margin-bottom: 10px;
+    color: var(--gray-700);
+}
+
+#lexi-empty-state p {
+    color: var(--gray-500);
+}
+
+/* ========== ریسپانسیو ========== */
+@media (max-width: 768px) {
+    .lexi-style-bar {
+        gap: 8px;
+    }
+    
+    .style-btn {
+        padding: 6px 16px;
+        font-size: 13px;
+    }
+    
+    .lexi-preview-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .lexi-actions {
+        justify-content: center;
+    }
+    
+    .lexi-card-modern .lexi-word,
+    .lexi-card-dark .lexi-word {
+        font-size: 32px;
+    }
+    
+    .lexi-card-classic .lexi-word {
+        font-size: 30px;
+    }
+    
+    .lexi-card-minimal .lexi-word {
+        font-size: 28px;
+    }
+    
+    .lexi-card-modern .lexi-meaning-text,
+    .lexi-card-dark .lexi-meaning-text {
+        font-size: 18px;
+    }
+    
+    .lexi-icon-box {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 22px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .lexi-card-modern,
+    .lexi-card-classic,
+    .lexi-card-minimal,
+    .lexi-card-dark {
+        padding: 20px;
+    }
+    
+    .lexi-word {
+        font-size: 26px !important;
+    }
+}
+.tab-content {
+    display: none !important;
+}
+
+.tab-content.active {
+    display: block !important;
+}
+/* اسکرول نرم لیست لغات */
+#word-list-container {
+    scroll-behavior: smooth;
+    transition: all 0.2s ease;
+}
+
+.word-list-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.word-list-item:hover {
+    transform: translateY(-2px);
+}
+/* دکمه حالت تاریک */
+.dark-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    background: var(--gray-100);
+    border: 2px solid var(--gray-200);
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Vazirmatn', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.dark-mode-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+}
+
+.dark-mode-btn.active {
+    background: #1e293b;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.dark-mode-btn.active i {
+    color: #fbbf24;
+}
+
+/* دکمه‌های اندازه فونت */
+.font-size-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.font-size-option {
+    padding: 10px 24px;
+    border: 2px solid var(--gray-200);
+    border-radius: 40px;
+    background: var(--white);
+    color: var(--gray-700);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.font-size-option:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.font-size-option.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: white;
+}
+/* ================================================
+   تمرین تطابق لغات (Matching Game)
+   ================================================ */
+
+/* استایل پایه کارت‌ها */
+.match-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    padding: 15px 20px;
+    border-radius: 14px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* حالت انتخاب شده (بنفش) - لایت مود */
+.match-card.selected {
+    background: #8b5cf6 !important;
+    border-color: #6d28d9 !important;
+    color: white !important;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* حالت درست (سبز) */
+.match-card.correct {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: white !important;
+    cursor: default !important;
+    opacity: 0.8;
+}
+
+/* حالت غلط (قرمز) */
+.match-card.wrong {
+    background: #ef4444 !important;
+    border-color: #dc2626 !important;
+    color: white !important;
+    animation: shake 0.3s ease;
+}
+
+/* ========== دارک مود - دقیقاً همان رنگ‌ها ========== */
+.dark-mode .match-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}
+
+/* دارک مود - انتخاب شده (بنفش مثل لایت) */
+.dark-mode .match-card.selected {
+    background: #8b5cf6 !important;
+    border-color: #a78bfa !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+/* دارک مود - درست (سبز مثل لایت) */
+.dark-mode .match-card.correct {
+    background: #10b981 !important;
+    border-color: #34d399 !important;
+    color: white !important;
+}
+
+/* دارک مود - غلط (قرمز مثل لایت) */
+.dark-mode .match-card.wrong {
+    background: #ef4444 !important;
+    border-color: #f87171 !important;
+    color: white !important;
+}
+
+/* هاور افکت */
+.match-card:hover:not(.correct):not(.selected) {
+    transform: translateY(-2px);
+    border-color: #8b5cf6;
+}
+
+.dark-mode .match-card:hover:not(.correct):not(.selected) {
+    background: #334155 !important;
+    border-color: #8b5cf6 !important;
+}
+
+/* انیمیشن تکان خوردن */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+/* نشانگر سطح SRS */
+.srs-level {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.srs-level-0 { background: #ef4444; color: white; }
+.srs-level-1 { background: #f59e0b; color: white; }
+.srs-level-2 { background: #eab308; color: white; }
+.srs-level-3 { background: #84cc16; color: white; }
+.srs-level-4 { background: #22c55e; color: white; }
+.srs-level-5 { background: #10b981; color: white; }
+
+/* مودال تنظیمات حالت مطالعه */
+.study-settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.study-settings-content {
+    background: white;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 400px;
+    overflow: hidden;
+}
+
+.study-settings-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    color: white;
+    text-align: center;
+}
+
+.study-settings-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.study-settings-body {
+    padding: 25px;
+}
+
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.time-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--gray-200);
+ 
+}
+
+.time-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4361ee;
+    cursor: pointer;
+}
+
+.time-value {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #4361ee;
+}
+
+.study-settings-footer {
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.study-settings-footer .btn {
+    flex: 1;
+}
+
+.dark-mode .study-settings-content {
+    background: #1e293b;
+}
+
+.dark-mode .setting-group label {
+    color: #e2e8f0;
+}
+
+.dark-mode .time-slider {
+    background: #334155;
+}
+/* ================================================
+   دکمه سورت گرد
+   ================================================ */
+
+.sort-circle-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.sort-circle-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.5);
+}
+
+.sort-circle-btn i {
+    font-size: 18px;
+}
+
+.dark-mode .sort-circle-btn {
+    background: linear-gradient(145deg, #4f46e5, #6d28d9);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+/* ================================================
+   مودال مرتب‌سازی
+   ================================================ */
+
+.sort-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.sort-modal-content {
+    background: var(--white);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 350px;
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.sort-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.sort-modal-header i {
+    margin-left: 8px;
+}
+
+.sort-modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.sort-modal-close:hover {
+    background: rgba(255,255,255,0.3);
+    transform: rotate(90deg);
+}
+
+.sort-modal-body {
+    padding: 12px 0;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.sort-modal-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--gray-700);
+    text-align: right;
+    font-family: 'Vazirmatn', sans-serif;
+    transition: all 0.2s;
+}
+
+.sort-modal-option:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.sort-modal-option i {
+    width: 20px;
+    font-size: 16px;
+    color: var(--primary);
+}
+
+.sort-divider {
+    height: 1px;
+    background: var(--gray-200);
+    margin: 8px 0;
+}
+
+.dark-mode .sort-modal-content {
+    background: #1e293b;
+}
+
+.dark-mode .sort-modal-option {
+    color: #e2e8f0;
+}
+
+.dark-mode .sort-modal-option:hover {
+    background: #334155;
+    color: #60a5fa;
+}
+
+.dark-mode .sort-modal-option i {
+    color: #60a5fa;
+}
+
+.dark-mode .sort-divider {
+    background: #334155;
+}
+/* تیک فعال در منوی مرتب‌سازی - سمت چپ */
+.sort-modal-option.active {
+    background: var(--primary-light);
+    color: var(--primary);
+    position: relative;
+    padding-right: 40px !important;
+}
+
+.sort-modal-option.active::before {
+    content: '✓';
+    position: absolute;
+    right: auto;
+    left: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.dark-mode .sort-modal-option.active {
+    background: #334155;
+    color: #60a5fa;
+}
+
+.dark-mode .sort-modal-option.active::before {
+    color: #60a5fa;
+}
+/* ================================================
+   پلیر پیشرفته موسیقی
+   ================================================ */
+
+.player-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: var(--gray-200);
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.player-icon-btn:hover {
+    transform: scale(1.05);
+    background: var(--primary);
+    color: white;
+}
+
+.play-pause {
+    width: 45px;
+    height: 45px;
+    background: var(--primary);
+    color: white;
+}
+
+#progress-bar {
+    cursor: pointer;
+}
+
+#progress-bar:hover {
+    height: 6px;
+}
+
+#player-volume-slider {
+ 
+    background: var(--gray-300);
+    border-radius: 3px;
+}
+
+#player-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+}
+
+/* ================================================
+   آیکون شناور موسیقی - نسخه حرفه‌ای
+   ================================================ */
+
+.music-floating-icon {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9999;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(5px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.music-floating-icon:hover {
+    transform: scale(1.12);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
+}
+
+.music-floating-icon.playing {
+    animation: musicWave 1.5s ease-in-out infinite;
+    background: linear-gradient(145deg, #10b981, #059669);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.music-floating-icon.playing:hover {
+    background: linear-gradient(145deg, #059669, #047857);
+}
+
+.music-floating-icon i {
+    font-size: 22px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+/* افکت موج برای وقتی که موسیقی در حال پخش است */
+@keyframes musicWave {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+        transform: scale(1.05);
+    }
+}
+
+/* افکت چرخش آیکون */
+.music-floating-icon.playing i {
+    animation: musicRotate 3s linear infinite;
+}
+
+@keyframes musicRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* دارک مود */
+.dark-mode .music-floating-icon {
+    background: linear-gradient(145deg, #4f46e5, #6d28d9);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .music-floating-icon.playing {
+    background: linear-gradient(145deg, #10b981, #047857);
+}
+
+/* ریسپانسیو موبایل */
+@media (max-width: 768px) {
+    .music-floating-icon {
+        top: 15px;
+        right: 15px;
+        width: 42px;
+        height: 42px;
+    }
+    
+    .music-floating-icon i {
+        font-size: 18px;
+    }
+}
+
+/* موقعیت در حالت RTL */
+[dir="rtl"] .music-floating-icon {
+    nav-left: auto;
+    right: 20px;
+}
+
+[dir="rtl"] .music-floating-icon {
+    left: auto;
+    right: 20px;
+}
+
+@media (max-width: 768px) {
+    [dir="rtl"] .music-floating-icon {
+        right: 15px;
+        left: auto;
+    }
+}
+
+@keyframes musicWave {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.7); }
+    50% { box-shadow: 0 0 0 15px rgba(67, 97, 238, 0); }
+}
+
+.dark-mode .player-icon-btn {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+.dark-mode #progress-bar {
+    background: #475569;
+}
+
+.dark-mode #player-volume-slider {
+    background: #475569;
+}
+/* نوار پیشرفت - از چپ به راست */
+#progress-bar {
+    direction: ltr !important;
+}
+
+.progress-bar-container {
+    direction: ltr !important;
+}
+/* اسلایدر صدا - از چپ به راست */
+#player-volume-slider {
+    direction: ltr !important;
+
+    background: var(--gray-300);
+    border-radius: 3px;
+    height: 4px;
+}
+
+#player-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+}
+
+.dark-mode #player-volume-slider {
+    background: #475569;
+}
+/* ================================================
+   استایل گزینه‌های آزمون چهارگزینه‌ای
+   ================================================ */
+
+.quiz-option-btn {
+    padding: 15px 20px;
+    background: var(--white);
+    border: 2px solid var(--gray-200);
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 500;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', Tahoma, sans-serif !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--gray-800);
+    text-align: center;
+    width: 100%;
+}
+
+.quiz-option-btn:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 8px 20px rgba(67, 97, 238, 0.15);
+}
+
+/* حالت انتخاب شده (قبل از بررسی) */
+.quiz-option-btn.selected {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+    color: white;
+    transform: scale(1.02);
+}
+
+/* حالت درست (سبز) */
+.quiz-option-btn.correct {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: white !important;
+    transform: scale(1.02);
+}
+
+/* حالت غلط (قرمز) */
+.quiz-option-btn.incorrect {
+    background: #ef4444 !important;
+    border-color: #dc2626 !important;
+    color: white !important;
+}
+
+/* غیرفعال */
+.quiz-option-btn:disabled {
+    cursor: default;
+    opacity: 0.8;
+    transform: none;
+}
+
+/* ========== دارک مود ========== */
+.dark-mode .quiz-option-btn {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.dark-mode .quiz-option-btn:hover {
+    background: #334155;
+    border-color: #60a5fa;
+    color: white;
+}
+
+.dark-mode .quiz-option-btn.selected {
+    background: #3b82f6;
+    border-color: #2563eb;
+    color: white;
+}
+
+.dark-mode .quiz-option-btn.correct {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: white !important;
+}
+
+.dark-mode .quiz-option-btn.incorrect {
+    background: #ef4444 !important;
+    border-color: #dc2626 !important;
+    color: white !important;
+}
+
+/* افکت ریپل هنگام کلیک */
+.quiz-option-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.quiz-option-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+}
+
+.quiz-option-btn:active::after {
+    width: 200px;
+    height: 200px;
+}
+
+/* ریسپانسیو موبایل */
+@media (max-width: 768px) {
+    .quiz-option-btn {
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+}
+/* ================================================
+   فقط رنگی کردن برچسب جنسیت در تمرین تطابق
+   ================================================ */
+
+/* برچسب جنسیت - فقط همون der/die/das */
+.gender-badge.masculine {
+    background: #3b82f6;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.gender-badge.feminine {
+    background: #ec4899;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.gender-badge.neuter {
+    background: #10b981;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 8px;
+    display: inline-block;
+}
+.word-actions {
+    margin-top: 0 !important;
+    display: flex;
+    align-items: center;
+}
+.word-actions i {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px;
+    height: 36px;
+  
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+/* ================================================
+   سیستم فونت و اندازه - نسخه نهایی
+   ================================================ */
+
+/* پایه */
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    font-size: 1rem;
+    transition: font-size 0.2s ease;
+}
+
+/* ========== کلاس‌های سایز فونت ========== */
+body.font-small { font-size: 14px; }
+body.font-medium { font-size: 16px; }
+body.font-large { font-size: 18px; }
+body.font-xlarge { font-size: 20px; }
+body.font-xxlarge { font-size: 22px; }
+
+/* همه المان‌ها از فونت body پیروی کنن */
+body * {
+    font-size: inherit;
+}
+
+/* ========== بخش‌هایی که فونت ثابت دارند (بزرگ نمیشن) ========== */
+
+/* فلش کارت - کلمه اصلی */
+.flashcard-front .flashcard-word,
+.flashcard-back .flashcard-word {
+    font-size: 36px !important;
+}
+
+/* فلش کارت - برچسب‌ها */
+.flashcard .word-gender,
+.flashcard .word-type,
+.flashcard-verb-label,
+.flashcard-verb-value {
+    font-size: 14px !important;
+}
+
+/* تمرین جنسیت - کلمه اصلی */
+.gender-word,
+.gender-exercise .gender-word {
+    font-size: 64px !important;
+}
+
+/* تمرین جنسیت - دکمه‌ها */
+.gender-option-btn {
+    font-size: 18px !important;
+}
+
+/* تمرین جنسیت - نمایش معنی */
+#word-meaning-display {
+    font-size: 18px !important;
+}
+
+/* حالت مطالعه - کلمه اصلی */
+.study-card .lexi-word,
+.study-card .gender-word,
+#practice-section .study-card div[style*="56px"] {
+    font-size: 56px !important;
+}
+
+/* حالت مطالعه - معنی */
+.study-card .lexi-meaning-text {
+    font-size: 28px !important;
+}
+
+/* حالت مطالعه - مثال */
+.study-card .lexi-example-german {
+    font-size: 14px !important;
+}
+
+/* ========== ایکون‌ها ========== */
+
+/* ایکون‌های هدر بخش‌ها */
+.section-header h2 i {
+    font-size: 24px !important;
+}
+
+/* ایکون‌های کارت تمرین */
+.practice-icon i {
+    font-size: 48px !important;
+}
+
+/* ایکون‌های دکمه‌ها */
+.btn i,
+.action-btn i,
+.voice-btn i {
+    font-size: 16px !important;
+}
+
+/* ایکون‌های تنظیمات تمرین */
+.customization-label i,
+.range-option i,
+.count-option i,
+.order-option i {
+    font-size: 16px !important;
+}
+
+/* ایکون‌های جنسیت */
+.gender-option-btn i {
+    font-size: 18px !important;
+}
+
+/* ایکون‌های تطابق */
+.match-card i {
+    font-size: 14px !important;
+}
+
+/* ایکون‌های فلش کارت */
+.flashcard-actions i {
+    font-size: 18px !important;
+}
+
+/* ایکون‌های حالت مطالعه */
+.study-card i {
+    font-size: 20px !important;
+}
+
+/* ایکون‌های منو */
+.floating-menu-item .menu-item-icon {
+    font-size: 18px !important;
+}
+
+/* ========== ریسپانسیو موبایل ========== */
+@media (max-width: 768px) {
+    body.font-small { font-size: 13px; }
+    body.font-medium { font-size: 15px; }
+    body.font-large { font-size: 17px; }
+    body.font-xlarge { font-size: 19px; }
+    body.font-xxlarge { font-size: 21px; }
+    
+    /* ثابت‌ها در موبایل */
+    .flashcard-front .flashcard-word,
+    .flashcard-back .flashcard-word {
+        font-size: 28px !important;
+    }
+    
+    .gender-word {
+        font-size: 48px !important;
+    }
+    
+    .study-card .lexi-word {
+        font-size: 42px !important;
+    }
+    
+    .practice-icon i {
+        font-size: 40px !important;
+    }
+}
+/* ================================================
+   مودال خروجی تصویری لغات - نسخه نهایی
+   ================================================ */
+
+.export-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+    z-index: 100000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.export-modal-content {
+    background: var(--white);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.export-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.export-modal-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.export-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.export-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.selected-count {
+    margin-right: auto;
+    padding: 8px 15px;
+    background: var(--primary-light);
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.export-words-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.export-word-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.export-word-item:hover {
+    background: var(--primary-light);
+}
+
+.export-word-item input {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.export-word-item .word-info {
+    flex: 1;
+}
+
+.export-word-item .word-german {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.export-word-item .word-persian {
+    font-size: 13px;
+    color: var(--gray-500);
+}
+
+.export-word-item .word-badges {
+    display: flex;
+    gap: 5px;
+    margin-top: 4px;
+}
+
+.export-word-item .badge-sm {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    color: white;
+}
+
+.export-modal-footer {
+    display: flex;
+    gap: 15px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+/* نوار ابزار */
+.export-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-200);
+    align-items: center;
+}
+
+.export-toolbar select,
+.export-toolbar input {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    font-family: 'Vazirmatn', sans-serif;
+    font-size: 13px;
+}
+
+.btn-apply {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* نوار پیش‌نمایش */
+.preview-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px 18px;
+    background: var(--gray-50);
+    border-radius: 16px;
+}
+
+.btn-nav {
+    padding: 6px 18px;
+    border: 1px solid var(--gray-300);
+    border-radius: 30px;
+    background: var(--white);
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-nav:hover:not(:disabled) {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.btn-nav:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.preview-page-info {
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+/* ================================================
+   صفحات خروجی تصویری - با پشتیبانی از تم‌های رنگی
+   ================================================ */
+
+.preview-page {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    margin: 20px 0;
+    direction: rtl;
+}
+
+.preview-page-header {
+    padding: 16px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.preview-title {
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.preview-page-num {
+    font-size: 12px;
+    background: rgba(255,255,255,0.2);
+    padding: 5px 14px;
+    border-radius: 30px;
+}
+
+.preview-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.preview-table th {
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    border-bottom: 2px solid;
+}
+
+.preview-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid;
+    font-size: 13px;
+}
+
+.preview-table td:first-child {
+    text-align: center;
+    font-weight: 700;
+    width: 50px;
+}
+
+.preview-table td:nth-child(2) {
+    font-weight: 800;
+    font-size: 15px;
+}
+
+.preview-footer {
+    padding: 10px 22px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    border-top: 1px solid;
+}
+
+/* لودینگ */
+#simple-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.simple-loading-content {
+    background: white;
+    padding: 28px 40px;
+    border-radius: 24px;
+    text-align: center;
+    min-width: 250px;
+}
+
+.simple-spinner {
+    width: 42px;
+    height: 42px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #4361ee;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    animation: spin 0.7s linear infinite;
+}
+
+.simple-text {
+    font-size: 14px;
+    color: #1e293b;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.simple-progress {
+    width: 200px;
+    height: 5px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.simple-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: #4361ee;
+    transition: width 0.3s;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========== تم روشن (پیش‌فرض) ========== */
+.preview-page.light-theme {
+    background: #ffffff;
+}
+
+.preview-page.light-theme .preview-page-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.preview-page.light-theme .preview-title {
+    color: white;
+}
+
+.preview-page.light-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.light-theme .preview-table th {
+    background: #f8fafc;
+    color: #334155;
+    border-bottom-color: #e2e8f0;
+}
+
+.preview-page.light-theme .preview-table td {
+    color: #334155;
+    border-bottom-color: #f1f5f9;
+}
+
+.preview-page.light-theme .preview-table td:first-child {
+    color: #667eea;
+}
+
+.preview-page.light-theme .preview-table td:nth-child(2) {
+    color: #1e293b;
+}
+
+.preview-page.light-theme .preview-footer {
+    background: #f8fafc;
+    color: #64748b;
+    border-top-color: #e2e8f0;
+}
+
+/* ========== تم تاریک ========== */
+.preview-page.dark-theme {
+    background: #0f172a;
+}
+
+.preview-page.dark-theme .preview-page-header {
+    background: linear-gradient(135deg, #1e40af, #5b21b6);
+    color: white;
+}
+
+.preview-page.dark-theme .preview-title {
+    color: white;
+}
+
+.preview-page.dark-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.dark-theme .preview-table th {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-bottom-color: #334155;
+}
+
+.preview-page.dark-theme .preview-table td {
+    color: #cbd5e1;
+    border-bottom-color: #1e293b;
+}
+
+.preview-page.dark-theme .preview-table td:first-child {
+    color: #818cf8;
+}
+
+.preview-page.dark-theme .preview-table td:nth-child(2) {
+    color: #f1f5f9;
+}
+
+.preview-page.dark-theme .preview-footer {
+    background: #1e293b;
+    color: #94a3b8;
+    border-top-color: #334155;
+}
+
+/* ========== تم آبی ========== */
+.preview-page.blue-theme {
+    background: #eff6ff;
+}
+
+.preview-page.blue-theme .preview-page-header {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    color: white;
+}
+
+.preview-page.blue-theme .preview-title {
+    color: white;
+}
+
+.preview-page.blue-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.blue-theme .preview-table th {
+    background: #dbeafe;
+    color: #1e40af;
+    border-bottom-color: #bfdbfe;
+}
+
+.preview-page.blue-theme .preview-table td {
+    color: #1e3a8a;
+    border-bottom-color: #dbeafe;
+}
+
+.preview-page.blue-theme .preview-table td:first-child {
+    color: #3b82f6;
+}
+
+.preview-page.blue-theme .preview-table td:nth-child(2) {
+    color: #1e40af;
+}
+
+.preview-page.blue-theme .preview-footer {
+    background: #dbeafe;
+    color: #3b82f6;
+    border-top-color: #bfdbfe;
+}
+
+/* ========== تم سبز ========== */
+.preview-page.green-theme {
+    background: #ecfdf5;
+}
+
+.preview-page.green-theme .preview-page-header {
+    background: linear-gradient(135deg, #10b981, #065f46);
+    color: white;
+}
+
+.preview-page.green-theme .preview-title {
+    color: white;
+}
+
+.preview-page.green-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.green-theme .preview-table th {
+    background: #d1fae5;
+    color: #065f46;
+    border-bottom-color: #a7f3d0;
+}
+
+.preview-page.green-theme .preview-table td {
+    color: #064e3b;
+    border-bottom-color: #d1fae5;
+}
+
+.preview-page.green-theme .preview-table td:first-child {
+    color: #10b981;
+}
+
+.preview-page.green-theme .preview-table td:nth-child(2) {
+    color: #065f46;
+}
+
+.preview-page.green-theme .preview-footer {
+    background: #d1fae5;
+    color: #10b981;
+    border-top-color: #a7f3d0;
+}
+
+/* ========== تم بنفش ========== */
+.preview-page.purple-theme {
+    background: #f5f3ff;
+}
+
+.preview-page.purple-theme .preview-page-header {
+    background: linear-gradient(135deg, #8b5cf6, #5b21b6);
+    color: white;
+}
+
+.preview-page.purple-theme .preview-title {
+    color: white;
+}
+
+.preview-page.purple-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.purple-theme .preview-table th {
+    background: #ede9fe;
+    color: #5b21b6;
+    border-bottom-color: #ddd6fe;
+}
+
+.preview-page.purple-theme .preview-table td {
+    color: #4c1d95;
+    border-bottom-color: #ede9fe;
+}
+
+.preview-page.purple-theme .preview-table td:first-child {
+    color: #8b5cf6;
+}
+
+.preview-page.purple-theme .preview-table td:nth-child(2) {
+    color: #5b21b6;
+}
+
+.preview-page.purple-theme .preview-footer {
+    background: #ede9fe;
+    color: #8b5cf6;
+    border-top-color: #ddd6fe;
+}
+
+/* ========== تم نارنجی ========== */
+.preview-page.orange-theme {
+    background: #fffbeb;
+}
+
+.preview-page.orange-theme .preview-page-header {
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+    color: white;
+}
+
+.preview-page.orange-theme .preview-title {
+    color: white;
+}
+
+.preview-page.orange-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.orange-theme .preview-table th {
+    background: #fef3c7;
+    color: #b45309;
+    border-bottom-color: #fde68a;
+}
+
+.preview-page.orange-theme .preview-table td {
+    color: #78350f;
+    border-bottom-color: #fef3c7;
+}
+
+.preview-page.orange-theme .preview-table td:first-child {
+    color: #f59e0b;
+}
+
+.preview-page.orange-theme .preview-table td:nth-child(2) {
+    color: #b45309;
+}
+
+.preview-page.orange-theme .preview-footer {
+    background: #fef3c7;
+    color: #f59e0b;
+    border-top-color: #fde68a;
+}
+
+/* ========== تم صورتی ========== */
+.preview-page.pink-theme {
+    background: #fdf2f8;
+}
+
+.preview-page.pink-theme .preview-page-header {
+    background: linear-gradient(135deg, #ec4899, #be185d);
+    color: white;
+}
+
+.preview-page.pink-theme .preview-title {
+    color: white;
+}
+
+.preview-page.pink-theme .preview-page-num {
+    color: white;
+}
+
+.preview-page.pink-theme .preview-table th {
+    background: #fce7f3;
+    color: #be185d;
+    border-bottom-color: #fbcfe8;
+}
+
+.preview-page.pink-theme .preview-table td {
+    color: #831843;
+    border-bottom-color: #fce7f3;
+}
+
+.preview-page.pink-theme .preview-table td:first-child {
+    color: #ec4899;
+}
+
+.preview-page.pink-theme .preview-table td:nth-child(2) {
+    color: #be185d;
+}
+
+.preview-page.pink-theme .preview-footer {
+    background: #fce7f3;
+    color: #ec4899;
+    border-top-color: #fbcfe8;
+}
+
+/* دارک مود برای مودال */
+.dark-mode .export-modal-content {
+    background: #1e293b;
+}
+
+.dark-mode .export-words-list {
+    background: #0f172a;
+}
+
+.dark-mode .export-word-item {
+    background: #334155;
+}
+
+.dark-mode .export-word-item .word-persian {
+    color: #94a3b8;
+}
+
+.dark-mode .selected-count {
+    background: #334155;
+    color: white;
+}
+
+.dark-mode .export-toolbar {
+    background: #0f172a;
+    border-bottom-color: #334155;
+}
+
+.dark-mode .export-toolbar select,
+.dark-mode .export-toolbar input {
+    background: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.dark-mode .preview-navbar {
+    background: #0f172a;
+}
+
+.dark-mode .btn-nav {
+    background: #1e293b;
+    border-color: #475569;
+    color: #cbd5e1;
+}
+
+.dark-mode .preview-page-info {
+    color: #94a3b8;
+}
+
+.dark-mode .simple-loading-content {
+    background: #1e293b;
+}
+
+.dark-mode .simple-text {
+    color: #f1f5f9;
+}
+
+.dark-mode .simple-spinner {
+    border-color: #334155;
+    border-top-color: #3b82f6;
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .export-words-list {
+        grid-template-columns: 1fr;
+    }
+    
+    .export-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .export-modal-footer {
+        flex-direction: column;
+    }
+    
+    .export-modal-footer .btn {
+        width: 100%;
+    }
+    
+    .preview-navbar {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .preview-table th,
+    .preview-table td {
+        padding: 8px;
+        font-size: 11px;
+    }
+    
+    .preview-title {
+        font-size: 14px;
+    }
+}
+/* استایل هاور و selected برای آیتم‌های انتخاب لغت */
+.export-word-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    background: var(--gray-50);
+    border-radius: 14px;
+    margin-bottom: 8px;
+}
+
+.export-word-item:hover {
+    transform: translateX(-5px);
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.export-word-item.selected {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    border-color: #4f46e5;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.dark-mode .export-word-item {
+    background: #1e293b;
+}
+
+.dark-mode .export-word-item:hover {
+    background: #334155;
+    border-color: #60a5fa;
+}
+
+.dark-mode .export-word-item.selected {
+    background: linear-gradient(135deg, #1e3a8a, #1e40af);
+    border-color: #3b82f6;
+}
+/* ================================================
+   فونت وزیرمتن برای بخش خروجی تصویری
+   ================================================ */
+
+/* تمام عناصر مودال خروجی تصویری */
+.export-modal,
+.export-modal *,
+.export-modal-content,
+.export-modal-header,
+.export-modal-body,
+.export-modal-footer,
+.export-actions,
+.export-toolbar,
+.export-word-item,
+.word-german,
+.word-persian,
+.word-badges,
+.badge-sm,
+.selected-count,
+.preview-navbar,
+.btn-nav,
+.preview-page-info,
+.preview-page,
+.preview-page-header,
+.preview-title,
+.preview-page-num,
+.preview-table,
+.preview-table th,
+.preview-table td,
+.preview-footer,
+#export-search-input,
+#export-sort-select,
+#export-words-per-page,
+#export-theme-select,
+#export-show-gender,
+#export-show-type,
+#apply-export-settings,
+.select-all-words,
+.deselect-all-words,
+.select-weak-words,
+#preview-export-btn,
+#cancel-export-btn,
+#confirm-export-btn,
+#back-to-select-btn {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* تنظیم خاص برای اعداد و متن‌های لاتین */
+.preview-table td:nth-child(2),
+.word-german,
+#export-sort-select,
+#export-words-per-page {
+    font-family: 'Segoe UI', 'Vazirmatn', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* تنظیم دکمه‌ها */
+.export-toolbar button,
+.btn-nav,
+#apply-export-settings,
+#select-all-words,
+#deselect-all-words,
+#select-weak-words,
+#preview-export-btn,
+#cancel-export-btn,
+#confirm-export-btn,
+#back-to-select-btn {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+    font-weight: 500 !important;
+}
+
+/* تنظیم لیبل‌ها و چکباکس‌ها */
+.export-toolbar label {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+    font-size: 13px !important;
+}
+
+/* تنظیم اینپوت جستجو */
+#export-search-input::placeholder {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+/* ================================================
+   رفع مشکل حالت تاریک در مودال انتخاب لغات
+   ================================================ */
+
+/* پس‌زمینه مودال در حالت تاریک */
+.dark-mode .export-modal-content {
+    background: #1e293b !important;
+}
+
+/* پس‌زمینه لیست لغات */
+.dark-mode .export-words-list {
+    background: #0f172a !important;
+}
+
+/* آیتم‌های لغت */
+.dark-mode .export-word-item {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+.dark-mode .export-word-item:hover {
+    background: #334155 !important;
+}
+
+.dark-mode .export-word-item.selected {
+    background: #334155 !important;
+    border-color: #3b82f6 !important;
+}
+
+/* متن لغت آلمانی */
+.dark-mode .export-word-item .word-german {
+    color: #f1f5f9 !important;
+}
+
+/* متن معنی فارسی */
+.dark-mode .export-word-item .word-persian {
+    color: #94a3b8 !important;
+}
+
+/* نوار ابزار */
+.dark-mode .export-toolbar {
+    background: #0f172a !important;
+    border-bottom-color: #334155 !important;
+}
+
+/* دکمه‌های سورت و سلکت */
+.dark-mode #export-sort-select,
+.dark-mode #export-words-per-page,
+.dark-mode #export-theme-select {
+    background: #1e293b !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+
+/* فیلد جستجو */
+.dark-mode #export-search-input {
+    background: #1e293b !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+
+.dark-mode #export-search-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* چکباکس‌ها و لیبل‌ها */
+.dark-mode .export-toolbar label {
+    color: #cbd5e1 !important;
+}
+
+/* دکمه اعمال */
+.dark-mode #apply-export-settings {
+    background: #3b82f6 !important;
+}
+
+/* دکمه‌های انتخاب (انتخاب همه، لغو همه، لغات ضعیف) */
+.dark-mode #select-all-words,
+.dark-mode #deselect-all-words,
+.dark-mode #select-weak-words {
+    background: #334155 !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+
+.dark-mode #select-all-words:hover,
+.dark-mode #deselect-all-words:hover,
+.dark-mode #select-weak-words:hover {
+    background: #3b82f6 !important;
+    color: white !important;
+}
+
+/* شمارنده انتخاب شده */
+.dark-mode .selected-count {
+    background: #334155 !important;
+    color: #94a3b8 !important;
+}
+
+/* دکمه پیش‌نمایش و انصراف */
+.dark-mode #preview-export-btn {
+    background: #3b82f6 !important;
+}
+
+.dark-mode #cancel-export-btn {
+    background: #334155 !important;
+    color: #e2e8f0 !important;
+    border-color: #475569 !important;
+}
+
+.dark-mode #cancel-export-btn:hover {
+    background: #ef4444 !important;
+    color: white !important;
+}
+/* ================================================
+   فرم افزودن لغت پیشرفته - نسخه 2.0
+   ================================================ */
+
+/* کارت اصلی */
+.add-word-card {
+    background: var(--white);
+    border-radius: 28px;
+    padding: 30px;
+}
+
+/* هدر بخش */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.header-badges {
+    display: flex;
+    gap: 12px;
+}
+
+.header-badges .badge {
+    padding: 8px 18px;
+    font-size: 13px;
+}
+
+.info-badge {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* فیلدها */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 10px;
+}
+
+.form-label i {
+    color: var(--primary);
+    font-size: 16px;
+}
+
+.required {
+    color: #ef4444;
+    margin-right: 4px;
+}
+
+.modern-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid var(--gray-200);
+    border-radius: 16px;
+    font-size: 15px;
+    font-family: 'Vazirmatn', sans-serif;
+    background: var(--white);
+    color: var(--gray-900);
+    transition: all 0.2s ease;
+}
+
+.modern-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+    transform: translateY(-2px);
+}
+
+.modern-input::placeholder {
+    color: var(--gray-400);
+}
+
+.input-hint {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* کارت‌های انتخاب نوع کلمه */
+.type-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 8px;
+    background: var(--gray-50);
+    border: 2px solid var(--gray-200);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.type-card i {
+    font-size: 24px;
+    color: var(--gray-600);
+    margin-bottom: 8px;
+}
+
+.type-card span {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.type-card small {
+    font-size: 10px;
+    color: var(--gray-500);
+    margin-top: 4px;
+}
+
+.type-card:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: translateY(-3px);
+}
+
+.type-card.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+}
+
+.type-card.active i,
+.type-card.active span,
+.type-card.active small {
+    color: white;
+}
+
+/* کارت‌های فیلدهای تخصصی */
+.type-fields-card {
+    background: var(--gray-50);
+    border-radius: 24px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+}
+
+.fields-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary);
+}
+
+.fields-header i {
+    font-size: 20px;
+    color: var(--primary);
+}
+
+.fields-header span {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+/* انتخابگر جنسیت */
+.gender-selector {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.gender-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: 2px solid var(--gray-200);
+    border-radius: 40px;
+    background: var(--white);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gender-option i {
+    font-size: 16px;
+}
+
+.gender-option span {
+    font-size: 12px;
+    color: var(--gray-500);
+    font-weight: normal;
+}
+
+.gender-option.masculine:hover,
+.gender-option.masculine.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.gender-option.feminine:hover,
+.gender-option.feminine.active {
+    background: #ec4899;
+    border-color: #ec4899;
+    color: white;
+}
+
+.gender-option.neuter:hover,
+.gender-option.neuter.active {
+    background: #10b981;
+    border-color: #10b981;
+    color: white;
+}
+
+.gender-option.active span {
+    color: rgba(255,255,255,0.8);
+}
+
+/* انتخابگر فعل کمکی */
+.helper-selector {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.helper-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 8px 16px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 30px;
+    font-size: 14px;
+}
+
+.helper-option input {
+    margin: 0;
+    accent-color: var(--primary);
+}
+
+/* سوئیچ جداشدنی */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: 0.3s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.checkbox-label {
+    font-size: 14px;
+    color: var(--gray-700);
+}
+
+/* دکمه‌های عملیات */
+.action-buttons-group {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid var(--gray-200);
+}
+
+.action-buttons-group .btn {
+    min-width: 180px;
+    padding: 14px 28px;
+}
+
+/* میانبرهای کیبورد */
+.keyboard-shortcuts {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    background: var(--gray-50);
+    border-radius: 40px;
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.keyboard-shortcuts i {
+    margin-left: 6px;
+    color: var(--primary);
+}
+
+/* ========== دارک مود ========== */
+.dark-mode .add-word-card {
+    background: var(--bg-card);
+}
+
+.dark-mode .type-card {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .type-card span {
+    color: var(--text-secondary);
+}
+
+.dark-mode .type-card small {
+    color: var(--text-tertiary);
+}
+
+.dark-mode .type-fields-card {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .fields-header span {
+    color: var(--text-primary);
+}
+
+.dark-mode .gender-option {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .helper-option {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .keyboard-shortcuts {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+/* ================================================
+   بخش جزئیات لغت - نسخه کامل
+   ================================================ */
+
+.detail-word-card {
+    padding: 25px;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.word-title-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.word-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin: 0;
+}
+
+.gender-badge {
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+}
+
+.gender-badge.masculine { background: #3b82f6; }
+.gender-badge.feminine { background: #ec4899; }
+.gender-badge.neuter { background: #10b981; }
+
+.type-badge {
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+}
+
+.type-badge.noun { background: #8b5cf6; }
+.type-badge.verb { background: #f59e0b; }
+.type-badge.adjective { background: #06b6d4; }
+.type-badge.adverb { background: #84cc16; }
+.type-badge.preposition { background: #f97316; }
+
+.word-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.word-actions i {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 18px;
+}
+
+.word-actions i:hover {
+    transform: translateY(-2px);
+}
+
+.favorite-icon.active {
+    background: #fbbf24;
+    color: white;
+}
+
+.pronunciation-icon:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.edit-word-icon:hover {
+    background: #8b5cf6;
+    color: white;
+}
+
+.delete-word-icon:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.word-meaning {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 20px;
+    margin: 20px 0;
+}
+
+.word-meaning i {
+    font-size: 24px;
+    color: var(--primary);
+}
+
+.word-meaning p {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.pronunciation-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 30px;
+    width: fit-content;
+    margin-bottom: 15px;
+    font-size: 13px;
+    color: #10b981;
+}
+
+.word-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.tag {
+    padding: 4px 12px;
+    background: var(--gray-200);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--gray-700);
+}
+
+/* گرید جزئیات */
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.detail-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: var(--gray-50);
+    border-radius: 16px;
+    flex-wrap: wrap;
+}
+
+.detail-icon {
+    width: 45px;
+    height: 45px;
+    background: var(--primary-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 20px;
+}
+
+.detail-info {
+    flex: 1;
+}
+
+.detail-label {
+    font-size: 11px;
+    color: var(--gray-500);
+    text-transform: uppercase;
+}
+
+.detail-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+/* گرید صرف فعل */
+.conjugation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.conjugation-item {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid var(--gray-200);
+}
+
+.conj-label {
+    font-size: 10px;
+    color: var(--gray-500);
+    margin-bottom: 5px;
+}
+
+.conj-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+/* تب‌ها */
+.tab-container {
+    display: flex;
+    gap: 5px;
+    margin: 20px 0;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 12px 12px 0 0;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.tab:hover {
+    background: var(--gray-100);
+}
+
+.tab.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* مثال‌ها */
+.example-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: var(--gray-50);
+    border-radius: 16px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.example-text {
+    flex: 2;
+    font-weight: 500;
+    color: var(--gray-800);
+    direction: ltr;
+    text-align: left;
+}
+
+.example-trans {
+    flex: 2;
+    color: var(--gray-600);
+}
+
+.btn-speak {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.btn-speak:hover {
+    background: var(--gray-200);
+}
+
+.add-example-form {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 20px;
+}
+
+.add-example-form h4 {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+/* آمار تمرین */
+.practice-stats {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.practice-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.practice-circle svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.practice-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: 800;
+    color: #10b981;
+}
+
+.practice-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.practice-stat {
+    font-size: 14px;
+    color: var(--gray-700);
+}
+
+.practice-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* آمار مینی */
+.stats-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.stat-mini-card {
+    text-align: center;
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 20px;
+}
+
+.stat-mini-card i {
+    font-size: 28px;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.stat-mini-label {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 5px;
+}
+
+.stat-mini-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.empty-examples,
+.empty-practice {
+    text-align: center;
+    padding: 40px;
+    color: var(--gray-500);
+}
+
+/* دارک مود */
+.dark-mode .detail-word-card {
+    background: var(--bg-card);
+}
+
+.dark-mode .word-title {
+    color: var(--text-primary);
+}
+
+.dark-mode .word-meaning {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .word-meaning p {
+    color: var(--text-primary);
+}
+
+.dark-mode .detail-card {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .detail-value {
+    color: var(--text-primary);
+}
+
+.dark-mode .conjugation-item {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .example-item {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .example-text {
+    color: var(--text-primary);
+}
+
+.dark-mode .add-example-form {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .stat-mini-card {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .stat-mini-value {
+    color: var(--text-primary);
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .detail-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .word-title {
+        font-size: 24px;
+    }
+    
+    .word-meaning p {
+        font-size: 15px;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .conjugation-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .practice-stats {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+/* ================================================
+   بخش جزئیات لغت - استایل مدرن و حرفه‌ای
+   ================================================ */
+
+/* دکمه بازگشت */
+.back-btn-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Vazirmatn', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 20px;
+}
+
+.back-btn-modern:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: translateX(-5px);
+}
+
+/* هدر */
+.detail-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.word-title-modern {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--gray-900);
+    margin: 0 0 12px 0;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.word-badges-modern {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.badge-gender {
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+}
+
+.badge-gender.masculine { background: #3b82f6; }
+.badge-gender.feminine { background: #ec4899; }
+.badge-gender.neuter { background: #10b981; }
+
+.badge-type {
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+}
+
+.badge-type.noun { background: #8b5cf6; }
+.badge-type.verb { background: #f59e0b; }
+.badge-type.adjective { background: #06b6d4; }
+.badge-type.adverb { background: #84cc16; }
+.badge-type.preposition { background: #f97316; }
+
+.badge-plural {
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #334155;
+    color: white;
+}
+
+/* دکمه‌های عملیات */
+.word-actions-modern {
+    display: flex;
+    gap: 12px;
+}
+
+.action-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 18px;
+    color: var(--gray-600);
+}
+
+.action-icon:hover {
+    transform: translateY(-3px);
+}
+
+.action-icon.favorite.active {
+    background: #fbbf24;
+    border-color: #fbbf24;
+    color: white;
+}
+
+.action-icon.speak:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.action-icon.edit:hover {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: white;
+}
+
+.action-icon.delete:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+}
+
+/* کارت معنی */
+.meaning-card-modern {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--primary-light), var(--gray-50));
+    border-radius: 24px;
+    margin-bottom: 20px;
+}
+
+.meaning-card-modern i {
+    font-size: 32px;
+    color: var(--primary);
+}
+
+.meaning-card-modern p {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+/* تلفظ */
+.pronunciation-modern {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 40px;
+    width: fit-content;
+    margin-bottom: 15px;
+}
+
+.pronunciation-modern i {
+    color: #10b981;
+}
+
+.listen-btn {
+    background: none;
+    border: none;
+    color: #10b981;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Vazirmatn', sans-serif;
+    transition: all 0.2s;
+}
+
+.listen-btn:hover {
+    text-decoration: underline;
+}
+
+/* برچسب‌ها */
+.tags-modern {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.tag-modern {
+    padding: 5px 14px;
+    background: var(--gray-200);
+    border-radius: 30px;
+    font-size: 12px;
+    color: var(--gray-700);
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+/* گرید جزئیات */
+.details-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.detail-card-modern {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 20px;
+    flex-wrap: wrap;
+}
+
+.detail-card-modern.wide {
+    grid-column: span 2;
+}
+
+.detail-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-light);
+    border-radius: 16px;
+    color: var(--primary);
+    font-size: 22px;
+}
+
+.detail-content {
+    flex: 1;
+}
+
+.detail-label {
+    font-size: 11px;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-800);
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+/* گرید صرف فعل */
+.conjugation-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.conj-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--gray-200);
+}
+
+.conj-label {
+    font-size: 10px;
+    color: var(--gray-500);
+    margin-bottom: 6px;
+}
+
+.conj-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Segoe UI', monospace;
+}
+
+/* تب‌ها */
+.tabs-modern {
+    display: flex;
+    gap: 8px;
+    margin: 25px 0 20px;
+    border-bottom: 2px solid var(--gray-200);
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Vazirmatn', sans-serif;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 12px 12px 0 0;
+}
+
+.tab-btn:hover {
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    background: linear-gradient(to top, var(--primary-light), transparent);
+    border-bottom: 3px solid var(--primary);
+}
+
+.tab-content-modern {
+    display: none;
+    padding: 20px 0;
+}
+
+.tab-content-modern.active {
+    display: block;
+}
+
+/* مثال‌ها */
+.examples-list-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.example-card-modern {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 18px;
+    background: var(--gray-50);
+    border-radius: 20px;
+}
+
+.example-text-modern {
+    flex: 2;
+    font-weight: 600;
+    color: var(--gray-800);
+    direction: ltr;
+    text-align: left;
+    font-family: 'Segoe UI', monospace;
+}
+
+.example-trans-modern {
+    flex: 2;
+    color: var(--gray-600);
+}
+
+.example-speak {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    transition: all 0.2s;
+    color: var(--primary);
+}
+
+.example-speak:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* افزودن مثال */
+.add-example-modern {
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 20px;
+}
+
+.add-example-modern h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: var(--gray-800);
+}
+
+.example-input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+}
+
+.example-input-group textarea {
+    padding: 12px;
+    border: 2px solid var(--gray-200);
+    border-radius: 16px;
+    font-family: 'Vazirmatn', sans-serif;
+    resize: vertical;
+    background: var(--white);
+}
+
+.btn-add-example {
+    padding: 0 24px;
+    background: var(--primary);
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* آمار تمرین */
+.practice-stats-modern {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+.practice-circle-modern {
+    position: relative;
+    width: 140px;
+    height: 140px;
+}
+
+.practice-circle-modern svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.practice-percent-modern {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: 800;
+    color: #10b981;
+}
+
+.practice-info-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.practice-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--gray-700);
+}
+
+.practice-now-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 20px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Vazirmatn', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.practice-now-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+/* آمار */
+.stats-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-card-modern {
+    text-align: center;
+    padding: 25px;
+    background: var(--gray-50);
+    border-radius: 24px;
+}
+
+.stat-card-modern i {
+    font-size: 32px;
+    color: var(--primary);
+    margin-bottom: 12px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--gray-500);
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--gray-800);
+}
+
+/* حالت خالی */
+.empty-state-modern {
+    text-align: center;
+    padding: 50px;
+    color: var(--gray-500);
+}
+
+/* دارک مود */
+.dark-mode .back-btn-modern {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+    color: var(--text-secondary);
+}
+
+.dark-mode .word-title-modern {
+    color: var(--text-primary);
+}
+
+.dark-mode .action-icon {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+    color: var(--text-tertiary);
+}
+
+.dark-mode .meaning-card-modern {
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-card));
+}
+
+.dark-mode .meaning-card-modern p {
+    color: var(--text-primary);
+}
+
+.dark-mode .detail-card-modern {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .detail-value {
+    color: var(--text-primary);
+}
+
+.dark-mode .conj-item {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .example-card-modern {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .example-text-modern {
+    color: var(--text-primary);
+}
+
+.dark-mode .add-example-modern {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .stat-card-modern {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .stat-value {
+    color: var(--text-primary);
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .word-title-modern {
+        font-size: 26px;
+    }
+    
+    .detail-header-modern {
+        flex-direction: column;
+    }
+    
+    .details-grid-modern {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-card-modern.wide {
+        grid-column: span 1;
+    }
+    
+    .conjugation-grid-modern {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .example-input-group {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn-add-example {
+        padding: 12px;
+    }
+    
+    .practice-stats-modern {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+/* اطمینان از نمایش صحیح مودال */
+#edit-word-modal {
+    z-index: 100001;
+}
+
+#edit-word-modal .modal-content {
+    position: relative;
+    background: var(--white);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+/* فونت برای دکمه‌های جنسیت */
+.gender-option,
+.gender-btn,
+.edit-gender-selector .gender-option,
+#add-word-section .gender-option,
+#edit-word-modal .gender-option {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+
+.gender-option span,
+.gender-btn span {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+/* فونت برای دکمه افزودن مثال */
+.btn-add-example,
+#add-example-btn,
+.add-example-modern button {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+
+.example-speak,
+.listen-btn,
+.practice-now-btn {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+/* دکمه‌های عملیات مثال */
+.example-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.example-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ef4444;
+    transition: all 0.2s ease;
+}
+
+.example-delete:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.05);
+}
+/* ناوبری لغات */
+.detail-navigation-buttons {
+    display: flex;
+    justify-content: flex-start;
+    gap: 12px;
+    margin: 12px 0 8px;
+}
+
+.nav-arrow-btn {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    border-radius: 40px;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    color: var(--gray-700);
+    font-size: 18px;
+}
+
+.nav-arrow-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+.nav-arrow-btn:active {
+    transform: scale(0.96);
+}
+
+@media (max-width: 480px) {
+    .nav-arrow-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    .detail-navigation-buttons {
+        gap: 8px;
+        margin: 8px 0 4px;
+    }
+}
+
+/* فقط تنظیم ستاره برای وسط چین شدن */
+.word-list-item-title-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.favorite-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 14px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+    margin: 0;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+/* بقیه استایل‌های قبلی بمونه، فقط ستاره رو وسط میکنه */
+.word-number,
+.word-list-item-title,
+.word-gender,
+.word-type {
+    vertical-align: middle;
+}
