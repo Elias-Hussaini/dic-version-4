@@ -1,21 +1,21 @@
-
 {
   "name": "Elias Dictionary",
   "short_name": "EliasDict",
   "description": "دیکشنری هوشمند آلمانی-فارسی",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#4361ee",
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
+  
   ]
 }
