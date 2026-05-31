@@ -3,7 +3,8 @@
 
 class GermanDictionary {
     constructor() {
-        
+        this.uploadedImage = null;  // برای ذخیره تصویر آپلود شده
+this.uploadedImageUrl = null;
         
         this.dbName = 'GermanPersianDictionary';
         this.dbVersion = 5;
@@ -136,29 +137,25 @@ this.prepositionsDB = [
         this.init();
     }
 
-    // ================================================
-    // مقداردهی اولیه و دیتابیس
-    // ================================================
 async init() {
     console.log('🚀 راه‌اندازی Elias.Dictionary...');
     
-    // حتماً بعد از 2 ثانیه صفحه لودینگ رو حذف کن
     const forceHide = setTimeout(() => {
         console.log('⏰ حذف اجباری صفحه لودینگ');
         this.hideLoadingScreen();
     }, 2000);
 
-        setTimeout(() => {
+    setTimeout(() => {
         if (window.VerbsDatabase) {
             const countSpan = document.getElementById('tools-verbs-count');
-        if (countSpan) {
-            countSpan.textContent = `${window.VerbsDatabase.totalCount}+ فعل`;
-            console.log(`✅ تعداد افعال به‌روز شد: ${window.VerbsDatabase.totalCount}+ فعل`);
+            if (countSpan) {
+                countSpan.textContent = `${window.VerbsDatabase.totalCount}+ فعل`;
+                console.log(`✅ تعداد افعال به‌روز شد: ${window.VerbsDatabase.totalCount}+ فعل`);
+            }
         }
-        }
-        }, 500);
+    }, 500);
    
-try {
+    try {
         await this.initDB();
         await this.loadFavorites();
         await this.initSRS();
@@ -169,13 +166,20 @@ try {
         this.setupOnlineStatusListener();
         this.setupFloatingMenuQuickSearch();
         this.setupLexiCard();
+        this.setupFloatingSortButton();
+        this.setupSortButtonScroll();
+        this.initVerbConjugationTool();  
+        this.setupPasswordLock();
+        this.checkAndLock();
+        this.loadChatMemory();
+        this.renderAIChat();
         
-       
-      this.setupFloatingSortButton();
-this.setupSortButtonScroll();
-         this.initVerbConjugationTool();  
-      this.setupPasswordLock();
-    this.checkAndLock();
+        // ========== مقداردهی اولیه حافظه چت ==========
+        this.currentChatId = localStorage.getItem('current_chat_id') || 'chat_' + Date.now();
+        this.currentChatHistory = [];  // فقط برای چت فعلی
+        this.permanentMemory = {};      // اطلاعات دائمی (اسم و...)
+        this.loadPermanentMemory();
+        this.loadCurrentChatMemory();
         
         setTimeout(() => {
             this.renderWordList('all');
@@ -188,9 +192,7 @@ this.setupSortButtonScroll();
             }
         }, 1000);
         
-        setTimeout(() => {
-            this.autoLoadChatOnStart();
-        }, 500);
+       
         
         console.log('✅ راه‌اندازی کامل شد');
         
@@ -12443,12 +12445,12 @@ renderAIChat() {
                         <span>${isGerman ? 'مدل هوش مصنوعی:' : 'AI Model:'}</span>
                     </div>
                     <div class="model-select-wrapper">
-                        <select id="ai-model-select" class="model-select">
-                            <option value="elias-mini" selected>⚡ ${isGerman ? 'الیاس مینی' : 'Elias Mini'}</option>
-                            <option value="elias-pro">🚀 ${isGerman ? 'الیاس پرو' : 'Elias Pro'}</option>
-                            <option value="elias-vision">👁️ ${isGerman ? 'الیاس بینا' : 'Elias Vision'}</option>
-                            <option value="elias-creative">🎨 ${isGerman ? 'الیاس خلاق' : 'Elias Creative'}</option>
-                        </select>
+                       <select id="ai-model-select" class="model-select">
+    <option value="elias-mini" selected>⚡ الیاس مینی (GPT-5.4 nano - سریع)</option>
+    <option value="elias-pro">🚀 الیاس پرو (GPT-5.2 chat - قدرتمند + جستجوی وب)</option>
+    <option value="elias-vision">👁️ الیاس بینا (تحلیل تصویر)</option>
+    <option value="elias-creative">🎨 الیاس خلاق (تولید خلاقانه)</option>
+</select>
                     </div>
                     <div class="model-status">
                         <span class="status-indicator online"></span>
@@ -12534,7 +12536,9 @@ renderAIChat() {
 
     // راه‌اندازی event listenerها
     this.setupAIChatEventListeners();
-    this.loadChatHistoryFromStorage();
+   
+    this.setupImageUpload();
+
     
     if (isMobile) {
         this.setupMobileView();
@@ -12878,9 +12882,8 @@ setupAIChatEventListeners() {
         document.getElementById('file-upload-input').click();
     });
     
-    document.getElementById('upload-image-btn')?.addEventListener('click', () => {
-        document.getElementById('image-upload-input').click();
-    });
+
+
     
     // ========== تولید تصویر ==========
     document.getElementById('generate-image-btn')?.addEventListener('click', async () => {
@@ -12902,12 +12905,7 @@ setupAIChatEventListeners() {
         }
     });
     
-    document.getElementById('image-upload-input')?.addEventListener('change', async (e) => {
-        if (e.target.files && e.target.files[0]) {
-            await this.analyzeImageWithAI(e.target.files[0]);
-            e.target.value = '';
-        }
-    });
+   
     
     
 }
@@ -12948,45 +12946,150 @@ setupVoiceSettingsControls() {
         this.resetVoiceSettings();
     });
 }
+setupImageUpload() {
+    const imageUploadBtn = document.getElementById('upload-image-btn');
+    const imageInput = document.getElementById('image-upload-input');
+    const chatInput = document.getElementById('ai-chat-input');
+    
+    if (!imageUploadBtn || !imageInput) return;
+    
+    // کلیک روی دکمه تصویر
+    imageUploadBtn.onclick = () => {
+        imageInput.click();
+    };
+    
+    // انتخاب فایل
+    imageInput.onchange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (file.type.startsWith('image/')) {
+                this.displayImageInInput(file);
+            } else {
+                this.showToast('❌ لطفاً فقط فایل تصویری انتخاب کنید', 'error');
+            }
+        }
+        e.target.value = '';
+    };
+}
 
+// نمایش تصویر در input (دقیقاً مثل خودش)
+displayImageInInput(file) {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+        this.uploadedImageUrl = e.target.result;
+        this.uploadedImage = file;
+        
+        const inputWrapper = document.querySelector('.input-wrapper');
+        const existingImagePreview = document.querySelector('.input-image-preview');
+        
+        // حذف preview قبلی اگر存在 داشت
+        if (existingImagePreview) existingImagePreview.remove();
+        
+        // ایجاد preview تصویر
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'input-image-preview';
+        previewDiv.style.cssText = `
+            position: relative;
+            display: inline-block;
+            margin: 5px 0 0 0;
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 5px;
+        `;
+        
+        previewDiv.innerHTML = `
+            <img src="${this.uploadedImageUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+            <button type="button" class="remove-image-btn" style="
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: #ef4444;
+                border: none;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+            ">✕</button>
+        `;
+        
+        // دکمه حذف تصویر
+        const removeBtn = previewDiv.querySelector('.remove-image-btn');
+        removeBtn.onclick = () => {
+            previewDiv.remove();
+            this.uploadedImage = null;
+            this.uploadedImageUrl = null;
+            this.showToast('🗑️ تصویر حذف شد', 'info');
+        };
+        
+        // اضافه کردن به input-wrapper
+        if (inputWrapper) {
+            inputWrapper.insertBefore(previewDiv, inputWrapper.firstChild);
+        }
+        
+        this.showToast('✅ تصویر اضافه شد. حالا می‌توانید متن خود را تایپ کنید.', 'success');
+    };
+    
+    reader.readAsDataURL(file);
+}
 // ================================================
 // حافظه چت
 // ================================================
+loadCurrentChatMemory() {
+    try {
+        const saved = localStorage.getItem(`chat_memory_${this.currentChatId}`);
+        if (saved) {
+            this.currentChatHistory = JSON.parse(saved);
+            console.log(`✅ حافظه چت ${this.currentChatId} بارگذاری شد (${this.currentChatHistory.length} پیام)`);
+        } else {
+            this.currentChatHistory = [];
+            console.log(`🆕 چت جدید ${this.currentChatId} - بدون حافظه قبلی`);
+        }
+    } catch (e) {
+        console.error('خطا در بارگذاری حافظه چت:', e);
+        this.currentChatHistory = [];
+    }
+}
+loadPermanentMemory() {
+    try {
+        const saved = localStorage.getItem('permanent_memory');
+        if (saved) {
+            this.permanentMemory = JSON.parse(saved);
+        } else {
+            this.permanentMemory = {};
+        }
+    } catch (e) {
+        this.permanentMemory = {};
+    }
+}
+savePermanentMemory() {
+    localStorage.setItem('permanent_memory', JSON.stringify(this.permanentMemory));
+}
+// ================================================
+// سیستم حافظه یکپارچه
+// ================================================
 
 addToMemory(role, content) {
-    this.chatMemory.push({
-        role: role, // 'user' یا 'assistant'
-        content: content,
-        timestamp: new Date().toISOString()
-    });
-    
-    // محدود کردن به 50 پیام آخر برای جلوگیری از حجم زیاد
-    if (this.chatMemory.length > 150) {
-        this.chatMemory = this.chatMemory.slice(-150);
-    }
-    
-    // ذخیره در localStorage
-    this.saveChatMemory();
+    if (!this.chatMemory) this.chatMemory = [];
+    this.chatMemory.push({ role, content, timestamp: new Date().toISOString() });
+    // نگه داشتن ۲۰ پیام آخر
+    if (this.chatMemory.length > 20) this.chatMemory = this.chatMemory.slice(-20);
+    localStorage.setItem(`chat_${this.currentChatId}`, JSON.stringify(this.chatMemory));
 }
 
 getMemoryForAI() {
-    if (!this.chatMemory || this.chatMemory.length === 0) {
-        return "هیچ تاریخچه‌ای وجود ندارد. این اولین پیام کاربر است.";
-    }
-    
-    let memoryText = "تاریخچه مکالمه:\n\n";
-    
-    // فقط 10 پیام آخر رو بگیر (برای جلوگیری از طولانی شدن)
-    const lastMessages = this.chatMemory.slice(-20);
-    
-    for (const msg of lastMessages) {
-        const role = msg.role === 'user' ? 'کاربر' : 'دستیار';
-        memoryText += `${role}: ${msg.content}\n\n`;
-    }
-    
-    return memoryText;
+    if (!this.chatMemory || this.chatMemory.length === 0) return [];
+    // آخرین ۱۰ پیام رو به فرمت messages array برگردون
+    return this.chatMemory.slice(-10).map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content
+    }));
 }
-
 saveChatMemory() {
     try {
         localStorage.setItem('aiChatMemory', JSON.stringify(this.chatMemory));
@@ -12997,123 +13100,274 @@ saveChatMemory() {
 
 loadChatMemory() {
     try {
-        const saved = localStorage.getItem('aiChatMemory');
-        if (saved) {
-            this.chatMemory = JSON.parse(saved);
+        // بازیابی ID چت فعلی
+        this.currentChatId = localStorage.getItem('current_chat_id') || ('chat_' + Date.now());
+        localStorage.setItem('current_chat_id', this.currentChatId);
+
+        // بارگذاری از all_chats (منبع اصلی)
+        const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
+        const currentChat = allChats.find(c => c.id === this.currentChatId);
+
+        if (currentChat) {
+            this.chatMemory = currentChat.messages.map(m => ({
+                role: m.type === 'user' ? 'user' : 'assistant',
+                content: m.content,
+                timestamp: m.timestamp || new Date().toISOString()
+            }));
+            // نمایش پیام‌های قبلی
+            setTimeout(() => {
+                const chatHistory = document.getElementById('chat-history');
+                if (chatHistory && this.chatMemory.length > 0) {
+                    chatHistory.innerHTML = '';
+                    this.chatMemory.forEach(msg => {
+                        this.addMessageToHistory(msg.role === 'user' ? 'user' : 'ai', msg.content, false);
+                    });
+                    this.scrollToBottom();
+                }
+            }, 300);
         } else {
             this.chatMemory = [];
         }
     } catch (e) {
         console.error('خطا در بارگذاری حافظه:', e);
         this.chatMemory = [];
+        this.currentChatId = 'chat_' + Date.now();
     }
 }
-
 clearMemory() {
-    this.chatMemory = [];
-    localStorage.removeItem('aiChatMemory');
+    this.currentChatHistory = [];
+    localStorage.removeItem(`chat_memory_${this.currentChatId}`);
+    console.log(`🗑️ حافظه چت ${this.currentChatId} پاک شد`);
 }
-// ================================================
-// اصلاح تابع sendAIMessage - اضافه کردن پاک کردن ورودی
-// ================================================
 
 async sendAIMessage() {
     const input = document.getElementById('ai-chat-input');
-    const mobileInput = document.getElementById('mobile-chat-input');
     const sendBtn = document.getElementById('send-ai-message');
-    
     if (!input || !sendBtn) return;
-    
+
     const message = input.value.trim();
-    if (!message) {
+    if (!message && !this.uploadedImage) {
         this.showToast('✏️ لطفاً پیام خود را وارد کنید', 'warning');
         return;
     }
-    
+
     sendBtn.disabled = true;
-    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    
-    // ===== پاک کردن ورودی قبل از ارسال =====
+    sendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+
+    const hasImage = !!this.uploadedImage;
+    const imageUrl = this.uploadedImageUrl;
+
+    // پاک کردن input
     input.value = '';
     input.style.height = 'auto';
-    if (mobileInput) {
-        mobileInput.value = '';
-        mobileInput.style.height = 'auto';
-    }
-    // ======================================
-    
-    await this.addMessageToHistory('user', message);
-    
+    const mobileInput = document.getElementById('mobile-chat-input');
+    if (mobileInput) { mobileInput.value = ''; mobileInput.style.height = 'auto'; }
+    document.querySelector('.input-image-preview')?.remove();
+
+    // نمایش پیام کاربر
+    const displayMsg = hasImage && this.uploadedImage
+        ? (message ? `${message}\n\n📸 [تصویر: ${this.uploadedImage.name}]` : `📸 [تصویر: ${this.uploadedImage.name}]`)
+        : message;
+
+    await this.addMessageWithImageToHistory('user', message, imageUrl);
+    this.addToMemory('user', displayMsg);
+
     this.showTypingIndicator();
-    
+
     try {
-        const response = await this.getAIResponseWithMemory(message);
+        const modelSelect = document.getElementById('ai-model-select');
+        const selectedModel = modelSelect?.value || 'elias-mini';
+        const modelMap = {
+            'elias-mini':    'gpt-5.4-nano',
+            'elias-pro':     'openai/gpt-5.2-chat',
+            'elias-vision':  'gpt-5.4-nano',
+            'elias-creative':'gpt-5.4-nano'
+        };
+        const actualModel = modelMap[selectedModel] || 'gpt-5.4-nano';
+
+        // system prompt
+        const systemMsg = {
+            role: 'system',
+            content: `تو یک دستیار هوشمند به نام "الیاس" هستی که در دیکشنری آلمانی-فارسی کمک می‌کنی.
+پاسخ‌هایت را همیشه تمیز، منظم و خوانا بنویس.
+از Markdown استفاده کن: **متن بولد**، # عنوان، - برای لیست، \`کد\`.
+اگر پرسیدند سازنده‌ات کیست: "من توسط الیاس حسینی ساخته شده‌ام، یک برنامه‌نویس و توسعه‌دهنده وب."
+فقط به سوال فعلی پاسخ بده مگر اینکه کاربر به قبل اشاره کند.`
+        };
+
+        // ساختن messages array با حافظه
+        const historyMsgs = this.getMemoryForAI();
+        // آخرین پیام user رو که الان فرستادیم از history حذف کن (چون الان اضافه میشه)
+        const msgsWithoutLast = historyMsgs.slice(0, -1);
+
+        let fullMessages;
+        if (hasImage && imageUrl) {
+            fullMessages = [
+                systemMsg,
+                ...msgsWithoutLast,
+                {
+                    role: 'user',
+                    content: [
+                        { type: 'image_url', image_url: { url: imageUrl } },
+                        { type: 'text', text: message || 'این تصویر را تحلیل کن.' }
+                    ]
+                }
+            ];
+        } else {
+            fullMessages = [
+                systemMsg,
+                ...msgsWithoutLast,
+                { role: 'user', content: message }
+            ];
+        }
+
+        const response = await puter.ai.chat(fullMessages, {
+            model: actualModel,
+            stream: false
+        });
+
         this.removeTypingIndicator();
-        await this.addMessageToHistory('ai', response);
-        this.addToMemory('assistant', response);
+
+        // استخراج متن پاسخ
+        let fullResponse = '';
+        if (response?.message?.content?.[0]?.text) fullResponse = response.message.content[0].text;
+        else if (Array.isArray(response?.message?.content)) fullResponse = response.message.content.map(c => c.text || '').join('');
+        else if (typeof response?.message?.content === 'string') fullResponse = response.message.content;
+        else if (typeof response === 'string') fullResponse = response;
+        else if (response?.text) fullResponse = response.text;
+        else fullResponse = 'پاسخی دریافت نشد';
+
+        await this.addMessageToHistory('ai', fullResponse);
+        this.addToMemory('assistant', fullResponse);
         this.saveCompleteChat();
-        
+
+        this.uploadedImage = null;
+        this.uploadedImageUrl = null;
+
     } catch (error) {
         console.error('❌ خطا:', error);
         this.removeTypingIndicator();
-        await this.addMessageToHistory('ai', '⚠️ متأسفانه خطایی رخ داد');
+        await this.addMessageToHistory('ai', '⚠️ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
     } finally {
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>ارسال</span>';
     }
 }
+async addMessageWithImageToHistory(sender, message, imageUrl) {
+    const chatHistory = document.getElementById('chat-history');
+    if (!chatHistory) return;
+    
+    const time = new Date().toLocaleTimeString('fa-IR');
+    const messageClass = sender === 'user' ? 'user-message' : 'ai-message';
+    
+    let imageHtml = '';
+    if (imageUrl) {
+        imageHtml = `
+            <div class="uploaded-image-container" style="margin: 10px 0;">
+                <img src="${imageUrl}" style="max-width: 150px; max-height: 120px; border-radius: 12px; cursor: pointer;" 
+                     onclick="dictionaryApp.showImageFullscreen('${imageUrl}')">
+            </div>
+        `;
+    }
+    
+    const messageHtml = `
+        <div class="message ${messageClass}" style="animation: fadeInUp 0.3s ease;">
+            <div class="message-avatar">
+                <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-text">
+                    ${message ? this.escapeHtml(message).replace(/\n/g, '<br>') : ''}
+                    ${imageHtml}
+                </div>
+                <div class="message-time">${time}</div>
+            </div>
+        </div>
+    `;
+    
+    chatHistory.insertAdjacentHTML('beforeend', messageHtml);
+    this.scrollToBottom();
+}
 
-async getAIResponseWithMemory(message) {
-    try {
-        const modelSelect = document.getElementById('ai-model-select');
-        const selectedModel = modelSelect ? modelSelect.value : 'elias-mini';
-        
-        const modelMap = {
-            'elias-mini': 'gpt-4o-mini',
-            'elias-pro': 'gpt-4o',
-            'elias-vision': 'gpt-4o',
-            'elias-creative': 'gpt-4o'
-        };
-        
-        const actualModel = modelMap[selectedModel] || 'gpt-4o-mini';
-        
-        const memoryContext = this.getMemoryForAI();
-        
-        const systemPrompt = `شما یک دستیار هوش مصنوعی هستید به نام "الیاس".
-شما حافظه کامل دارید.
+addMessageToHistory(sender, message, scroll = true) {
+    const chatHistory = document.getElementById('chat-history');
+    if (!chatHistory) return;
 
-${memoryContext}
+    const time = new Date().toLocaleTimeString('fa-IR');
+    const messageClass = sender === 'user' ? 'user-message' : 'ai-message';
 
-اکنون کاربر می‌گوید: "${message}"`;
+    const formatted = sender === 'ai'
+        ? this._formatAIMessage(message)
+        : `<p>${this.escapeHtml(message).replace(/\n/g, '<br>')}</p>`;
 
-        const response = await puter.ai.chat([
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message }
-        ], { model: actualModel });
-        
-        // ========== استخراج درست متن ==========
-        // ساختار: response.message.content[0].text
-        if (response && response.message && response.message.content) {
-            const content = response.message.content;
-            if (Array.isArray(content) && content.length > 0) {
-                return content[0].text || content[0].content || "پاسخی دریافت نشد";
-            }
-            if (typeof content === 'string') {
-                return content;
-            }
+    const html = `
+        <div class="message ${messageClass}" style="animation:fadeInUp 0.3s ease;">
+            <div class="message-avatar">
+                <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-text">${formatted}</div>
+                <div class="message-time">${time}</div>
+            </div>
+        </div>`;
+
+    chatHistory.insertAdjacentHTML('beforeend', html);
+    if (scroll) this.scrollToBottom();
+}
+
+// تبدیل Markdown ساده به HTML تمیز
+_formatAIMessage(text) {
+    if (!text) return '';
+    let t = this.escapeHtml(text);
+
+    // عناوین
+    t = t.replace(/^### (.+)$/gm, '<h4 style="margin:12px 0 6px;color:var(--primary);">$1</h4>');
+    t = t.replace(/^## (.+)$/gm,  '<h3 style="margin:14px 0 8px;color:var(--primary);">$1</h3>');
+    t = t.replace(/^# (.+)$/gm,   '<h2 style="margin:16px 0 10px;color:var(--primary);">$1</h2>');
+
+    // بولد و ایتالیک
+    t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    t = t.replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>');
+    t = t.replace(/\*(.+?)\*/g,         '<em>$1</em>');
+
+    // کد inline
+    t = t.replace(/`(.+?)`/g, '<code style="background:rgba(0,0,0,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:0.9em;">$1</code>');
+
+    // لیست‌ها
+    t = t.replace(/^[-•]\s+(.+)$/gm, '<li style="margin:4px 0;padding-right:4px;">$1</li>');
+    t = t.replace(/^(\d+)\.\s+(.+)$/gm, '<li style="margin:4px 0;padding-right:4px;"><strong>$1.</strong> $2</li>');
+    t = t.replace(/(<li[^>]*>.*<\/li>\n?)+/gs, m => `<ul style="padding-right:20px;margin:8px 0;">${m}</ul>`);
+
+    // خط افقی
+    t = t.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--gray-200);margin:12px 0;">');
+
+    // پاراگراف
+    const lines = t.split('\n');
+    const result = [];
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i].trim();
+        if (!line) { i++; continue; }
+        if (line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<hr') || line.startsWith('<li')) {
+            result.push(line);
+        } else {
+            result.push(`<p style="margin:6px 0;line-height:1.7;">${line}</p>`);
         }
-        
-        // fallback
-        if (response && response.text) return response.text;
-        if (response && response.content) return response.content;
-        
-        return "پاسخی دریافت نشد";
-        
-    } catch (error) {
-        console.error('❌ خطا:', error);
-        return `⚠️ خطا: ${error.message || 'مشکل در ارتباط با سرور'}`;
+        i++;
+    }
+    return result.join('\n');
+}
+
+scrollToBottom() {
+    const chatHistory = document.getElementById('chat-history');
+    if (chatHistory) {
+        chatHistory.scrollTo({
+            top: chatHistory.scrollHeight,
+            behavior: 'smooth'
+        });
     }
 }
+
 startVoiceInput() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         this.showToast('❌ مرورگر شما از تشخیص گفتار پشتیبانی نمی‌کند', 'error');
@@ -13336,115 +13590,7 @@ resetVoiceSettings() {
     this.showToast('🔄 تنظیمات بازنشانی شد', 'info');
 }
 
-    async analyzeImageWithAI(imageFile) {
-        try {
-            this.showToast('🖼️ در حال تحلیل تصویر...', 'info');
-            
-            const reader = new FileReader();
-            const imageUrl = await new Promise((resolve) => {
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(imageFile);
-            });
-            
-            await this.addMessageToHistory('user', `📸 تصویر: ${imageFile.name}`);
-            
-            const response = await puter.ai.chat(
-                "لطفاً این تصویر را تحلیل کن. اگر متن آلمانی دارد، ترجمه کن. اگر صحنه است، توصیف کن.",
-                imageUrl,
-                { model: "gpt-4o-vision" }
-            );
-            
-            await this.addMessageToHistory('ai', response);
-            this.saveCompleteChat();
-            
-        } catch (error) {
-            console.error('❌ خطا در تحلیل تصویر:', error);
-            this.showToast('❌ خطا در تحلیل تصویر', 'error');
-        }
-    }
 
-  
-async generateImageWithAI(prompt) {
-    if (this.isGeneratingImage) {
-        this.showToast('⏳ در حال تولید تصویر قبلی...', 'warning');
-        return;
-    }
-    
-    this.isGeneratingImage = true;
-    this.lastImagePrompt = prompt;
-    
-    this.showToast('🎨 در حال تولید تصویر...', 'info');
-    
-    try {
-        const imageElement = await puter.ai.txt2img(prompt, { 
-            model: "gpt-image-1" 
-        });
-        
-        const chatHistory = document.getElementById('chat-history');
-        const time = new Date().toLocaleTimeString('fa-IR');
-        
-        // ایجاد دکمه‌های دانلود و فول‌اسکرین
-        const imageHtml = `
-            <div class="message ai-message image-message">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="message-content">
-                    <div class="message-text">
-                        <p>🖼️ تصویر ساخته شده برای: <strong>"${prompt}"</strong></p>
-                        <div class="generated-image-container" style="position: relative; margin: 15px 0;">
-                            ${imageElement.outerHTML}
-                            <div class="image-actions" style="position: absolute; bottom: 10px; left: 10px; display: flex; gap: 10px;">
-                                <button class="btn btn-sm btn-primary download-image-btn" title="دانلود تصویر">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary fullscreen-image-btn" title="نمایش تمام صفحه">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="message-time">${time}</div>
-                </div>
-            </div>
-        `;
-        
-        chatHistory.insertAdjacentHTML('beforeend', imageHtml);
-        
-        // اضافه کردن event listener برای دکمه‌ها
-        const lastMessage = chatHistory.lastElementChild;
-        const img = lastMessage.querySelector('img');
-        const downloadBtn = lastMessage.querySelector('.download-image-btn');
-        const fullscreenBtn = lastMessage.querySelector('.fullscreen-image-btn');
-        
-        if (downloadBtn && img) {
-            downloadBtn.addEventListener('click', () => {
-                const link = document.createElement('a');
-                link.href = img.src;
-                link.download = `ai-image-${Date.now()}.png`;
-                link.click();
-            });
-        }
-        
-        if (fullscreenBtn && img) {
-            fullscreenBtn.addEventListener('click', () => {
-                this.showImageFullscreen(img.src);
-            });
-        }
-        
-        this.scrollToBottom();
-        this.showToast('✅ تصویر با موفقیت تولید شد!', 'success');
-        
-        // اضافه کردن به حافظه
-        this.addToMemory('assistant', `[تصویر تولید شد: ${prompt}]`);
-        
-    } catch (error) {
-        console.error('❌ خطا در تولید تصویر:', error);
-        this.showToast('❌ خطا در تولید تصویر', 'error');
-    } finally {
-        this.isGeneratingImage = false;
-    }
-}
 
 // ================================================
 // نمایش تصویر در حالت تمام صفحه
@@ -13537,58 +13683,44 @@ toggleAITheme() {
         localStorage.setItem('darkMode', 'true');
     }
 }
-
-// ================================================
-// چت جدید
-// ================================================
-
 newChat() {
-    if (this.chatMemory.length > 0) {
-        if (confirm('آیا می‌خواهید چت جدید شروع کنید؟ چت فعلی ذخیره خواهد شد.')) {
-            // ذخیره چت فعلی
-            this.saveCompleteChat();
-            
-            // پاک کردن حافظه
-            this.clearMemory();
-            
-            // پاک کردن صفحه چت
-            const chatHistory = document.getElementById('chat-history');
-            if (chatHistory) {
-                chatHistory.innerHTML = this.renderWelcomeMessage();
-            }
-            
-            this.showToast('🆕 چت جدید شروع شد', 'success');
-        }
-    } else {
-        const chatHistory = document.getElementById('chat-history');
-        if (chatHistory) {
-            chatHistory.innerHTML = this.renderWelcomeMessage();
-        }
-        this.showToast('🆕 چت جدید شروع شد', 'success');
+    // اگه چت فعلی پیام داره، اول ذخیره‌اش کن
+    if (this.chatMemory && this.chatMemory.length > 0) {
+        this.saveCompleteChat();
     }
-}
 
-// ================================================
-// پاک کردن تاریخچه چت
-// ================================================
+    // یه ID جدید بساز برای چت جدید
+    this.currentChatId = 'chat_' + Date.now();
+    localStorage.setItem('current_chat_id', this.currentChatId);
+
+    // حافظه رو پاک کن
+    this.chatMemory = [];
+
+    // UI رو پاک کن
+    const chatHistory = document.getElementById('chat-history');
+    if (chatHistory) chatHistory.innerHTML = this.renderWelcomeMessage();
+
+    this.showToast('🆕 چت جدید شروع شد', 'success');
+}
 
 clearChatHistory() {
-    if (confirm('🗑️ آیا از پاک کردن تاریخچه چت مطمئن هستید؟')) {
-        localStorage.removeItem('chatHistory');
-        localStorage.removeItem('aiChatMemory');
-        localStorage.removeItem('all_chats');
-        
+    if (confirm('🗑️ آیا از پاک کردن این چت مطمئن هستید؟')) {
+        // فقط چت فعلی رو پاک کن، بقیه چت‌ها دست نخوره
+        const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
+        const filtered = allChats.filter(c => c.id !== this.currentChatId);
+        localStorage.setItem('all_chats', JSON.stringify(filtered));
+
+        // شروع یه چت کاملاً جدید
         this.chatMemory = [];
-        
+        this.currentChatId = 'chat_' + Date.now();
+        localStorage.setItem('current_chat_id', this.currentChatId);
+
         const chatHistory = document.getElementById('chat-history');
-        if (chatHistory) {
-            chatHistory.innerHTML = this.renderWelcomeMessage();
-        }
-        
-        this.showToast('✅ تاریخچه چت پاک شد', 'success');
+        if (chatHistory) chatHistory.innerHTML = this.renderWelcomeMessage();
+
+        this.showToast('✅ چت پاک شد', 'success');
     }
 }
-
 // ================================================
 // تاریخچه چت‌ها
 // ================================================
@@ -13651,151 +13783,176 @@ showChatHistoryModal() {
 }
 
 // ================================================
-// بارگذاری چت از تاریخچه
+// Elias AI - نسخه نهایی با GPT-5.4 nano
 // ================================================
 
-loadChatFromHistory(chatId) {
-    const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
-    const chatData = allChats.find(c => c.id === chatId);
-    
-    if (!chatData) {
-        this.showToast('❌ چت مورد نظر یافت نشد', 'error');
+async getAIResponseWithMemory(message, imageUrl = null) {
+    try {
+        const modelSelect = document.getElementById('ai-model-select');
+        const selectedModel = modelSelect ? modelSelect.value : 'elias-mini';
+        
+        // نقشه مدل‌های جدید Puter.ai
+        const modelMap = {
+            'elias-mini': 'gpt-5.4-nano',        // سریع و سبک
+            'elias-pro': 'openai/gpt-5.2-chat',   // قدرتمند با جستجوی وب
+            'elias-vision': 'gpt-5.4-nano',       // برای تحلیل تصویر
+            'elias-creative': 'gpt-5.4-nano'      // برای تولید خلاقانه
+        };
+        
+        const actualModel = modelMap[selectedModel] || 'gpt-5.4-nano';
+        
+        // گرفتن حافظه چت
+        const memoryContext = this.getMemoryForAI();
+        
+        const systemPrompt = `شما یک دستیار هوش مصنوعی هستید به نام "الیاس".
+شما حافظه کامل دارید و همه چیزهایی که کاربر گفته را به خاطر می‌آورید.
+
+⚠️ نکته مهم: 
+اگر کاربر پرسید "تو رو کی ساخته؟" یا "سازنده تو کیه؟" حتماً بگو:
+"من توسط الیاس حسینی ساخته شده‌ام. ایشون یک برنامه‌نویس و توسعه‌دهنده وب هستند."
+
+تاریخچه مکالمه:
+${memoryContext}
+
+اکنون کاربر می‌گوید: "${message}"
+
+پاسخ خود را بر اساس تاریخچه مکالمه بالا بده.`;
+
+        let response;
+        
+        // اگر تصویر داریم، از قابلیت vision استفاده کن
+        if (imageUrl) {
+            response = await puter.ai.chat(systemPrompt, imageUrl, {
+                model: actualModel,
+                stream: false
+            });
+        } else {
+            // ابزارهای اضافی (مثل جستجوی وب)
+            const tools = [];
+            
+            // برای مدل gpt-5.2-chat قابلیت جستجوی وب رو فعال کن
+            if (actualModel === 'openai/gpt-5.2-chat') {
+                tools.push({ type: "web_search" });
+            }
+            
+            response = await puter.ai.chat(systemPrompt, {
+                model: actualModel,
+                tools: tools,
+                stream: false
+            });
+        }
+        
+        // استخراج متن از پاسخ (فرمت جدید Puter)
+        if (response?.message?.content?.[0]?.text) {
+            return response.message.content[0].text;
+        }
+        
+        if (response?.message?.content) {
+            if (Array.isArray(response.message.content)) {
+                return response.message.content[0]?.text || response.message.content[0]?.content || "پاسخی دریافت نشد";
+            }
+            return response.message.content;
+        }
+        
+        if (typeof response === 'string') return response;
+        
+        if (response?.text) return response.text;
+        if (response?.content) return response.content;
+        
+        return "پاسخی دریافت نشد";
+        
+    } catch (error) {
+        console.error('❌ خطا:', error);
+        return `⚠️ خطا: ${error.message || 'مشکل در ارتباط با سرور'}`;
+    }
+}
+
+async generateImageWithAI(prompt) {
+    if (this.isGeneratingImage) {
+        this.showToast('⏳ در حال تولید تصویر قبلی...', 'warning');
         return;
     }
     
-    // پاک کردن حافظه فعلی
-    this.chatMemory = [];
+    this.isGeneratingImage = true;
+    this.showToast('🎨 در حال تولید تصویر با GPT-5.4 nano...', 'info');
     
-    // بازسازی حافظه از پیام‌ها
-    if (chatData.messages) {
-        chatData.messages.forEach(msg => {
-            this.addToMemory(
-                msg.type === 'user' ? 'user' : 'assistant',
-                msg.content.replace(/<[^>]*>/g, '')
-            );
+    try {
+        // روش جدید با gpt-5.4-nano
+        const imageElement = await puter.ai.txt2img(prompt, { 
+            model: "gpt-image-1"  // جدیدترین مدل تولید تصویر
         });
-    }
-    
-    // نمایش در صفحه
-    const chatHistory = document.getElementById('chat-history');
-    if (chatHistory) {
-        chatHistory.innerHTML = '';
         
-        chatData.messages.forEach(msg => {
-            this.addMessageToHistory(
-                msg.type === 'user' ? 'user' : 'ai',
-                msg.content
-            );
-        });
-    }
-    
-    document.getElementById('chat-history-modal').style.display = 'none';
-    this.showToast(`📂 "${chatData.title}" بارگذاری شد`, 'success');
-}
-
-// ================================================
-// حذف چت از تاریخچه
-// ================================================
-
-deleteChatFromHistory(chatId) {
-    if (!confirm('🗑️ آیا از حذف این چت مطمئن هستید؟')) return;
-    
-    const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
-    const filteredChats = allChats.filter(c => c.id !== chatId);
-    localStorage.setItem('all_chats', JSON.stringify(filteredChats));
-    
-    this.showChatHistoryModal();
-    this.showToast('✅ چت حذف شد', 'success');
-}
-
-// ================================================
-// ذخیره چت کامل
-// ================================================
-
-saveCompleteChat() {
-    const chatHistory = document.getElementById('chat-history');
-    if (!chatHistory) return;
-    
-    const messages = [];
-    chatHistory.querySelectorAll('.message').forEach(msg => {
-        const text = msg.querySelector('.message-text')?.innerHTML || '';
-        const time = msg.querySelector('.message-time')?.textContent || '';
-        const isUser = msg.classList.contains('user-message');
-        
-        if (text && !text.includes('به الیاس خوش آمدید')) {
-            messages.push({
-                type: isUser ? 'user' : 'ai',
-                content: text,
-                time: time
-            });
-        }
-    });
-    
-    if (messages.length === 0) return;
-    
-    const chatData = {
-        id: 'chat_' + Date.now(),
-        title: this.generateChatTitle(messages),
-        messages: messages,
-        lastUpdated: Date.now(),
-        messageCount: messages.length
-    };
-    
-    const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
-    allChats.unshift(chatData);
-    
-    // محدود کردن به 20 چت آخر
-    localStorage.setItem('all_chats', JSON.stringify(allChats.slice(0, 20)));
-}
-
-generateChatTitle(messages) {
-    const firstUserMsg = messages.find(m => m.type === 'user');
-    if (firstUserMsg) {
-        const text = firstUserMsg.content.replace(/<[^>]*>/g, '').substring(0, 30);
-        return text + (text.length >= 30 ? '...' : '');
-    }
-    return 'چت جدید';
-}
-
-    async handleFileUpload(file) {
-        if (file.type.startsWith('image/')) {
-            await this.analyzeImageWithAI(file);
-        } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-            const content = await file.text();
-            await this.addMessageToHistory('user', `📄 فایل: ${file.name}\n\n${content.substring(0, 500)}${content.length > 500 ? '...' : ''}`);
-            this.showToast(`✅ فایل ${file.name} آپلود شد`, 'success');
-        } else {
-            this.showToast(`❌ نوع فایل ${file.type} پشتیبانی نمی‌شود`, 'warning');
-        }
-    }
-
-    async addMessageToHistory(sender, message) {
         const chatHistory = document.getElementById('chat-history');
-        if (!chatHistory) return;
+        const time = new Date().toLocaleTimeString('fa-IR');
         
-        const time = new Date().toLocaleTimeString('fa-IR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        
-        const messageClass = sender === 'user' ? 'user-message' : 'ai-message';
-        const formattedMessage = this.escapeHtml(message).replace(/\n/g, '<br>');
-        
-        const messageHtml = `
-            <div class="message ${messageClass}" style="animation: fadeInUp 0.3s ease;">
+        const imageHtml = `
+            <div class="message ai-message image-message">
                 <div class="message-avatar">
-                    <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+                    <i class="fas fa-robot"></i>
                 </div>
                 <div class="message-content">
-                    <div class="message-text">${formattedMessage}</div>
+                    <div class="message-text">
+                        <p>🎨 تصویر ساخته شده برای: <strong>"${this.escapeHtml(prompt)}"</strong></p>
+                        <div class="generated-image-container" style="margin: 15px 0; position: relative;">
+                            ${imageElement.outerHTML}
+                            <div class="image-actions" style="position: absolute; bottom: 10px; left: 10px; display: flex; gap: 10px;">
+                                <button class="btn btn-sm btn-primary download-image-btn" title="دانلود تصویر">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-sm btn-primary fullscreen-image-btn" title="نمایش تمام صفحه">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="message-time">${time}</div>
                 </div>
             </div>
         `;
         
-        chatHistory.insertAdjacentHTML('beforeend', messageHtml);
+        chatHistory.insertAdjacentHTML('beforeend', imageHtml);
+        
+        // تنظیم دکمه‌ها
+        const lastMessage = chatHistory.lastElementChild;
+        const img = lastMessage.querySelector('img');
+        const downloadBtn = lastMessage.querySelector('.download-image-btn');
+        const fullscreenBtn = lastMessage.querySelector('.fullscreen-image-btn');
+        
+        if (downloadBtn && img) {
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.href = img.src;
+                link.download = `ai-image-${Date.now()}.png`;
+                link.click();
+            };
+        }
+        
+        if (fullscreenBtn && img) {
+            fullscreenBtn.onclick = () => {
+                this.showImageFullscreen(img.src);
+            };
+        }
+        
         this.scrollToBottom();
+        this.showToast('✅ تصویر با موفقیت تولید شد!', 'success');
+        
+        this.addToMemory('assistant', `[تصویر تولید شد: ${prompt}]`);
+        
+    } catch (error) {
+        console.error('❌ خطا در تولید تصویر:', error);
+        this.showToast('❌ خطا در تولید تصویر', 'error');
+    } finally {
+        this.isGeneratingImage = false;
     }
+}
+
+
+// ================================================
+// ارسال تصویر به AI و دریافت تحلیل
+// ================================================
+
+
+
 
     showTypingIndicator() {
         const chatHistory = document.getElementById('chat-history');
@@ -13884,118 +14041,70 @@ generateChatTitle(messages) {
         }
     }
 
-    loadChatHistoryFromStorage() {
-        try {
-            const chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
-            const chatContainer = document.getElementById('chat-history');
-            
-            if (!chatContainer) return;
-            
-            if (chatHistory.length === 0) {
-                this.showWelcomeMessage();
-                return;
-            }
-            
-            chatContainer.innerHTML = '';
-            
-            chatHistory.forEach(msg => {
-                this.addMessageToHistory(
-                    msg.sender === 'user' ? 'user' : 'ai',
-                    msg.content
-                );
-            });
-            
-        } catch (error) {
-            console.error('❌ خطا در بارگذاری تاریخچه:', error);
-            this.showWelcomeMessage();
-        }
-    }
 
-    showWelcomeMessage() {
-        const chatHistory = document.getElementById('chat-history');
-        if (!chatHistory) return;
-        
-        chatHistory.innerHTML = `
-            <div class="message ai-message">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="message-content">
-                    <div class="message-text">
-                        <h4>🤖 سلام! خوش آمدید</h4>
-                        <p>من دستیار هوش مصنوعی شما برای یادگیری زبان آلمانی هستم.</p>
-                        <p>می‌توانید سوالات خود را بپرسید:</p>
-                        <ul style="margin-top: 10px; padding-right: 20px;">
-                            <li>📘 گرامر و دستور زبان</li>
-                            <li>📝 صرف افعال</li>
-                            <li>🗣️ تلفظ کلمات</li>
-                            <li>💬 جمله‌سازی</li>
-                            <li>📖 معنی لغات</li>
-                        </ul>
-                    </div>
-                    <div class="message-time">${new Date().toLocaleTimeString('fa-IR')}</div>
-                </div>
+ // ================================================
+// نمایش پیام خوش آمدگویی
+// ================================================
+
+showWelcomeMessage() {
+    const chatHistory = document.getElementById('chat-history');
+    if (!chatHistory) return;
+    
+    const isGerman = LanguageSystem.isGerman();
+    
+    chatHistory.innerHTML = `
+        <div class="message ai-message welcome-message">
+            <div class="message-avatar">
+                <i class="fas fa-robot"></i>
             </div>
-        `;
+            <div class="message-content">
+                <div class="message-text">
+                    <h4>🤖 ${isGerman ? 'سلام! به الیاس خوش آمدید' : 'Hello! Welcome to Elias'}</h4>
+                    <p>${isGerman ? 'من دستیار هوش مصنوعی شما هستم.' : 'I am your AI assistant.'}</p>
+                    <p>${isGerman ? 'چطور می‌توانم به شما کمک کنم؟' : 'How can I help you?'}</p>
+                </div>
+                <div class="message-time">${new Date().toLocaleTimeString('fa-IR')}</div>
+            </div>
+        </div>
+    `;
+}
+
+ 
+ 
+
+saveCompleteChat() {
+    if (!this.chatMemory || this.chatMemory.length === 0) return;
+
+    const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
+
+    // ساختن عنوان هوشمند از اولین پیام کاربر
+    const firstUserMsg = this.chatMemory.find(m => m.role === 'user')?.content || '';
+    const title = firstUserMsg.length > 40
+        ? firstUserMsg.substring(0, 40) + '...'
+        : firstUserMsg || 'چت بدون عنوان';
+
+    const chatData = {
+        id: this.currentChatId,
+        title,
+        messages: this.chatMemory.map(m => ({
+            type: m.role === 'user' ? 'user' : 'ai',
+            content: m.content,
+            timestamp: m.timestamp
+        })),
+        lastUpdated: Date.now(),
+        messageCount: this.chatMemory.length
+    };
+
+    // آپدیت چت موجود یا اضافه کردن چت جدید
+    const idx = allChats.findIndex(c => c.id === this.currentChatId);
+    if (idx >= 0) {
+        allChats[idx] = chatData;
+    } else {
+        allChats.unshift(chatData);
     }
 
-    clearChatHistory() {
-        if (confirm('🗑️ آیا از پاک کردن تاریخچه چت مطمئن هستید؟')) {
-            localStorage.removeItem('chatHistory');
-            this.showWelcomeMessage();
-            this.showToast('✅ تاریخچه چت پاک شد', 'success');
-        }
-    }
-
-    newChat() {
-        localStorage.removeItem('chatHistory');
-        this.showWelcomeMessage();
-        this.showToast('🆕 چت جدید شروع شد', 'success');
-    }
-
-    saveCompleteChat() {
-        // قبلاً در localStorage ذخیره می‌کنیم
-        const chatHistory = document.getElementById('chat-history');
-        if (chatHistory) {
-            const messages = [];
-            chatHistory.querySelectorAll('.message').forEach(msg => {
-                const text = msg.querySelector('.message-text')?.innerHTML || '';
-                const time = msg.querySelector('.message-time')?.textContent || '';
-                const isUser = msg.classList.contains('user-message');
-                
-                if (text && !text.includes('سلام! خوش آمدید')) {
-                    messages.push({
-                        type: isUser ? 'user' : 'ai',
-                        content: text,
-                        time: time
-                    });
-                }
-            });
-            
-            if (messages.length > 0) {
-                const chatData = {
-                    id: this.currentChatId,
-                    title: messages[0]?.content.substring(0, 30) + '...' || 'چت جدید',
-                    messages: messages,
-                    lastUpdated: Date.now(),
-                    messageCount: messages.length
-                };
-                
-                const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
-                const existingIndex = allChats.findIndex(c => c.id === chatData.id);
-                
-                if (existingIndex !== -1) {
-                    allChats[existingIndex] = chatData;
-                } else {
-                    allChats.unshift(chatData);
-                }
-                
-                localStorage.setItem('all_chats', JSON.stringify(allChats.slice(0, 20)));
-                localStorage.setItem('current_chat_id', this.currentChatId);
-            }
-        }
-    }
-
+    localStorage.setItem('all_chats', JSON.stringify(allChats.slice(0, 50)));
+}
     showChatHistoryModal() {
         const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
         const modal = document.getElementById('chat-history-modal');
@@ -14059,30 +14168,44 @@ generateChatTitle(messages) {
         });
     }
 
-    loadChatFromHistory(chatId) {
-        const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
-        const chatData = allChats.find(c => c.id === chatId);
-        
-        if (!chatData) {
-            this.showToast('❌ چت مورد نظر یافت نشد', 'error');
-            return;
-        }
-        
-        const chatHistory = document.getElementById('chat-history');
-        if (chatHistory) {
-            chatHistory.innerHTML = '';
-            
-            chatData.messages.forEach(msg => {
-                this.addMessageToHistory(
-                    msg.type === 'user' ? 'user' : 'ai',
-                    msg.content.replace(/<[^>]*>/g, '')
-                );
-            });
-        }
-        
-        document.getElementById('chat-history-modal').style.display = 'none';
-        this.showToast(`📂 "${chatData.title}" بارگذاری شد`, 'success');
+loadChatFromHistory(chatId) {
+    // قبل از تغییر، چت فعلی رو ذخیره کن
+    if (this.chatMemory && this.chatMemory.length > 0) {
+        this.saveCompleteChat();
     }
+
+    const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
+    const chatData = allChats.find(c => c.id === chatId);
+
+    if (!chatData) {
+        this.showToast('❌ چت مورد نظر یافت نشد', 'error');
+        return;
+    }
+
+    // تنظیم ID به همون چت قدیمی — ادامه چت روی همین ID ذخیره میشه
+    this.currentChatId = chatId;
+    localStorage.setItem('current_chat_id', this.currentChatId);
+
+    // بازسازی حافظه
+    this.chatMemory = chatData.messages.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content,
+        timestamp: msg.timestamp || new Date().toISOString()
+    }));
+
+    // نمایش در UI
+    const chatHistory = document.getElementById('chat-history');
+    if (chatHistory) {
+        chatHistory.innerHTML = '';
+        this.chatMemory.forEach(msg => {
+            this.addMessageToHistory(msg.role === 'user' ? 'user' : 'ai', msg.content, false);
+        });
+        this.scrollToBottom();
+    }
+
+    document.getElementById('chat-history-modal').style.display = 'none';
+    this.showToast(`📂 "${chatData.title}" بارگذاری شد`, 'success');
+}
 
     deleteChatFromHistory(chatId) {
         if (!confirm('🗑️ آیا از حذف این چت مطمئن هستید؟')) return;
@@ -14095,12 +14218,6 @@ generateChatTitle(messages) {
         this.showToast('✅ چت حذف شد', 'success');
     }
 
-    autoLoadChatOnStart() {
-        const currentChatId = localStorage.getItem('current_chat_id');
-        if (currentChatId) {
-            this.loadChatFromHistory(currentChatId);
-        }
-    }
 
     toggleVoiceSettingsPanel() {
         const panel = document.getElementById('voice-settings-panel');
@@ -14395,6 +14512,17 @@ setupEventListeners() {
             // نمایش فیلدهای مربوطه
             const type = card.dataset.type;
             this.toggleTypeFields(type);
+ const word = document.getElementById('german-word')?.value.trim();
+    if (word && word.length >= 2) {
+        // دکمه header رو آپدیت کن با نوع جدید
+        this.showAIFillButton(word);
+        // صرف فعل فقط برای فعل
+        if (type === 'verb') {
+            this.fetchAIVerbConjugation(word);
+        } else {
+            document.getElementById('ai-verb-suggestion')?.remove();
+        }
+    }
             // به‌روزرسانی بج نوع
             const typeBadge = document.getElementById('word-type-badge');
             if (typeBadge) {
@@ -14453,18 +14581,30 @@ setupEventListeners() {
     // ========== اعتبارسنجی实时================
     const germanInput = document.getElementById('german-word');
     const persianInput = document.getElementById('persian-meaning');
-    
-    if (germanInput) {
-        germanInput.onblur = () => {
-            const value = germanInput.value.trim();
-            if (value && /^[a-z]/i.test(value)) {
-                // پیشنهاد بزرگ کردن حرف اول برای اسم
-                if (!value.match(/^[A-ZÄÖÜ]/) && document.querySelector('.type-card.active')?.dataset.type === 'noun') {
-                    this.showToast('💡 نکته: اسم‌ها در آلمانی با حرف بزرگ نوشته می‌شوند', 'info');
-                }
+
+if (germanInput) {
+    germanInput.onblur = () => {
+        const value = germanInput.value.trim();
+        if (value && /^[a-z]/i.test(value)) {
+            if (!value.match(/^[A-ZÄÖÜ]/) && document.querySelector('.type-card.active')?.dataset.type === 'noun') {
+                this.showToast('💡 نکته: اسم‌ها در آلمانی با حرف بزرگ نوشته می‌شوند', 'info');
             }
-        };
-    }
+        }
+        if (value && value.length >= 2) {
+            // نمایش دکمه هوش مصنوعی در header
+            this.showAIFillButton(value);
+            // پیشنهاد مثال
+            this.fetchAIExampleSuggestion(value);
+            // صرف فعل اگه نوع فعله
+            const activeType = document.querySelector('.type-card.active')?.dataset.type;
+            if (activeType === 'verb') this.fetchAIVerbConjugation(value);
+        }
+    };
+    // پاک شدن input → پنهان کردن دکمه
+    germanInput.addEventListener('input', () => {
+        if (!germanInput.value.trim()) this.hideAIFillButton();
+    });
+}
     
     if (persianInput) {
         persianInput.onblur = () => {
@@ -15150,7 +15290,649 @@ async updateWordFromEditForm(wordId) {
     }
     this.renderWordList();
 }
+// ========================================
+// === پیشنهاد مثال هوشمند با AI =========
+// ========================================
 
+async fetchAIExampleSuggestion(germanWord, forceRefresh = false) {
+    this._aiExampleSuggestion = null;
+    this._aiExampleWord = germanWord;
+
+    this.showAIExampleLoading(forceRefresh);
+
+    const prompt = `یک جمله مثال ساده آلمانی (سطح A1-B1) برای لغت "${germanWord}" بساز.
+فقط یک JSON برگردان، هیچ توضیح اضافه‌ای نده:
+{"example":"جمله آلمانی","translation":"ترجمه فارسی جمله"}`;
+
+    try {
+        const response = await puter.ai.chat(prompt, { model: 'gpt-5.4-nano', stream: false });
+
+        let rawText = '';
+        if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+        else if (typeof response === 'string') rawText = response;
+        else if (response?.text) rawText = response.text;
+        else if (response?.message?.content) {
+            rawText = Array.isArray(response.message.content)
+                ? (response.message.content[0]?.text || '')
+                : response.message.content;
+        }
+
+        let parsed;
+        try {
+            const clean = rawText.replace(/```json|```/g, '').trim();
+            const jsonMatch = clean.match(/\{[\s\S]*\}/);
+            parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+        } catch {
+            this.hideAIExampleLoading();
+            return;
+        }
+
+        if (!parsed?.example || !parsed?.translation) { this.hideAIExampleLoading(); return; }
+
+        this._aiExampleSuggestion = parsed;
+
+        const currentVal = document.getElementById('german-word')?.value.trim();
+        if (currentVal === germanWord || forceRefresh) {
+            this.showAIExampleSuggestion(parsed);
+        } else {
+            this.hideAIExampleLoading();
+        }
+
+    } catch (err) {
+        console.warn('AI example fetch failed:', err);
+        this.hideAIExampleLoading();
+    }
+}
+
+showAIExampleLoading(isRefresh = false) {
+    document.getElementById('ai-example-suggestion')?.remove();
+    const exampleField = document.getElementById('example');
+    if (!exampleField) return;
+    const exampleGroup = exampleField.closest('.form-group') || exampleField.parentElement;
+    if (!exampleGroup) return;
+
+    const loadingEl = document.createElement('div');
+    loadingEl.id = 'ai-example-suggestion';
+    loadingEl.style.cssText = `
+        margin-top:8px; padding:10px 14px;
+        background:linear-gradient(135deg,rgba(67,97,238,0.06),rgba(76,201,240,0.06));
+        border:1.5px dashed var(--primary,#4361ee); border-radius:10px;
+        display:flex; align-items:center; gap:8px; opacity:0.8;
+    `;
+    loadingEl.innerHTML = `
+        <span style="font-size:16px;animation:ai-spin 1s linear infinite;display:inline-block;">⏳</span>
+        <span style="font-size:12px;color:var(--primary,#4361ee);">
+            ${isRefresh ? '🔄 در حال ساخت مثال جدید...' : '🤖 در حال ساخت مثال...'}
+        </span>
+    `;
+    exampleGroup.appendChild(loadingEl);
+    this._injectAISuggestionStyles();
+}
+
+hideAIExampleLoading() {
+    document.getElementById('ai-example-suggestion')?.remove();
+}
+
+showAIExampleSuggestion(suggestion) {
+    const exampleField = document.getElementById('example');
+    const exampleTransField = document.getElementById('example-translation');
+    if (!exampleField || !exampleTransField) return;
+
+    document.getElementById('ai-example-suggestion')?.remove();
+
+    const exampleGroup = exampleField.closest('.form-group') || exampleField.parentElement;
+    if (!exampleGroup) return;
+
+    const suggestionEl = document.createElement('div');
+    suggestionEl.id = 'ai-example-suggestion';
+    suggestionEl.style.cssText = `
+        margin-top:8px; padding:10px 14px;
+        background:linear-gradient(135deg,rgba(67,97,238,0.08),rgba(76,201,240,0.08));
+        border:1.5px dashed var(--primary,#4361ee); border-radius:10px;
+        display:flex; align-items:flex-start; gap:10px;
+        cursor:pointer; transition:all 0.2s ease; animation:ai-fadeInUp 0.3s ease;
+    `;
+    suggestionEl.innerHTML = `
+        <span style="font-size:18px;flex-shrink:0;">🤖</span>
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;color:var(--primary,#4361ee);font-weight:600;margin-bottom:4px;">
+                <i class="fas fa-lightbulb"></i> پیشنهاد هوش مصنوعی — کلیک کن تا اعمال بشه
+            </div>
+            <div style="font-size:13px;color:var(--gray-800,#1f2937);font-weight:500;direction:ltr;margin-bottom:3px;">
+                ${this.escapeHtml(suggestion.example)}
+            </div>
+            <div style="font-size:12px;color:var(--gray-500,#6b7280);">
+                ${this.escapeHtml(suggestion.translation)}
+            </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+            <button id="ai-example-refresh" title="مثال جدید" style="
+                background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.3);
+                border-radius:6px;cursor:pointer;color:var(--primary,#4361ee);
+                font-size:12px;padding:3px 7px;white-space:nowrap;
+            ">🔄 مثال جدید</button>
+            <button id="ai-suggestion-close" title="بستن" style="
+                background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);
+                border-radius:6px;cursor:pointer;color:#ef4444;
+                font-size:12px;padding:3px 7px;
+            ">✕ بستن</button>
+        </div>
+    `;
+
+    suggestionEl.addEventListener('click', (e) => {
+        const refreshBtn = e.target.closest('#ai-example-refresh');
+        const closeBtn = e.target.closest('#ai-suggestion-close');
+
+        if (closeBtn) { suggestionEl.remove(); return; }
+
+        if (refreshBtn) {
+            const word = document.getElementById('german-word')?.value.trim();
+            if (word) this.fetchAIExampleSuggestion(word, true);
+            return;
+        }
+
+        // کلیک روی باکس → اعمال
+        if (!document.getElementById('example')?.value.trim()) {
+            document.getElementById('example').value = suggestion.example;
+        }
+        if (!document.getElementById('example-translation')?.value.trim()) {
+            document.getElementById('example-translation').value = suggestion.translation;
+        }
+        suggestionEl.style.background = 'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(5,150,105,0.05))';
+        suggestionEl.style.borderColor = '#10b981';
+        suggestionEl.style.cursor = 'default';
+        suggestionEl.innerHTML = `
+            <span>✅</span>
+            <span style="font-size:13px;color:#10b981;font-weight:600;">مثال اعمال شد!</span>
+        `;
+        setTimeout(() => suggestionEl.remove(), 1500);
+        this.updateFieldCount?.();
+    });
+
+    exampleGroup.appendChild(suggestionEl);
+}
+
+// ========================================
+// === پیشنهاد صرف فعل با AI =============
+// ========================================
+
+async fetchAIVerbConjugation(germanVerb, forceRefresh = false) {
+    this._aiVerbWord = germanVerb;
+
+    this.showAIVerbLoading(forceRefresh);
+
+    const prompt = `صرف کامل فعل آلمانی "${germanVerb}" را بده.
+فقط یک JSON برگردان، بدون هیچ توضیح اضافه:
+{
+  "present": "ich ...  /  du ...  /  er ...",
+  "past": "ich ...",
+  "perfect": "ich habe/bin ... + Partizip",
+  "future": "ich werde ... + Infinitiv",
+  "konjunktiv": "ich würde ...",
+  "helper": "haben یا sein",
+  "separable": true یا false
+}`;
+
+    try {
+        const response = await puter.ai.chat(prompt, { model: 'gpt-5.4-nano', stream: false });
+
+        let rawText = '';
+        if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+        else if (typeof response === 'string') rawText = response;
+        else if (response?.text) rawText = response.text;
+        else if (response?.message?.content) {
+            rawText = Array.isArray(response.message.content)
+                ? (response.message.content[0]?.text || '')
+                : response.message.content;
+        }
+
+        let parsed;
+        try {
+            const clean = rawText.replace(/```json|```/g, '').trim();
+            const jsonMatch = clean.match(/\{[\s\S]*\}/);
+            parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+        } catch {
+            this.hideAIVerbLoading();
+            return;
+        }
+
+        if (!parsed?.present) { this.hideAIVerbLoading(); return; }
+
+        this._aiVerbSuggestion = parsed;
+
+        const currentVal = document.getElementById('german-word')?.value.trim();
+        if (currentVal === germanVerb || forceRefresh) {
+            this.showAIVerbSuggestion(parsed);
+        } else {
+            this.hideAIVerbLoading();
+        }
+
+    } catch (err) {
+        console.warn('AI verb fetch failed:', err);
+        this.hideAIVerbLoading();
+    }
+}
+
+showAIVerbLoading(isRefresh = false) {
+    document.getElementById('ai-verb-suggestion')?.remove();
+    const verbFields = document.getElementById('verb-fields');
+    if (!verbFields || verbFields.style.display === 'none') return;
+
+    const loadingEl = document.createElement('div');
+    loadingEl.id = 'ai-verb-suggestion';
+    loadingEl.style.cssText = `
+        margin-top:10px; padding:10px 14px;
+        background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(251,191,36,0.06));
+        border:1.5px dashed #f59e0b; border-radius:10px;
+        display:flex; align-items:center; gap:8px; opacity:0.8;
+    `;
+    loadingEl.innerHTML = `
+        <span style="font-size:16px;animation:ai-spin 1s linear infinite;display:inline-block;">⏳</span>
+        <span style="font-size:12px;color:#d97706;">
+            ${isRefresh ? '🔄 در حال بروزرسانی صرف فعل...' : '🤖 در حال تحلیل صرف فعل...'}
+        </span>
+    `;
+    verbFields.appendChild(loadingEl);
+    this._injectAISuggestionStyles();
+}
+
+hideAIVerbLoading() {
+    document.getElementById('ai-verb-suggestion')?.remove();
+}
+
+showAIVerbSuggestion(suggestion) {
+    document.getElementById('ai-verb-suggestion')?.remove();
+    const verbFields = document.getElementById('verb-fields');
+    if (!verbFields || verbFields.style.display === 'none') return;
+
+    const suggestionEl = document.createElement('div');
+    suggestionEl.id = 'ai-verb-suggestion';
+    suggestionEl.style.cssText = `
+        margin-top:10px; padding:12px 14px;
+        background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(251,191,36,0.05));
+        border:1.5px dashed #f59e0b; border-radius:10px;
+        animation:ai-fadeInUp 0.3s ease;
+    `;
+
+    const rows = [
+        { label: 'Präsens (حال)', value: suggestion.present, icon: '🟢' },
+        { label: 'Präteritum (گذشته)', value: suggestion.past, icon: '🟡' },
+        { label: 'Perfekt (کامل)', value: suggestion.perfect, icon: '🔵' },
+        { label: 'Futur I (آینده)', value: suggestion.future, icon: '🟣' },
+        { label: 'Konjunktiv II (التزامی)', value: suggestion.konjunktiv, icon: '⚪' },
+    ].filter(r => r.value);
+
+    const helperText = suggestion.helper
+        ? `<span style="background:rgba(245,158,11,0.15);padding:2px 8px;border-radius:5px;font-size:11px;color:#d97706;">
+            فعل کمکی: <strong>${suggestion.helper}</strong>
+           </span>`
+        : '';
+
+    const separableText = suggestion.separable === true
+        ? `<span style="background:rgba(239,68,68,0.1);padding:2px 8px;border-radius:5px;font-size:11px;color:#ef4444;">جداشدنی ✓</span>`
+        : '';
+
+    suggestionEl.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+            <div style="font-size:11px;color:#d97706;font-weight:600;">
+                <i class="fas fa-robot"></i> پیشنهاد صرف فعل — کلیک هر ردیف برای اعمال
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                ${helperText} ${separableText}
+                <button id="ai-verb-apply-all" style="
+                    background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;
+                    border-radius:6px;cursor:pointer;font-size:11px;padding:3px 10px;font-weight:600;
+                ">✅ اعمال همه</button>
+                <button id="ai-verb-refresh" style="
+                    background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
+                    border-radius:6px;cursor:pointer;color:#d97706;font-size:11px;padding:3px 8px;
+                ">🔄 بروزرسانی</button>
+                <button id="ai-verb-close" style="
+                    background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);
+                    border-radius:6px;cursor:pointer;color:#ef4444;font-size:11px;padding:3px 8px;
+                ">✕</button>
+            </div>
+        </div>
+        <div id="ai-verb-rows" style="display:flex;flex-direction:column;gap:4px;">
+            ${rows.map(r => `
+                <div class="ai-verb-row" data-field="${this._verbLabelToField(r.label)}" style="
+                    display:flex;align-items:center;gap:8px;padding:5px 8px;
+                    border-radius:7px;cursor:pointer;transition:background 0.15s;
+                    border:1px solid transparent;
+                " onmouseover="this.style.background='rgba(245,158,11,0.1)';this.style.borderColor='rgba(245,158,11,0.3)'"
+                   onmouseout="this.style.background='';this.style.borderColor='transparent'">
+                    <span style="font-size:13px;flex-shrink:0;">${r.icon}</span>
+                    <span style="font-size:11px;color:#92400e;width:130px;flex-shrink:0;">${r.label}</span>
+                    <span style="font-size:12px;color:#1f2937;direction:ltr;font-weight:500;flex:1;">${this.escapeHtml(r.value)}</span>
+                    <span style="font-size:10px;color:#d97706;opacity:0.7;">← کلیک</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    // کلیک روی هر ردیف → فقط اون فیلد پر بشه
+    suggestionEl.querySelectorAll('.ai-verb-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const fieldId = row.dataset.field;
+            const value = row.querySelector('span:nth-child(3)')?.textContent?.trim();
+            if (!fieldId || !value) return;
+
+            const input = document.getElementById(fieldId);
+            if (input) {
+                input.value = value;
+                input.style.borderColor = '#10b981';
+                setTimeout(() => input.style.borderColor = '', 1500);
+                this.updateFieldCount?.();
+            }
+
+            row.style.background = 'rgba(16,185,129,0.1)';
+            row.style.borderColor = '#10b981';
+            row.querySelector('span:last-child').textContent = '✓';
+        });
+    });
+
+    // اعمال همه
+    suggestionEl.querySelector('#ai-verb-apply-all')?.addEventListener('click', () => {
+        const fieldMap = {
+            'verb-present': suggestion.present,
+            'verb-past': suggestion.past,
+            'verb-perfect': suggestion.perfect,
+            'verb-future': suggestion.future,
+            'verb-konjunktiv': suggestion.konjunktiv,
+        };
+        Object.entries(fieldMap).forEach(([id, val]) => {
+            if (val) {
+                const el = document.getElementById(id);
+                if (el) { el.value = val; el.style.borderColor = '#10b981'; setTimeout(() => el.style.borderColor = '', 1500); }
+            }
+        });
+        // فعل کمکی
+        if (suggestion.helper) {
+            const helperVal = suggestion.helper.toLowerCase().includes('sein') ? 'sein' : 'haben';
+            const radio = document.querySelector(`input[name="verb-helper"][value="${helperVal}"]`);
+            if (radio) radio.checked = true;
+        }
+        // جداشدنی
+        if (suggestion.separable === true) {
+            const sep = document.getElementById('verb-separable');
+            if (sep) sep.checked = true;
+        }
+        this.updateFieldCount?.();
+
+        suggestionEl.style.background = 'linear-gradient(135deg,rgba(16,185,129,0.08),rgba(5,150,105,0.04))';
+        suggestionEl.style.borderColor = '#10b981';
+        suggestionEl.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+                <span>✅</span>
+                <span style="font-size:13px;color:#10b981;font-weight:600;">همه فیلدهای فعل اعمال شد!</span>
+            </div>
+        `;
+        setTimeout(() => suggestionEl.remove(), 1800);
+    });
+
+    // بروزرسانی
+    suggestionEl.querySelector('#ai-verb-refresh')?.addEventListener('click', () => {
+        const word = document.getElementById('german-word')?.value.trim();
+        if (word) this.fetchAIVerbConjugation(word, true);
+    });
+
+    // بستن
+    suggestionEl.querySelector('#ai-verb-close')?.addEventListener('click', () => suggestionEl.remove());
+
+    verbFields.appendChild(suggestionEl);
+}
+
+// تبدیل label به field ID
+_verbLabelToField(label) {
+    if (label.includes('Präsens') || label.includes('حال')) return 'verb-present';
+    if (label.includes('Präteritum') || label.includes('گذشته')) return 'verb-past';
+    if (label.includes('Perfekt') || label.includes('کامل')) return 'verb-perfect';
+    if (label.includes('Futur') || label.includes('آینده')) return 'verb-future';
+    if (label.includes('Konjunktiv') || label.includes('التزامی')) return 'verb-konjunktiv';
+    return '';
+}
+
+_injectAISuggestionStyles() {
+    if (document.getElementById('ai-suggestion-style')) return;
+    const style = document.createElement('style');
+    style.id = 'ai-suggestion-style';
+    style.textContent = `
+        @keyframes ai-fadeInUp {
+            from { opacity:0; transform:translateY(8px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes ai-spin {
+            from { transform:rotate(0deg); }
+            to   { transform:rotate(360deg); }
+        }
+        #ai-example-suggestion:hover {
+            background: linear-gradient(135deg,rgba(67,97,238,0.13),rgba(76,201,240,0.13)) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(67,97,238,0.15);
+        }
+        #ai-example-suggestion button,
+        #ai-verb-suggestion button,
+        #ai-verb-suggestion span,
+        #ai-verb-suggestion div,
+        #ai-example-suggestion span,
+        #ai-example-suggestion div {
+            font-family: 'Vazirmatn', 'Vazir', sans-serif !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+// ========================================
+// === دکمه هوشمند header ================
+// ========================================
+
+showAIFillButton(word) {
+    const btn = document.getElementById('ai-fill-all-btn');
+    if (!btn || !word) return;
+    // ذخیره لغت روی دکمه
+    btn.dataset.word = word;
+    btn.style.display = 'flex';
+    btn.innerHTML = `<i class="fas fa-robot"></i> پر کردن با هوش مصنوعی`;
+    btn.classList.remove('loading');
+    // اطمینان از اینکه window.dict به این instance اشاره داره
+    window.dict = this;
+}
+
+hideAIFillButton() {
+    const btn = document.getElementById('ai-fill-all-btn');
+    if (btn) btn.style.display = 'none';
+}
+
+async aiSmartFillAll() {
+    const btn = document.getElementById('ai-fill-all-btn');
+    const word = btn?.dataset.word || document.getElementById('german-word')?.value.trim();
+    if (!word) return;
+
+    // حالت loading
+    btn.classList.add('loading');
+    btn.innerHTML = `<span class="btn-spinner">⏳</span> در حال تحلیل...`;
+
+    const activeType = document.querySelector('.type-card.active')?.dataset.type || 'noun';
+
+    const prompt = `تحلیل کامل لغت آلمانی "${word}" را بده.
+نوع فعلی که کاربر انتخاب کرده: ${activeType}
+اگر نوع اشتباه بود، نوع صحیح را در فیلد "correct_type" بنویس.
+
+فقط یک JSON برگردان، بدون هیچ توضیح اضافه:
+{
+  "word": "${word}",
+  "correct_type": "noun یا verb یا adjective یا adverb یا preposition یا other",
+  "persian_meaning": "معنی فارسی",
+  "pronunciation": "تلفظ آوانویسی مثل [haʊs]",
+  "example": "جمله مثال آلمانی ساده A1-B1",
+  "example_translation": "ترجمه فارسی جمله",
+  "tags": "مثل A1,Alltag (با کاما)",
+  
+  "noun": {
+    "gender": "masculine یا feminine یا neuter",
+    "plural": "شکل جمع"
+  },
+  
+"verb": {
+    "present": "فقط صرف کامل: ich lerne / du lernst / er lernt / wir lernen / ihr lernt / sie lernen",
+    "past": "فقط صرف کامل: ich lernte / du lerntest / er lernte / wir lernten",
+    "perfect": "فقط Partizip II بدون فعل کمکی: gelernt یا gegangen",
+    "future": "فقط Infinitiv بدون werde: lernen",
+    "konjunktiv": "فقط Konjunktiv II: würde lernen یا hätte / wäre",
+    "helper": "haben یا sein",
+    "separable": true یا false
+  },
+  
+  "adjective": {
+    "komparativ": "حالت برتر",
+    "superlativ": "am ...sten",
+    "antonym": "متضاد"
+  },
+  
+  "preposition": {
+    "case": "Akkusativ یا Dativ یا Genitiv یا Wechsel",
+    "meanings": "معانی مختلف با کاما"
+  }
+}`;
+
+    try {
+        const response = await puter.ai.chat(prompt, { model: 'gpt-5.4-nano', stream: false });
+
+        let rawText = '';
+        if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+        else if (typeof response === 'string') rawText = response;
+        else if (response?.text) rawText = response.text;
+        else if (response?.message?.content) {
+            rawText = Array.isArray(response.message.content)
+                ? (response.message.content[0]?.text || '') : response.message.content;
+        }
+
+        let parsed;
+        try {
+            const clean = rawText.replace(/```json|```/g, '').trim();
+            const jsonMatch = clean.match(/\{[\s\S]*\}/);
+            parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+        } catch {
+            btn.classList.remove('loading');
+            btn.innerHTML = `<i class="fas fa-robot"></i> پر کردن با هوش مصنوعی`;
+            this.showToast('❌ خطا در پردازش پاسخ AI', 'error');
+            return;
+        }
+
+        // تصحیح نوع کلمه اگه لازم بود
+        const correctType = parsed.correct_type || activeType;
+        if (correctType !== activeType) {
+            document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+            const correctCard = document.querySelector(`.type-card[data-type="${correctType}"]`);
+            if (correctCard) {
+                correctCard.classList.add('active');
+                this.toggleTypeFields(correctType);
+                // آپدیت badge
+                const typeNames = {
+                    noun:'📘 اسم', verb:'⚡ فعل', adjective:'✨ صفت',
+                    adverb:'📌 قید', preposition:'🔗 حرف اضافه', other:'📎 سایر'
+                };
+                const typeBadge = document.getElementById('word-type-badge');
+                if (typeBadge) typeBadge.innerHTML = typeNames[correctType] || '📘 اسم';
+            }
+        }
+
+        // پر کردن فیلدهای مشترک
+       this._setAlways('persian-meaning', parsed.persian_meaning);
+       this._setAlways('pronunciation', parsed.pronunciation);
+       this._setAlways('example', parsed.example);
+       this._setAlways('example-translation', parsed.example_translation);
+       this._setAlways('word-tags', parsed.tags);
+
+        // پر کردن فیلدهای اختصاصی بر اساس نوع صحیح
+        if (correctType === 'noun' && parsed.noun) {
+            // جنسیت
+            if (parsed.noun.gender) {
+                document.querySelectorAll('.gender-option').forEach(opt => opt.classList.remove('active'));
+                const gBtn = document.querySelector(`.gender-option[data-gender="${parsed.noun.gender}"]`);
+                if (gBtn) gBtn.classList.add('active');
+            }
+           this._setAlways('noun-plural', parsed.noun.plural);
+        }
+
+        if (correctType === 'verb' && parsed.verb) {
+          this._setAlways('verb-present', parsed.verb.present);
+            this._setAlways('verb-past', parsed.verb.past);
+          this._setAlways('verb-perfect', parsed.verb.perfect);
+          this._setAlways('verb-future', parsed.verb.future);
+            this._setAlways('verb-konjunktiv', parsed.verb.konjunktiv);
+            if (parsed.verb.helper) {
+                const hVal = parsed.verb.helper.toLowerCase().includes('sein') ? 'sein' : 'haben';
+                const radio = document.querySelector(`input[name="verb-helper"][value="${hVal}"]`);
+                if (radio) radio.checked = true;
+            }
+            if (parsed.verb.separable === true) {
+                const sep = document.getElementById('verb-separable');
+                if (sep) sep.checked = true;
+            }
+        }
+
+        if (correctType === 'adjective' && parsed.adjective) {
+          this._setAlways('adj-komparativ', parsed.adjective.komparativ);
+           this._setAlways('adj-superlativ', parsed.adjective.superlativ);
+           this._setAlways('adj-antonym', parsed.adjective.antonym);
+        }
+
+        if (correctType === 'preposition' && parsed.preposition) {
+            if (parsed.preposition.case) {
+                const prepCase = document.getElementById('prep-case');
+                if (prepCase) prepCase.value = parsed.preposition.case;
+            }
+           this._setAlways('prep-meanings', parsed.preposition.meanings);
+        }
+
+        // پاک کردن پیشنهادهای قدیمی inline
+        document.getElementById('ai-example-suggestion')?.remove();
+        document.getElementById('ai-verb-suggestion')?.remove();
+
+        this.updateFieldCount?.();
+
+        // دکمه → حالت موفق
+        btn.classList.remove('loading');
+        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        btn.innerHTML = `<i class="fas fa-check-circle"></i> فیلدها پر شدند!`;
+        setTimeout(() => {
+            btn.style.background = '';
+            btn.innerHTML = `<i class="fas fa-robot"></i> پر کردن با هوش مصنوعی`;
+            btn.classList.remove('loading');
+        }, 2500);
+
+        const filledCount = document.querySelectorAll('#add-word-section .modern-input, #add-word-section textarea')
+            .length;
+        this.showToast(`✅ ${filledCount} فیلد توسط هوش مصنوعی پر شد`, 'success');
+
+    } catch (err) {
+        console.warn('AI smart fill failed:', err);
+        btn.classList.remove('loading');
+        btn.innerHTML = `<i class="fas fa-robot"></i> پر کردن با هوش مصنوعی`;
+        this.showToast('❌ خطا در اتصال به هوش مصنوعی', 'error');
+    }
+}
+
+// helper: فقط اگه فیلد خالیه پر کن
+_setIfEmpty(id, value) {
+    if (!value) return;
+    const el = document.getElementById(id);
+    if (el && !el.value.trim()) {
+        el.value = value;
+        // flash سبز کوتاه
+        el.style.borderColor = '#10b981';
+        setTimeout(() => el.style.borderColor = '', 1200);
+    }
+}
+_setAlways(id, value) {
+    if (!value) return;
+    const el = document.getElementById(id);
+    if (el) {
+        el.value = value;
+        el.style.borderColor = '#10b981';
+        setTimeout(() => el.style.borderColor = '', 1200);
+    }
+}
 setupTabs() {
     const tabs = document.querySelectorAll('.tab');
     const contents = document.querySelectorAll('.tab-content');

@@ -4710,3 +4710,146 @@ input:checked + .slider:before {
 .word-type {
     vertical-align: middle;
 }
+/* استایل preview تصویر در input */
+.input-image-preview {
+    position: relative;
+    display: inline-block;
+    margin: 5px 8px 5px 0;
+    background: #f0f0f0;
+    border-radius: 12px;
+    padding: 4px;
+    animation: fadeIn 0.2s ease;
+}
+
+.input-image-preview img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.input-image-preview .remove-image-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.input-image-preview .remove-image-btn:hover {
+    transform: scale(1.1);
+    background: #dc2626;
+}
+
+.dark-mode .input-image-preview {
+    background: #334155;
+}
+/* آیکون چرخان برای دکمه ارسال */
+.fa-circle-notch {
+    animation: fa-spin-rotate 1s infinite linear !important;
+}
+
+@keyframes fa-spin-rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* حالت غیرفعال دکمه */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.send-message-btn:disabled {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    transform: none;
+}
+/* ========== استایل تمیز برای پیام‌های AI ========== */
+
+.message-text.ai-formatted {
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+.message-text.ai-formatted p {
+    margin: 12px 0;
+    line-height: 1.8;
+}
+
+.message-text.ai-formatted strong {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.message-text.ai-formatted em {
+    font-style: italic;
+    color: var(--gray-600);
+}
+
+/* لیست‌های مرتب و منظم */
+.message-text.ai-formatted ul,
+.message-text.ai-formatted ol {
+    margin: 12px 0;
+    padding-right: 25px;
+}
+
+.message-text.ai-formatted li {
+    margin: 8px 0;
+    line-height: 1.7;
+}
+
+/* حالت تاریک */
+.dark-mode .message-text.ai-formatted strong {
+    color: #60a5fa;
+}
+
+.dark-mode .message-text.ai-formatted em {
+    color: #9ca3af;
+}
+#ai-fill-all-btn {
+    font-family: 'Vazirmatn', 'Vazir', sans-serif;
+    background: linear-gradient(135deg, #7c3aed, #4361ee);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    animation: ai-pulse-btn 2s infinite;
+    white-space: nowrap;
+}
+#ai-fill-all-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(124,58,237,0.4);
+}
+#ai-fill-all-btn.loading {
+    opacity: 0.75;
+    pointer-events: none;
+}
+#ai-fill-all-btn .btn-spinner {
+    display: inline-block;
+    animation: ai-spin 1s linear infinite;
+}
+@keyframes ai-pulse-btn {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(124,58,237,0); }
+}
