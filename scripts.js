@@ -3,7 +3,7 @@
 
 class GermanDictionary {
     constructor() {
-        this.uploadedImage = null;  // برای ذخیره تصویر آپلود شده
+     
 this.uploadedImageUrl = null;
         
         this.dbName = 'GermanPersianDictionary';
@@ -7935,42 +7935,153 @@ setupFilterButtons() {
 }
 async performAutoTranslation(text) {
     const resultDiv = document.getElementById('translate-result');
-    
     if (!text || text.trim().length === 0) {
-        resultDiv.innerHTML = `<div class="empty-result">...</div>`;
+        resultDiv.innerHTML = `<div class="empty-result" style="text-align:center;padding:20px;color:#9ca3af;">متن را وارد کنید...</div>`;
         return;
     }
-    
-    resultDiv.innerHTML = `<div class="loading-translation">در حال ترجمه...</div>`;
-    
+
+    resultDiv.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:16px;
+            font-family:'Vazirmatn',sans-serif;color:#4361ee;">
+            <span style="animation:ai-spin 1s linear infinite;display:inline-block;font-size:18px;">⏳</span>
+            <span>در حال ترجمه...</span>
+        </div>`;
+
     try {
-        let translatedText = null;
-        
-        if (this.translateDirection === 'de-fa') {
-            translatedText = await this.translateWithMyMemory(text, 'de', 'fa');
-        } else {
-            translatedText = await this.translateWithMyMemory(text, 'fa', 'de');
-        }
-        
-        if (translatedText) {
+        // اول دیکشنری شخصی رو چک کن
+        const localResult = await this.searchExactInDictionary(text.trim());
+        if (localResult) {
             resultDiv.innerHTML = `
-                <div class="translated-text">
-                    <div class="original-text">
-                        <small>متن اصلی:</small>
-                        <p>${this.escapeHtml(text)}</p>
+                <div style="padding:12px;font-family:'Vazirmatn',sans-serif;">
+                    <div style="font-size:11px;color:#10b981;margin-bottom:8px;font-weight:600;">
+                        ✅ از دیکشنری شخصی شما
                     </div>
-                    <div class="result-text">
-                        <small>ترجمه:</small>
-                        <p>${this.escapeHtml(translatedText)}</p>
+                    <div style="font-size:17px;font-weight:700;color:var(--gray-800,#1f2937);">
+                        ${this.escapeHtml(localResult)}
                     </div>
-                </div>
-            `;
-        } else {
-            resultDiv.innerHTML = `<div class="error-message">ترجمه یافت نشد</div>`;
+                </div>`;
+            return;
         }
+
+        const isDeToFa = this.translateDirection === 'de-fa';
+        let translated = null;
+
+        // روش ۱: Google Translate (gtx - رایگان)
+        try {
+            const sl = isDeToFa ? 'de' : 'fa';
+            const tl = isDeToFa ? 'fa' : 'de';
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                // جمع کردن همه قطعه‌های ترجمه
+                if (Array.isArray(data[0])) {
+                    translated = data[0]
+                        .filter(chunk => chunk?.[0])
+                        .map(chunk => chunk[0])
+                        .join('');
+                }
+            }
+        } catch (e) {
+            console.log('Google Translate failed, trying fallback...');
+        }
+
+        // روش ۲: MyMemory (اگه Google کار نکرد)
+        if (!translated) {
+            try {
+                const sl = isDeToFa ? 'de' : 'fa';
+                const tl = isDeToFa ? 'fa' : 'de';
+                const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sl}|${tl}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data?.responseStatus === 200 && data?.responseData?.translatedText) {
+                        translated = data.responseData.translatedText;
+                    }
+                }
+            } catch (e) {
+                console.log('MyMemory failed, trying AI...');
+            }
+        }
+
+        // روش ۳: puter.ai (آخرین راه‌حل)
+        if (!translated) {
+            const fromLang = isDeToFa ? 'آلمانی' : 'فارسی';
+            const toLang   = isDeToFa ? 'فارسی'  : 'آلمانی';
+            const prompt = `متن زیر را از ${fromLang} به ${toLang} ترجمه کن. فقط ترجمه را بنویس بدون هیچ توضیحی:\n${text}`;
+           const response = await this._puterChat(prompt, {});
+            let raw = '';
+            if (response?.message?.content?.[0]?.text) raw = response.message.content[0].text;
+            else if (typeof response?.message?.content === 'string') raw = response.message.content;
+            else if (typeof response === 'string') raw = response;
+            else if (response?.text) raw = response.text;
+            translated = raw.trim().replace(/^["'«»]|["'«»]$/g, '').trim();
+        }
+
+        if (!translated) throw new Error('همه روش‌های ترجمه شکست خوردند');
+
+        const isRtlResult = isDeToFa;
+        resultDiv.innerHTML = `
+            <div style="padding:12px;font-family:'Vazirmatn',sans-serif;">
+                <div style="font-size:17px;font-weight:600;
+                    color:var(--gray-800,#1f2937);line-height:1.7;
+                    ${isRtlResult ? 'direction:rtl;text-align:right;' : 'direction:ltr;text-align:left;'}">
+                    ${this.escapeHtml(translated)}
+                </div>
+                <div style="margin-top:10px;padding-top:8px;
+                    border-top:1px solid rgba(0,0,0,0.07);
+                    font-size:11px;color:#9ca3af;">
+                    ${text.length > 50 ? this.escapeHtml(text.substring(0,50)) + '...' : this.escapeHtml(text)}
+                </div>
+            </div>`;
+
     } catch (error) {
-        resultDiv.innerHTML = `<div class="error-message">خطا در ترجمه</div>`;
+        console.error('Translation error:', error);
+        resultDiv.innerHTML = `
+            <div style="padding:16px;text-align:center;font-family:'Vazirmatn',sans-serif;">
+                <div style="color:#ef4444;margin-bottom:10px;">❌ خطا در ترجمه</div>
+                <button onclick="window.dictionaryApp?.performAutoTranslation(document.getElementById('translate-input')?.value)"
+                    style="background:#4361ee;color:white;border:none;border-radius:10px;
+                    padding:6px 16px;cursor:pointer;font-family:'Vazirmatn',sans-serif;font-size:13px;">
+                    🔄 تلاش مجدد
+                </button>
+            </div>`;
     }
+}
+// ================================================
+// puter AI wrapper — با auto-login و مدل رایگان
+// ================================================
+async _puterChat(messages, options = {}) {
+    const FREE_MODEL = 'claude-haiku-4-5-20251001'; // رایگان‌ترین مدل puter
+
+    // اگه puter لود نشده
+    if (typeof puter === 'undefined') {
+        throw new Error('puter.js لود نشده');
+    }
+
+    // چک لاگین — اگه نبود، لاگین کن
+    try {
+        const isSignedIn = await puter.auth.isSignedIn();
+        if (!isSignedIn) {
+            await puter.auth.signIn();
+        }
+    } catch (authErr) {
+        // بعضی نسخه‌های puter auth جدا نداره — ادامه بده
+        console.warn('puter auth check failed, continuing...', authErr);
+    }
+
+    const model = options.model || FREE_MODEL;
+    return await puter.ai.chat(messages, { ...options, model, stream: false });
+}
+
+async _puterExtractText(response) {
+    if (!response) return '';
+    if (response?.message?.content?.[0]?.text) return response.message.content[0].text;
+    if (Array.isArray(response?.message?.content)) return response.message.content.map(c => c.text || '').join('');
+    if (typeof response?.message?.content === 'string') return response.message.content;
+    if (typeof response === 'string') return response;
+    if (response?.text) return response.text;
+    return '';
 }
 /**
  * جستجوی دقیق در دیکشنری (فقط تطابق کامل)
@@ -10066,6 +10177,7 @@ setupSettingsEventListeners() {
 document.getElementById('export-words-to-image-btn')?.addEventListener('click', () => {
     this.showExportWordsModal();
 });
+
     // ========== مدیریت داده‌ها ==========
     document.getElementById('export-data-btn')?.addEventListener('click', () => {
         this.exportData();
@@ -12445,12 +12557,9 @@ renderAIChat() {
                         <span>${isGerman ? 'مدل هوش مصنوعی:' : 'AI Model:'}</span>
                     </div>
                     <div class="model-select-wrapper">
-                       <select id="ai-model-select" class="model-select">
-    <option value="elias-mini" selected>⚡ الیاس مینی (GPT-5.4 nano - سریع)</option>
-    <option value="elias-pro">🚀 الیاس پرو (GPT-5.2 chat - قدرتمند + جستجوی وب)</option>
-    <option value="elias-vision">👁️ الیاس بینا (تحلیل تصویر)</option>
-    <option value="elias-creative">🎨 الیاس خلاق (تولید خلاقانه)</option>
-</select>
+                        <select id="ai-model-select" class="model-select">
+                         <option value="elias" selected>🤖مدل 1 (اختصاصی)</option>
+                    </select>
                     </div>
                     <div class="model-status">
                         <span class="status-indicator online"></span>
@@ -12463,15 +12572,7 @@ renderAIChat() {
                     <div class="main-input-area">
                         <div class="input-wrapper">
                             <div class="input-actions-left">
-                                <button class="input-action-btn" id="attach-file-btn" title="${isGerman ? 'آپلود فایل' : 'Upload File'}">
-                                    <i class="fas fa-paperclip"></i>
-                                </button>
-                                <button class="input-action-btn" id="upload-image-btn" title="${isGerman ? 'تحلیل تصویر' : 'Image Analysis'}">
-                                    <i class="fas fa-image"></i>
-                                </button>
-                                <button class="input-action-btn" id="generate-image-btn" title="${isGerman ? 'تولید تصویر' : 'Generate Image'}">
-                                    <i class="fas fa-palette"></i>
-                                </button>
+                           
                             </div>
                             
                             <textarea 
@@ -12537,7 +12638,7 @@ renderAIChat() {
     // راه‌اندازی event listenerها
     this.setupAIChatEventListeners();
    
-    this.setupImageUpload();
+
 
     
     if (isMobile) {
@@ -12821,7 +12922,42 @@ setupAIChatEventListeners() {
     
     // ========== ارسال پیام ==========
     const sendBtn = document.getElementById('send-ai-message');
-    const chatInput = document.getElementById('ai-chat-input');
+   // پشتیبانی از paste تصویر در input
+const chatInput = document.getElementById('ai-chat-input');
+if (chatInput) {
+    chatInput.addEventListener('paste', (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    this.uploadedImage = file;
+                    this.uploadedImageUrl = ev.target.result;
+                    document.querySelector('.input-image-preview')?.remove();
+                    const wrapper = document.querySelector('.input-wrapper');
+                    const preview = document.createElement('div');
+                    preview.className = 'input-image-preview';
+                    preview.style.cssText = `display:flex;align-items:center;gap:8px;padding:6px 10px;
+                        background:rgba(67,97,238,0.08);border-radius:8px;margin-bottom:6px;
+                        font-family:'Vazirmatn',sans-serif;font-size:12px;`;
+                    preview.innerHTML = `
+                        <img src="${ev.target.result}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;">
+                        <span style="flex:1;color:#4361ee;">تصویر paste شد</span>
+                        <button onclick="this.closest('.input-image-preview').remove();window.dict.uploadedImage=null;window.dict.uploadedImageUrl=null;"
+                            style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:14px;">✕</button>
+                    `;
+                    if (wrapper) wrapper.insertAdjacentElement('beforebegin', preview);
+                    this.showToast('📋 تصویر paste شد — پیام بفرست', 'info');
+                };
+                reader.readAsDataURL(file);
+                return;
+            }
+        }
+    });
+}
     
     if (sendBtn) {
         sendBtn.addEventListener('click', () => this.sendAIMessage());
@@ -12877,36 +13013,7 @@ setupAIChatEventListeners() {
         this.clearChatHistory();
     });
     
-    // ========== آپلود فایل ==========
-    document.getElementById('attach-file-btn')?.addEventListener('click', () => {
-        document.getElementById('file-upload-input').click();
-    });
-    
 
-
-    
-    // ========== تولید تصویر ==========
-    document.getElementById('generate-image-btn')?.addEventListener('click', async () => {
-        const inputText = document.getElementById('ai-chat-input').value.trim();
-        if (!inputText) {
-            this.showToast('✏️ لطفاً متن مورد نظر را وارد کنید', 'warning');
-            return;
-        }
-        await this.generateImageWithAI(inputText);
-    });
-    
-    // ========== مدیریت آپلود فایل ==========
-    document.getElementById('file-upload-input')?.addEventListener('change', async (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            for (let i = 0; i < e.target.files.length; i++) {
-                await this.handleFileUpload(e.target.files[i]);
-            }
-            e.target.value = '';
-        }
-    });
-    
-   
-    
     
 }
 
@@ -12946,97 +13053,8 @@ setupVoiceSettingsControls() {
         this.resetVoiceSettings();
     });
 }
-setupImageUpload() {
-    const imageUploadBtn = document.getElementById('upload-image-btn');
-    const imageInput = document.getElementById('image-upload-input');
-    const chatInput = document.getElementById('ai-chat-input');
-    
-    if (!imageUploadBtn || !imageInput) return;
-    
-    // کلیک روی دکمه تصویر
-    imageUploadBtn.onclick = () => {
-        imageInput.click();
-    };
-    
-    // انتخاب فایل
-    imageInput.onchange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            if (file.type.startsWith('image/')) {
-                this.displayImageInInput(file);
-            } else {
-                this.showToast('❌ لطفاً فقط فایل تصویری انتخاب کنید', 'error');
-            }
-        }
-        e.target.value = '';
-    };
-}
 
-// نمایش تصویر در input (دقیقاً مثل خودش)
-displayImageInInput(file) {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-        this.uploadedImageUrl = e.target.result;
-        this.uploadedImage = file;
-        
-        const inputWrapper = document.querySelector('.input-wrapper');
-        const existingImagePreview = document.querySelector('.input-image-preview');
-        
-        // حذف preview قبلی اگر存在 داشت
-        if (existingImagePreview) existingImagePreview.remove();
-        
-        // ایجاد preview تصویر
-        const previewDiv = document.createElement('div');
-        previewDiv.className = 'input-image-preview';
-        previewDiv.style.cssText = `
-            position: relative;
-            display: inline-block;
-            margin: 5px 0 0 0;
-            background: #f0f0f0;
-            border-radius: 12px;
-            padding: 5px;
-        `;
-        
-        previewDiv.innerHTML = `
-            <img src="${this.uploadedImageUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-            <button type="button" class="remove-image-btn" style="
-                position: absolute;
-                top: -8px;
-                right: -8px;
-                width: 22px;
-                height: 22px;
-                border-radius: 50%;
-                background: #ef4444;
-                border: none;
-                color: white;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-            ">✕</button>
-        `;
-        
-        // دکمه حذف تصویر
-        const removeBtn = previewDiv.querySelector('.remove-image-btn');
-        removeBtn.onclick = () => {
-            previewDiv.remove();
-            this.uploadedImage = null;
-            this.uploadedImageUrl = null;
-            this.showToast('🗑️ تصویر حذف شد', 'info');
-        };
-        
-        // اضافه کردن به input-wrapper
-        if (inputWrapper) {
-            inputWrapper.insertBefore(previewDiv, inputWrapper.firstChild);
-        }
-        
-        this.showToast('✅ تصویر اضافه شد. حالا می‌توانید متن خود را تایپ کنید.', 'success');
-    };
-    
-    reader.readAsDataURL(file);
-}
+
 // ================================================
 // حافظه چت
 // ================================================
@@ -13175,25 +13193,21 @@ async sendAIMessage() {
     this.showTypingIndicator();
 
     try {
-        const modelSelect = document.getElementById('ai-model-select');
-        const selectedModel = modelSelect?.value || 'elias-mini';
-        const modelMap = {
-            'elias-mini':    'gpt-5.4-nano',
-            'elias-pro':     'openai/gpt-5.2-chat',
-            'elias-vision':  'gpt-5.4-nano',
-            'elias-creative':'gpt-5.4-nano'
-        };
-        const actualModel = modelMap[selectedModel] || 'gpt-5.4-nano';
+    const FREE_MODEL = 'claude-haiku-4-5-20251001';
+
 
         // system prompt
-        const systemMsg = {
-            role: 'system',
-            content: `تو یک دستیار هوشمند به نام "الیاس" هستی که در دیکشنری آلمانی-فارسی کمک می‌کنی.
-پاسخ‌هایت را همیشه تمیز، منظم و خوانا بنویس.
-از Markdown استفاده کن: **متن بولد**، # عنوان، - برای لیست، \`کد\`.
+  // system prompt
+const systemMsg = {
+    role: 'system',
+    content: `تو یک دستیار هوشمند به نام "الیاس" هستی که در برنامه دیکشنری آلمانی-فارسی کمک می‌کنی.
+پاسخ‌هایت را همیشه تمیز، منظم و خوانا بنویس. از Markdown استفاده کن: **متن بولد**، # عنوان، - برای لیست، \`کد\`.
+فقط به سوال فعلی پاسخ بده مگر اینکه کاربر به قبل اشاره کند.
 اگر پرسیدند سازنده‌ات کیست: "من توسط الیاس حسینی ساخته شده‌ام، یک برنامه‌نویس و توسعه‌دهنده وب."
-فقط به سوال فعلی پاسخ بده مگر اینکه کاربر به قبل اشاره کند.`
-        };
+
+=== اطلاعات دیکشنری کاربر ===
+${await this._getDictionaryContext()}`
+};
 
         // ساختن messages array با حافظه
         const historyMsgs = this.getMemoryForAI();
@@ -13221,11 +13235,7 @@ async sendAIMessage() {
             ];
         }
 
-        const response = await puter.ai.chat(fullMessages, {
-            model: actualModel,
-            stream: false
-        });
-
+     const response = await this._puterChat(fullMessages, { model: FREE_MODEL });
         this.removeTypingIndicator();
 
         // استخراج متن پاسخ
@@ -13241,7 +13251,7 @@ async sendAIMessage() {
         this.addToMemory('assistant', fullResponse);
         this.saveCompleteChat();
 
-        this.uploadedImage = null;
+    
         this.uploadedImageUrl = null;
 
     } catch (error) {
@@ -13251,6 +13261,43 @@ async sendAIMessage() {
     } finally {
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>ارسال</span>';
+    }
+}
+async _getDictionaryContext() {
+    try {
+        const words = await this.getAllWords();
+        const total = words.length;
+        const nouns = words.filter(w => w.type === 'noun').length;
+        const verbs = words.filter(w => w.type === 'verb').length;
+        const adjs  = words.filter(w => w.type === 'adjective').length;
+        const srsKeys = Object.keys(this.srsData || {});
+        const learned = srsKeys.filter(k => (this.srsData[k]?.level || 0) >= 3).length;
+        const recent = words.slice(-5).map(w => `${w.german} (${w.persian})`).join('، ');
+
+        return `
+تعداد کل لغات: ${total} (${nouns} اسم، ${verbs} فعل، ${adjs} صفت)
+لغات یاد گرفته: ${learned}
+آخرین لغات: ${recent || 'هنوز لغتی اضافه نشده'}
+
+بخش‌های برنامه:
+- جستجو → search-section
+- افزودن لغت → add-word-section
+- مترجم → translate-section
+- تمرین → practice-section
+- فلش‌کارت → flashcards-section
+- لیست لغات → word-list-section
+- پیشرفت → progress-section
+- تنظیمات → settings-section
+
+قانون لینک دادن به بخش‌ها — دقیقاً این HTML را بنویس (SECTION_ID و نام فارسی را عوض کن):
+<button onclick="dictionaryApp.showSection('SECTION_ID')" style="background:linear-gradient(135deg,#4361ee,#7c3aed);color:white;border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-family:Vazirmatn,sans-serif;font-size:12px;margin:4px 0;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-arrow-left"></i> رفتن به نام‌بخش</button>
+
+مثال برای لیست لغات:
+<button onclick="dictionaryApp.showSection('word-list-section')" style="background:linear-gradient(135deg,#4361ee,#7c3aed);color:white;border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-family:Vazirmatn,sans-serif;font-size:12px;margin:4px 0;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-arrow-left"></i> رفتن به لیست لغات</button>
+
+هیچوقت HTML دکمه را داخل backtick یا کد بلاک قرار نده. مستقیم بنویس.`;
+    } catch {
+        return 'اطلاعات دیکشنری در دسترس نیست';
     }
 }
 async addMessageWithImageToHistory(sender, message, imageUrl) {
@@ -13294,36 +13341,110 @@ addMessageToHistory(sender, message, scroll = true) {
     if (!chatHistory) return;
 
     const time = new Date().toLocaleTimeString('fa-IR');
-    const messageClass = sender === 'user' ? 'user-message' : 'ai-message';
 
-    const formatted = sender === 'ai'
-        ? this._formatAIMessage(message)
-        : `<p>${this.escapeHtml(message).replace(/\n/g, '<br>')}</p>`;
-
-    const html = `
-        <div class="message ${messageClass}" style="animation:fadeInUp 0.3s ease;">
-            <div class="message-avatar">
-                <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+    if (sender === 'user') {
+        const formatted = `<p style="margin:0;line-height:1.6;">${this.escapeHtml(message).replace(/\n/g, '<br>')}</p>`;
+        chatHistory.insertAdjacentHTML('beforeend', `
+            <div class="message user-message" style="animation:ai-fadeInUp 0.25s ease;">
+                <div class="message-avatar" style="width:30px;height:30px;font-size:13px;flex-shrink:0;">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="message-content" style="font-size:13px;">
+                    <div class="message-text">${formatted}</div>
+                    <div class="message-time" style="font-size:10px;margin-top:3px;">${time}</div>
+                </div>
             </div>
-            <div class="message-content">
-                <div class="message-text">${formatted}</div>
-                <div class="message-time">${time}</div>
+        `);
+    } else {
+        const formatted = this._formatAIMessage(message);
+        chatHistory.insertAdjacentHTML('beforeend', `
+            <div class="message ai-message" style="animation:ai-fadeInUp 0.25s ease;">
+                <div class="message-avatar" style="width:30px;height:30px;font-size:13px;flex-shrink:0;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content" style="font-size:13px;">
+                    <div class="message-text">${formatted}</div>
+                    <div class="message-time" style="font-size:10px;margin-top:3px;">${time}</div>
+                </div>
             </div>
-        </div>`;
+        `);
+    }
 
-    chatHistory.insertAdjacentHTML('beforeend', html);
     if (scroll) this.scrollToBottom();
 }
 
-// تبدیل Markdown ساده به HTML تمیز
+_typewriterEffect(container, fullText, scroll = true) {
+    const formatted = this._formatAIMessage(fullText);
+
+    // برای متن‌های کوتاه — مستقیم نشون بده
+    if (fullText.length < 80) {
+        container.innerHTML = formatted;
+        if (scroll) this.scrollToBottom();
+        return;
+    }
+
+    // برای متن‌های بلند — typewriter روی متن خام، بعد format
+    container.innerHTML = '';
+    const words = fullText.split(' ');
+    let i = 0;
+    let current = '';
+
+    const step = () => {
+        if (i >= words.length) {
+            // در پایان، نمایش formatted کامل
+            container.innerHTML = this._formatAIMessage(fullText);
+            if (scroll) this.scrollToBottom();
+            return;
+        }
+
+        // هر بار ۲ کلمه اضافه کن
+        const chunk = words.slice(i, i + 2).join(' ');
+        current += (i === 0 ? '' : ' ') + chunk;
+        i += 2;
+
+        // نمایش ساده در حین تایپ
+        container.innerHTML = `<p style="line-height:1.7;">${this.escapeHtml(current)}<span style="
+            display:inline-block;width:2px;height:1em;background:var(--primary,#4361ee);
+            margin-right:2px;vertical-align:middle;animation:ai-blink 0.7s infinite;">
+        </span></p>`;
+
+        if (scroll) this.scrollToBottom();
+
+        // سرعت تایپ بر اساس طول متن
+        const delay = fullText.length > 500 ? 18 : fullText.length > 200 ? 25 : 35;
+        setTimeout(step, delay);
+    };
+
+    // اضافه کردن انیمیشن blink اگه نیاز بود
+    if (!document.getElementById('ai-suggestion-style')?.textContent.includes('ai-blink')) {
+        const style = document.getElementById('ai-suggestion-style') || document.createElement('style');
+        if (!style.id) style.id = 'ai-suggestion-style-extra';
+        style.textContent += `
+            @keyframes ai-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        `;
+        if (!style.parentNode) document.head.appendChild(style);
+    }
+
+    step();
+}
 _formatAIMessage(text) {
     if (!text) return '';
-    let t = this.escapeHtml(text);
+
+    // دکمه‌های HTML رو قبل از هر کاری استخراج کن
+    const btnPlaceholders = [];
+    let t = text.replace(/<button[\s\S]*?<\/button>/gi, (match) => {
+        const idx = btnPlaceholders.length;
+        btnPlaceholders.push(match);
+        return `%%BTN_${idx}%%`;
+    });
+
+    // escapeHtml روی باقی متن
+    t = this.escapeHtml(t);
 
     // عناوین
-    t = t.replace(/^### (.+)$/gm, '<h4 style="margin:12px 0 6px;color:var(--primary);">$1</h4>');
-    t = t.replace(/^## (.+)$/gm,  '<h3 style="margin:14px 0 8px;color:var(--primary);">$1</h3>');
-    t = t.replace(/^# (.+)$/gm,   '<h2 style="margin:16px 0 10px;color:var(--primary);">$1</h2>');
+    t = t.replace(/^### (.+)$/gm, '<h4 style="margin:8px 0 4px;color:var(--primary,#4361ee);font-size:13px;">$1</h4>');
+    t = t.replace(/^## (.+)$/gm,  '<h3 style="margin:10px 0 6px;color:var(--primary,#4361ee);font-size:14px;">$1</h3>');
+    t = t.replace(/^# (.+)$/gm,   '<h2 style="margin:12px 0 6px;color:var(--primary,#4361ee);font-size:15px;">$1</h2>');
 
     // بولد و ایتالیک
     t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -13331,31 +13452,38 @@ _formatAIMessage(text) {
     t = t.replace(/\*(.+?)\*/g,         '<em>$1</em>');
 
     // کد inline
-    t = t.replace(/`(.+?)`/g, '<code style="background:rgba(0,0,0,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:0.9em;">$1</code>');
+    t = t.replace(/`(.+?)`/g, '<code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px;font-size:11px;font-family:monospace;">$1</code>');
 
-    // لیست‌ها
-    t = t.replace(/^[-•]\s+(.+)$/gm, '<li style="margin:4px 0;padding-right:4px;">$1</li>');
-    t = t.replace(/^(\d+)\.\s+(.+)$/gm, '<li style="margin:4px 0;padding-right:4px;"><strong>$1.</strong> $2</li>');
-    t = t.replace(/(<li[^>]*>.*<\/li>\n?)+/gs, m => `<ul style="padding-right:20px;margin:8px 0;">${m}</ul>`);
+    // لیست
+    t = t.replace(/^[-•]\s+(.+)$/gm, '<li style="margin:3px 0;padding-right:2px;font-size:13px;">$1</li>');
+    t = t.replace(/^(\d+)\.\s+(.+)$/gm, '<li style="margin:3px 0;font-size:13px;"><strong>$1.</strong> $2</li>');
+    t = t.replace(/(<li[^>]*>[\s\S]*?<\/li>\n?)+/g, m => `<ul style="padding-right:16px;margin:6px 0;">${m}</ul>`);
 
     // خط افقی
-    t = t.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--gray-200);margin:12px 0;">');
+    t = t.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0;">');
 
     // پاراگراف
     const lines = t.split('\n');
     const result = [];
-    let i = 0;
-    while (i < lines.length) {
-        const line = lines[i].trim();
-        if (!line) { i++; continue; }
-        if (line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<hr') || line.startsWith('<li')) {
-            result.push(line);
+    for (const line of lines) {
+        const l = line.trim();
+        if (!l) continue;
+        if (l.startsWith('<h') || l.startsWith('<ul') || l.startsWith('<hr') || l.startsWith('<li') || l.startsWith('%%BTN_')) {
+            result.push(l);
         } else {
-            result.push(`<p style="margin:6px 0;line-height:1.7;">${line}</p>`);
+            result.push(`<p style="margin:4px 0;line-height:1.65;font-size:13px;">${l}</p>`);
         }
-        i++;
     }
-    return result.join('\n');
+    let html = result.join('\n');
+
+    // برگرداندن دکمه‌های HTML
+    btnPlaceholders.forEach((btn, idx) => {
+        // اگه داخل <p> گیر کرده، خارجش کن
+        html = html.replace(new RegExp(`<p[^>]*>%%BTN_${idx}%%<\\/p>`, 'g'), btn);
+        html = html.replace(`%%BTN_${idx}%%`, btn);
+    });
+
+    return html;
 }
 
 scrollToBottom() {
@@ -13592,78 +13720,6 @@ resetVoiceSettings() {
 
 
 
-// ================================================
-// نمایش تصویر در حالت تمام صفحه
-// ================================================
-
-showImageFullscreen(imageSrc) {
-    const modal = document.createElement('div');
-    modal.className = 'image-fullscreen-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.9);
-        z-index: 100000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    `;
-    
-    const img = document.createElement('img');
-    img.src = imageSrc;
-    img.style.cssText = `
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-        border-radius: 10px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.5);
-    `;
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(255,255,255,0.2);
-        border: none;
-        color: white;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        font-size: 24px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-    `;
-    closeBtn.onmouseover = () => {
-        closeBtn.style.background = 'rgba(255,255,255,0.3)';
-    };
-    closeBtn.onmouseout = () => {
-        closeBtn.style.background = 'rgba(255,255,255,0.2)';
-    };
-    
-    modal.appendChild(img);
-    modal.appendChild(closeBtn);
-    
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            document.body.removeChild(modal);
-        }
-    };
-    
-    closeBtn.onclick = () => {
-        document.body.removeChild(modal);
-    };
-    
-    document.body.appendChild(modal);
-}
 
 // ================================================
 // تغییر تم AI
@@ -13788,18 +13844,7 @@ showChatHistoryModal() {
 
 async getAIResponseWithMemory(message, imageUrl = null) {
     try {
-        const modelSelect = document.getElementById('ai-model-select');
-        const selectedModel = modelSelect ? modelSelect.value : 'elias-mini';
-        
-        // نقشه مدل‌های جدید Puter.ai
-        const modelMap = {
-            'elias-mini': 'gpt-5.4-nano',        // سریع و سبک
-            'elias-pro': 'openai/gpt-5.2-chat',   // قدرتمند با جستجوی وب
-            'elias-vision': 'gpt-5.4-nano',       // برای تحلیل تصویر
-            'elias-creative': 'gpt-5.4-nano'      // برای تولید خلاقانه
-        };
-        
-        const actualModel = modelMap[selectedModel] || 'gpt-5.4-nano';
+     const FREE_MODEL = 'claude-haiku-4-5-20251001';
         
         // گرفتن حافظه چت
         const memoryContext = this.getMemoryForAI();
@@ -13822,24 +13867,16 @@ ${memoryContext}
         
         // اگر تصویر داریم، از قابلیت vision استفاده کن
         if (imageUrl) {
-            response = await puter.ai.chat(systemPrompt, imageUrl, {
-                model: actualModel,
-                stream: false
-            });
+           response = await this._puterChat([
+    { role: 'user', content: [
+        { type: 'image_url', image_url: { url: imageUrl } },
+        { type: 'text', text: systemPrompt }
+    ]}
+], { model: FREE_MODEL });
         } else {
-            // ابزارهای اضافی (مثل جستجوی وب)
-            const tools = [];
-            
-            // برای مدل gpt-5.2-chat قابلیت جستجوی وب رو فعال کن
-            if (actualModel === 'openai/gpt-5.2-chat') {
-                tools.push({ type: "web_search" });
-            }
-            
-            response = await puter.ai.chat(systemPrompt, {
-                model: actualModel,
-                tools: tools,
-                stream: false
-            });
+       
+          const tools = [];
+         response = await this._puterChat(systemPrompt, { model: FREE_MODEL });
         }
         
         // استخراج متن از پاسخ (فرمت جدید Puter)
@@ -13867,84 +13904,6 @@ ${memoryContext}
     }
 }
 
-async generateImageWithAI(prompt) {
-    if (this.isGeneratingImage) {
-        this.showToast('⏳ در حال تولید تصویر قبلی...', 'warning');
-        return;
-    }
-    
-    this.isGeneratingImage = true;
-    this.showToast('🎨 در حال تولید تصویر با GPT-5.4 nano...', 'info');
-    
-    try {
-        // روش جدید با gpt-5.4-nano
-        const imageElement = await puter.ai.txt2img(prompt, { 
-            model: "gpt-image-1"  // جدیدترین مدل تولید تصویر
-        });
-        
-        const chatHistory = document.getElementById('chat-history');
-        const time = new Date().toLocaleTimeString('fa-IR');
-        
-        const imageHtml = `
-            <div class="message ai-message image-message">
-                <div class="message-avatar">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="message-content">
-                    <div class="message-text">
-                        <p>🎨 تصویر ساخته شده برای: <strong>"${this.escapeHtml(prompt)}"</strong></p>
-                        <div class="generated-image-container" style="margin: 15px 0; position: relative;">
-                            ${imageElement.outerHTML}
-                            <div class="image-actions" style="position: absolute; bottom: 10px; left: 10px; display: flex; gap: 10px;">
-                                <button class="btn btn-sm btn-primary download-image-btn" title="دانلود تصویر">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <button class="btn btn-sm btn-primary fullscreen-image-btn" title="نمایش تمام صفحه">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="message-time">${time}</div>
-                </div>
-            </div>
-        `;
-        
-        chatHistory.insertAdjacentHTML('beforeend', imageHtml);
-        
-        // تنظیم دکمه‌ها
-        const lastMessage = chatHistory.lastElementChild;
-        const img = lastMessage.querySelector('img');
-        const downloadBtn = lastMessage.querySelector('.download-image-btn');
-        const fullscreenBtn = lastMessage.querySelector('.fullscreen-image-btn');
-        
-        if (downloadBtn && img) {
-            downloadBtn.onclick = () => {
-                const link = document.createElement('a');
-                link.href = img.src;
-                link.download = `ai-image-${Date.now()}.png`;
-                link.click();
-            };
-        }
-        
-        if (fullscreenBtn && img) {
-            fullscreenBtn.onclick = () => {
-                this.showImageFullscreen(img.src);
-            };
-        }
-        
-        this.scrollToBottom();
-        this.showToast('✅ تصویر با موفقیت تولید شد!', 'success');
-        
-        this.addToMemory('assistant', `[تصویر تولید شد: ${prompt}]`);
-        
-    } catch (error) {
-        console.error('❌ خطا در تولید تصویر:', error);
-        this.showToast('❌ خطا در تولید تصویر', 'error');
-    } finally {
-        this.isGeneratingImage = false;
-    }
-}
 
 
 // ================================================
@@ -14501,6 +14460,28 @@ setupEventListeners() {
         };
     }
     
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        const aiFillBtn = document.getElementById('ai-fill-all-btn');
+        if (aiFillBtn && aiFillBtn.style.display !== 'none') {
+            this.aiSmartFillAll();
+        } else {
+            // اگر دکمه مخفی بود، اول بررسی کن آیا فیلد آلمانی پر شده
+            const germanWord = document.getElementById('german-word')?.value.trim();
+            if (germanWord && germanWord.length >= 2) {
+                // نمایش موقت دکمه و اجرا
+                const btn = document.getElementById('ai-fill-all-btn');
+                if (btn) {
+                    btn.style.display = 'flex';
+                    this.aiSmartFillAll();
+                }
+            } else {
+                this.showToast('⌨️ ابتدا یک لغت آلمانی وارد کنید', 'info');
+            }
+        }
+    }
+});
     // ========== انتخاب نوع کلمه (Type Cards) ==========
     document.querySelectorAll('.type-card').forEach(card => {
         card.onclick = (e) => {
@@ -15305,7 +15286,7 @@ async fetchAIExampleSuggestion(germanWord, forceRefresh = false) {
 {"example":"جمله آلمانی","translation":"ترجمه فارسی جمله"}`;
 
     try {
-        const response = await puter.ai.chat(prompt, { model: 'gpt-5.4-nano', stream: false });
+        const response = await this._puterChat(prompt, {});
 
         let rawText = '';
         if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
@@ -15474,7 +15455,7 @@ async fetchAIVerbConjugation(germanVerb, forceRefresh = false) {
 }`;
 
     try {
-        const response = await puter.ai.chat(prompt, { model: 'gpt-5.4-nano', stream: false });
+      const response = await this._puterChat(prompt, {});
 
         let rawText = '';
         if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
@@ -15795,7 +15776,7 @@ async aiSmartFillAll() {
 }`;
 
     try {
-        const response = await puter.ai.chat(prompt, { model: 'gpt-5.4-nano', stream: false });
+      const response = await this._puterChat(prompt, {});
 
         let rawText = '';
         if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
@@ -15933,6 +15914,7 @@ _setAlways(id, value) {
         setTimeout(() => el.style.borderColor = '', 1200);
     }
 }
+
 setupTabs() {
     const tabs = document.querySelectorAll('.tab');
     const contents = document.querySelectorAll('.tab-content');
