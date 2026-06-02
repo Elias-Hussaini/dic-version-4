@@ -4853,3 +4853,99 @@ button:disabled {
     0%, 100% { box-shadow: 0 0 0 0 rgba(124,58,237,0.4); }
     50%       { box-shadow: 0 0 0 6px rgba(124,58,237,0); }
 }
+/* ================================================
+   API Key Settings - استایل بخش مدیریت کلید
+   ================================================ */
+
+.api-key-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#groq-api-key-input {
+    flex: 1;
+    padding-left: 45px;
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.toggle-visibility-btn {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--gray-500);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-visibility-btn:hover {
+    background: var(--gray-200);
+    color: var(--primary);
+}
+
+.api-key-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    animation: fadeInUp 0.3s ease;
+}
+
+.api-key-status i {
+    font-size: 16px;
+}
+
+.api-key-info a {
+    text-decoration: none;
+}
+
+.api-key-info a:hover {
+    text-decoration: underline;
+}
+
+/* دارک مود */
+.dark-mode .toggle-visibility-btn {
+    color: var(--text-tertiary);
+}
+
+.dark-mode .toggle-visibility-btn:hover {
+    background: var(--border-primary);
+    color: var(--primary);
+}
+
+.dark-mode .api-key-info {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
+
+/* ریسپانسیو موبایل */
+@media (max-width: 768px) {
+    .api-key-input-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .toggle-visibility-btn {
+        position: static;
+        transform: none;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    #groq-api-key-input {
+        padding-left: 15px;
+    }
+}

@@ -8048,32 +8048,107 @@ async performAutoTranslation(text) {
             </div>`;
     }
 }
-// ================================================
-// puter AI wrapper — با auto-login و مدل رایگان
-// ================================================
 async _puterChat(messages, options = {}) {
-    const FREE_MODEL = 'claude-haiku-4-5-20251001'; // رایگان‌ترین مدل puter
+  const GROQ_KEY = this.getGroqApiKey();
+    
+    if (!GROQ_KEY) {
+        throw new Error('API Key یافت نشد. لطفاً در بخش تنظیمات، کلید API خود را وارد کنید.');
+    }
+    
+    // بقیه کد متد به همان صورت قبلی باقی می‌ماند
+    const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-    // اگه puter لود نشده
-    if (typeof puter === 'undefined') {
-        throw new Error('puter.js لود نشده');
+    let msgs = [];
+
+    if (typeof messages === 'string') {
+        msgs = [{ role: 'user', content: messages }];
+    } else if (Array.isArray(messages)) {
+        msgs = messages.map(m => ({
+            role: m.role,
+            content: typeof m.content === 'string'
+                ? m.content
+                : Array.isArray(m.content)
+                    ? m.content.map(c => c.text || '').join('')
+                    : ''
+        })).filter(m => m.content);
     }
 
-    // چک لاگین — اگه نبود، لاگین کن
-    try {
-        const isSignedIn = await puter.auth.isSignedIn();
-        if (!isSignedIn) {
-            await puter.auth.signIn();
-        }
-    } catch (authErr) {
-        // بعضی نسخه‌های puter auth جدا نداره — ادامه بده
-        console.warn('puter auth check failed, continuing...', authErr);
+    const res = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${GROQ_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: msgs,
+            max_tokens: 1000,
+            stream: false
+        })
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error('Groq error: ' + res.status + ' ' + err);
     }
 
-    const model = options.model || FREE_MODEL;
-    return await puter.ai.chat(messages, { ...options, model, stream: false });
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    return { message: { content: [{ text }] } };
+}
+// ================================================
+// مدیریت API Key (ذخیره در localStorage با رمزگذاری ساده)
+// ================================================
+
+setGroqApiKey(key) {
+    if (key && key.trim()) {
+        const encrypted = btoa(key.trim());
+        localStorage.setItem('groq_api_key_encrypted', encrypted);
+        return true;
+    }
+    return false;
 }
 
+getGroqApiKey() {
+    const encrypted = localStorage.getItem('groq_api_key_encrypted');
+    if (encrypted) {
+        try {
+            return atob(encrypted);
+        } catch(e) {
+            return null;
+        }
+    }
+    return null;
+}
+
+clearGroqApiKey() {
+    localStorage.removeItem('groq_api_key_encrypted');
+}
+
+async testGroqApiKey(apiKey = null) {
+    const key = apiKey || this.getGroqApiKey();
+    if (!key) {
+        return { success: false, message: 'API Key وارد نشده است' };
+    }
+    
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            return { success: true, message: 'اتصال با موفقیت برقرار شد' };
+        } else {
+            return { success: false, message: `خطا: ${response.status} - کلید نامعتبر است` };
+        }
+    } catch (error) {
+        return { success: false, message: `خطا در اتصال: ${error.message}` };
+    }
+}
 async _puterExtractText(response) {
     if (!response) return '';
     if (response?.message?.content?.[0]?.text) return response.message.content[0].text;
@@ -9741,7 +9816,10 @@ formatPersianDate(isoDate) {
 // تنظیمات کامل برنامه - با پوسته‌های رنگی
 // ================================================
 renderSettings() {
-    // دریافت مقادیر ذخیره شده
+   
+const currentApiKey = this.getGroqApiKey ? this.getGroqApiKey() : '';
+
+
     const isDarkMode = localStorage.getItem('darkMode') === 'true';
     const fontSize = localStorage.getItem('fontSize') || 'medium';
     const theme = localStorage.getItem('theme') || 'default';
@@ -10010,6 +10088,56 @@ if (!document.getElementById('lock-modal')) {
         </div>
     </div>
 
+   
+    <div class="settings-group">
+        <h3><i class="fas fa-key"></i> ${isGerman ? 'تنظیمات API' : 'API Settings'}</h3>
+        
+        <div class="api-key-section">
+            <div class="form-group">
+                <label for="groq-api-key-input">
+                    <i class="fas fa-brain"></i> 
+                    Groq API Key
+                    <small style="display: block; font-size: 11px; color: var(--gray-500); margin-top: 4px;">
+                        ${isGerman ? 'برای استفاده از هوش مصنوعی و ترجمه پیشرفته لازم است' : 'Required for AI and advanced translation'}
+                    </small>
+                </label>
+                <div class="api-key-input-wrapper">
+                    <input type="password" id="groq-api-key-input" class="form-control modern-input" 
+                           placeholder="gsk_..." 
+                           value="${this.escapeHtml(currentApiKey)}"
+                           autocomplete="off">
+                    <button type="button" id="toggle-api-key-visibility" class="toggle-visibility-btn" title="${isGerman ? 'نمایش/مخفی کردن' : 'Show/Hide'}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="api-key-status" id="api-key-status" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span id="api-status-text"></span>
+            </div>
+            
+            <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 15px;">
+                <button id="save-api-key-btn" class="btn btn-primary">
+                    <i class="fas fa-save"></i> ${isGerman ? 'ذخیره کلید API' : 'Save API Key'}
+                </button>
+                <button id="test-api-key-btn" class="btn btn-outline">
+                    <i class="fas fa-vial"></i> ${isGerman ? 'تست اتصال' : 'Test Connection'}
+                </button>
+                <button id="clear-api-key-btn" class="btn btn-outline">
+                    <i class="fas fa-trash"></i> ${isGerman ? 'پاک کردن' : 'Clear'}
+                </button>
+            </div>
+            
+            <div class="api-key-info" style="margin-top: 15px; padding: 10px; background: var(--gray-50); border-radius: 12px; font-size: 12px; color: var(--gray-600);">
+                <i class="fas fa-info-circle"></i>
+                ${isGerman ? 
+                    'برای دریافت کلید API به سایت <a href="https://console.groq.com/keys" target="_blank" style="color: var(--primary);">console.groq.com</a> مراجعه کنید. کلید با gsk_ شروع می‌شود.' : 
+                    'Get your API key from <a href="https://console.groq.com/keys" target="_blank" style="color: var(--primary);">console.groq.com</a>. The key starts with gsk_.'}
+            </div>
+        </div>
+    </div>
+
             <!-- ========== درباره برنامه ========== -->
             <div class="settings-group">
                 <h3><i class="fas fa-info-circle"></i> ${LanguageSystem.t('settings.about')}</h3>
@@ -10109,6 +10237,106 @@ if (!document.getElementById('lock-modal')) {
 // ================================================
 
 setupSettingsEventListeners() {
+    // ========== مدیریت API Key ==========
+const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+const testApiKeyBtn = document.getElementById('test-api-key-btn');
+const clearApiKeyBtn = document.getElementById('clear-api-key-btn');
+const apiKeyInput = document.getElementById('groq-api-key-input');
+const toggleVisibilityBtn = document.getElementById('toggle-api-key-visibility');
+const apiKeyStatus = document.getElementById('api-key-status');
+const apiStatusText = document.getElementById('api-status-text');
+
+if (saveApiKeyBtn) {
+    saveApiKeyBtn.onclick = () => {
+        const newKey = apiKeyInput?.value.trim();
+        if (newKey && !newKey.startsWith('gsk_')) {
+            this.showToast('⚠️ کلید API باید با gsk_ شروع شود', 'warning');
+            return;
+        }
+        
+        if (newKey) {
+            this.setGroqApiKey(newKey);
+            this.showToast('✅ API Key با موفقیت ذخیره شد', 'success');
+            if (apiKeyStatus) {
+                apiKeyStatus.style.display = 'flex';
+                apiStatusText.textContent = 'کلید ذخیره شد';
+                apiKeyStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+                apiKeyStatus.style.color = '#10b981';
+                setTimeout(() => {
+                    apiKeyStatus.style.display = 'none';
+                }, 3000);
+            }
+        } else {
+            this.showToast('❌ لطفاً API Key معتبر وارد کنید', 'error');
+        }
+    };
+}
+
+if (clearApiKeyBtn) {
+    clearApiKeyBtn.onclick = () => {
+        if (confirm('آیا از حذف API Key مطمئن هستید؟ هوش مصنوعی بدون آن کار نخواهد کرد.')) {
+            this.clearGroqApiKey();
+            if (apiKeyInput) apiKeyInput.value = '';
+            this.showToast('🗑️ API Key حذف شد', 'info');
+            if (apiKeyStatus) {
+                apiKeyStatus.style.display = 'flex';
+                apiStatusText.textContent = 'کلید حذف شد';
+                apiKeyStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+                apiKeyStatus.style.color = '#ef4444';
+                setTimeout(() => {
+                    apiKeyStatus.style.display = 'none';
+                }, 3000);
+            }
+        }
+    };
+}
+
+if (testApiKeyBtn) {
+    testApiKeyBtn.onclick = async () => {
+        const key = apiKeyInput?.value.trim() || this.getGroqApiKey();
+        if (!key) {
+            this.showToast('❌ ابتدا API Key را وارد کنید', 'warning');
+            return;
+        }
+        
+        testApiKeyBtn.disabled = true;
+        testApiKeyBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> در حال تست...';
+        
+        const result = await this.testGroqApiKey(key);
+        
+        testApiKeyBtn.disabled = false;
+        testApiKeyBtn.innerHTML = '<i class="fas fa-vial"></i> تست اتصال';
+        
+        if (result.success) {
+            this.showToast('✅ ' + result.message, 'success');
+            if (apiKeyStatus) {
+                apiKeyStatus.style.display = 'flex';
+                apiStatusText.textContent = result.message;
+                apiKeyStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+                apiKeyStatus.style.color = '#10b981';
+                setTimeout(() => {
+                    apiKeyStatus.style.display = 'none';
+                }, 3000);
+            }
+        } else {
+            this.showToast('❌ ' + result.message, 'error');
+            if (apiKeyStatus) {
+                apiKeyStatus.style.display = 'flex';
+                apiStatusText.textContent = result.message;
+                apiKeyStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+                apiKeyStatus.style.color = '#ef4444';
+            }
+        }
+    };
+}
+
+if (toggleVisibilityBtn && apiKeyInput) {
+    toggleVisibilityBtn.onclick = () => {
+        const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        apiKeyInput.setAttribute('type', type);
+        toggleVisibilityBtn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    };
+}
     // ========== دکمه حالت تاریک ==========
     const darkModeBtn = document.getElementById('dark-mode-toggle-btn');
     if (darkModeBtn) {
@@ -13159,6 +13387,13 @@ clearMemory() {
 }
 
 async sendAIMessage() {
+    const apiKey = this.getGroqApiKey();
+if (!apiKey) {
+    this.addMessageToHistory('ai', '⚠️ لطفاً ابتدا در بخش تنظیمات، کلید API خود را وارد کنید.', true);
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>ارسال</span>';
+    return;
+}
     const input = document.getElementById('ai-chat-input');
     const sendBtn = document.getElementById('send-ai-message');
     if (!input || !sendBtn) return;
@@ -13193,7 +13428,7 @@ async sendAIMessage() {
     this.showTypingIndicator();
 
     try {
-    const FREE_MODEL = 'claude-haiku-4-5-20251001';
+
 
 
         // system prompt
@@ -13235,7 +13470,7 @@ ${await this._getDictionaryContext()}`
             ];
         }
 
-     const response = await this._puterChat(fullMessages, { model: FREE_MODEL });
+   const response = await this._puterChat(fullMessages, {});
         this.removeTypingIndicator();
 
         // استخراج متن پاسخ
@@ -13844,7 +14079,7 @@ showChatHistoryModal() {
 
 async getAIResponseWithMemory(message, imageUrl = null) {
     try {
-     const FREE_MODEL = 'claude-haiku-4-5-20251001';
+   
         
         // گرفتن حافظه چت
         const memoryContext = this.getMemoryForAI();
