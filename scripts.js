@@ -10058,8 +10058,10 @@ if (!document.getElementById('lock-modal')) {
         <button class="btn btn-danger" id="reset-data-btn">
             <i class="fas fa-trash"></i> ${isGerman ? 'بازنشانی برنامه' : 'Reset App'}
         </button>
+
     </div>
 </div>
+ 
 
     <div class="settings-group">
         <h3><i class="fas fa-lock"></i> ${isGerman ? 'قفل دیکشنری' : 'Dictionary Lock'}</h3>
@@ -10127,6 +10129,9 @@ if (!document.getElementById('lock-modal')) {
                 <button id="clear-api-key-btn" class="btn btn-outline">
                     <i class="fas fa-trash"></i> ${isGerman ? 'پاک کردن' : 'Clear'}
                 </button>
+                        <button class="btn btn-outline" id="clear-cache-btn">
+    <i class="fas fa-broom"></i> ${isGerman ? 'پاک کردن کش و رفرش' : 'Clear Cache & Refresh'}
+</button>
             </div>
             
             <div class="api-key-info" style="margin-top: 15px; padding: 10px; background: var(--gray-50); border-radius: 12px; font-size: 12px; color: var(--gray-600);">
@@ -10335,6 +10340,29 @@ if (toggleVisibilityBtn && apiKeyInput) {
         const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
         apiKeyInput.setAttribute('type', type);
         toggleVisibilityBtn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    };
+}
+// ========== پاک کردن کش Service Worker ==========
+const clearCacheBtn = document.getElementById('clear-cache-btn');
+if (clearCacheBtn) {
+    clearCacheBtn.onclick = async () => {
+        if (confirm('⚠️ با پاک کردن کش، برنامه مجدداً بارگذاری می‌شود. آیا مطمئن هستید؟')) {
+            // حذف همه کش‌ها
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(key => caches.delete(key)));
+                console.log('✅ همه کش‌ها پاک شدند');
+            }
+            // حذف Service Worker قدیمی
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map(reg => reg.unregister()));
+                console.log('✅ Service Worker لغو ثبت شد');
+            }
+            // رفرش کامل صفحه
+            localStorage.setItem('force_refresh', Date.now());
+            window.location.reload(true);
+        }
     };
 }
     // ========== دکمه حالت تاریک ==========
