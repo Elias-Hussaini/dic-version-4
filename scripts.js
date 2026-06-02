@@ -1,11 +1,249 @@
 // start scripts.js
+// ================================================
+// سیستم مدیریت چندین API Key با قابلیت Failover
+// ================================================
+
+class APIKeyManager {
+    constructor() {
+        this.keys = [];        // [{key, name, addedAt, isActive, remainingQuota}]
+        this.currentIndex = 0;
+        this.failedKeys = new Set(); // کلیدهایی که موقتاً خطا داده‌اند
+        this.failedUntil = new Map(); // زمان انقضای خطا
+    }
+
+    // بارگذاری کلیدها از localStorage
+    loadKeys() {
+        try {
+            const saved = localStorage.getItem('api_keys_list');
+            if (saved) {
+                this.keys = JSON.parse(saved);
+                // تنظیم مجدد وضعیت فعال برای کلیدها
+                this.keys.forEach(key => {
+                    key.isActive = key.isActive !== false;
+                });
+                console.log(`🔑 ${this.keys.length} API Key بارگذاری شد`);
+            } else {
+                // کلید پیش‌فرض اگر وجود داشته باشد
+                const defaultKey = localStorage.getItem('groq_api_key_encrypted');
+                if (defaultKey) {
+                    try {
+                        const decrypted = atob(defaultKey);
+                        this.addKey(decrypted, 'پیش‌فرض');
+                        localStorage.removeItem('groq_api_key_encrypted'); // حذف کلید قدیمی
+                    } catch(e) {}
+                }
+            }
+            this.currentIndex = 0;
+            return this.keys;
+        } catch(e) {
+            console.error('خطا در بارگذاری کلیدها:', e);
+            this.keys = [];
+            return [];
+        }
+    }
+
+    // ذخیره کلیدها در localStorage
+    saveKeys() {
+        try {
+            const toSave = this.keys.map(k => ({
+                key: k.key,
+                name: k.name,
+                addedAt: k.addedAt,
+                isActive: k.isActive !== false,
+                remainingQuota: k.remainingQuota
+            }));
+            localStorage.setItem('api_keys_list', JSON.stringify(toSave));
+        } catch(e) {
+            console.error('خطا در ذخیره کلیدها:', e);
+        }
+    }
+
+    // اضافه کردن کلید جدید
+    addKey(apiKey, name = null) {
+        if (!apiKey || !apiKey.trim()) return false;
+        const trimmedKey = apiKey.trim();
+        
+        // بررسی تکراری نبودن
+        const exists = this.keys.some(k => k.key === trimmedKey);
+        if (exists) return false;
+        
+        this.keys.push({
+            key: trimmedKey,
+            name: name || `کلید ${this.keys.length + 1}`,
+            addedAt: Date.now(),
+            isActive: true,
+            remainingQuota: null
+        });
+        this.saveKeys();
+        return true;
+    }
+
+    // حذف کلید
+    removeKey(index) {
+        if (index >= 0 && index < this.keys.length) {
+            const removed = this.keys.splice(index, 1)[0];
+            if (this.currentIndex >= this.keys.length) this.currentIndex = 0;
+            if (this.currentIndex === index && this.currentIndex >= this.keys.length) {
+                this.currentIndex = 0;
+            }
+            this.saveKeys();
+            return true;
+        }
+        return false;
+    }
+
+    // غیرفعال کردن کلید
+    disableKey(index) {
+        if (this.keys[index]) {
+            this.keys[index].isActive = false;
+            this.saveKeys();
+            return true;
+        }
+        return false;
+    }
+
+    // فعال کردن کلید
+    enableKey(index) {
+        if (this.keys[index]) {
+            this.keys[index].isActive = true;
+            this.keys[index].remainingQuota = null;
+            this.saveKeys();
+            return true;
+        }
+        return false;
+    }
+
+    // دریافت کلید فعال بعدی (Round-Robin با احتساب خطاها)
+    getNextActiveKey() {
+        const activeKeys = this.keys.filter((k, idx) => 
+            k.isActive && !this.failedKeys.has(idx) && 
+            (!this.failedUntil.has(idx) || this.failedUntil.get(idx) < Date.now())
+        );
+        
+        if (activeKeys.length === 0) return null;
+        
+        // پیدا کردن ایندکس فعلی در بین کلیدهای فعال
+        const currentActiveIndex = activeKeys.findIndex(k => k.key === this.keys[this.currentIndex]?.key);
+        const nextIndex = (currentActiveIndex + 1) % activeKeys.length;
+        const nextKey = activeKeys[nextIndex];
+        
+        // به‌روزرسانی currentIndex به ایندکس اصلی
+        this.currentIndex = this.keys.findIndex(k => k.key === nextKey.key);
+        
+        return nextKey;
+    }
+
+    // گزارش خطا برای کلید فعلی
+    reportError(errorType) {
+        const currentKey = this.getCurrentKey();
+        if (!currentKey) return false;
+        
+        const currentIdx = this.keys.findIndex(k => k.key === currentKey.key);
+        
+        // خطای 429 (Rate Limit) - کلید را برای 60 ثانیه غیرفعال کن
+        if (errorType === 429 || (errorType.message && errorType.message.includes('rate_limit'))) {
+            this.failedKeys.add(currentIdx);
+            this.failedUntil.set(currentIdx, Date.now() + 60000); // 60 ثانیه
+            console.log(`⏳ کلید ${currentKey.name} به دلیل Rate Limit برای 60 ثانیه غیرفعال شد`);
+            return true;
+        }
+        
+        // خطای 401 (Invalid Key) - کلید را دائماً غیرفعال کن
+        if (errorType === 401 || (errorType.message && errorType.message.includes('invalid'))) {
+            this.disableKey(currentIdx);
+            console.log(`❌ کلید ${currentKey.name} نامعتبر است و غیرفعال شد`);
+            return true;
+        }
+        
+        // خطای 429 (Quota exceeded) - کلید را غیرفعال کن
+        if (errorType === 429 || (errorType.message && errorType.message.includes('quota'))) {
+            this.disableKey(currentIdx);
+            console.log(`⚠️ سهمیه کلید ${currentKey.name} تمام شد و غیرفعال شد`);
+            return true;
+        }
+        
+        // خطای موقتی - کلید را برای 30 ثانیه غیرفعال کن
+        this.failedKeys.add(currentIdx);
+        this.failedUntil.set(currentIdx, Date.now() + 30000);
+        return true;
+    }
+
+    // دریافت کلید فعلی
+    getCurrentKey() {
+        if (this.keys.length === 0) return null;
+        if (this.currentIndex >= this.keys.length) this.currentIndex = 0;
+        return this.keys[this.currentIndex];
+    }
+
+    // گرفتن کلید برای استفاده (با failover خودکار)
+    getKeyForRequest() {
+        let attempts = 0;
+        const maxAttempts = this.keys.filter(k => k.isActive).length || 1;
+        
+        while (attempts < maxAttempts) {
+            const current = this.getCurrentKey();
+            if (!current) return null;
+            
+            // بررسی فعال بودن و عدم خطا
+            const idx = this.keys.findIndex(k => k.key === current.key);
+            const isFailed = this.failedKeys.has(idx);
+            const failedExpired = this.failedUntil.has(idx) && this.failedUntil.get(idx) < Date.now();
+            
+            if (current.isActive && (!isFailed || failedExpired)) {
+                if (isFailed && failedExpired) {
+                    this.failedKeys.delete(idx);
+                    this.failedUntil.delete(idx);
+                }
+                return current.key;
+            }
+            
+            // رفتن به کلید بعدی
+            this.moveToNextKey();
+            attempts++;
+        }
+        
+        return null;
+    }
+
+    // حرکت به کلید بعدی
+    moveToNextKey() {
+        if (this.keys.length === 0) return false;
+        this.currentIndex = (this.currentIndex + 1) % this.keys.length;
+        return true;
+    }
+
+    // ریست وضعیت خطاها
+    resetErrors() {
+        this.failedKeys.clear();
+        this.failedUntil.clear();
+    }
+
+    // بروزرسانی سهمیه باقیمانده (از هدر پاسخ)
+    updateQuota(remaining, keyIndex = null) {
+        const idx = keyIndex !== null ? keyIndex : this.currentIndex;
+        if (this.keys[idx]) {
+            this.keys[idx].remainingQuota = remaining;
+            this.saveKeys();
+        }
+    }
+
+    // گرفتن همه کلیدها
+    getAllKeys() {
+        return this.keys;
+    }
+}
+
+// اضافه کردن instance به کلاس GermanDictionary
+// در constructor کلاس GermanDictionary اضافه کنید:
+// this.apiKeyManager = new APIKeyManager();
 
 
 class GermanDictionary {
     constructor() {
      
 this.uploadedImageUrl = null;
-        
+        this.apiKeyManager = new APIKeyManager();
+        this.apiKeyManager.loadKeys();
         this.dbName = 'GermanPersianDictionary';
         this.dbVersion = 5;
         this.db = null;
@@ -1785,7 +2023,13 @@ async renderWordDetails(word) {
                     </div>
                 </div>
             </div>
-            
+            <div class="notes-section-modern">
+    <div class="notes-header">
+        <i class="fas fa-sticky-note"></i>
+        <span>توضیحات</span>
+    </div>
+    <div class="notes-content">${this.escapeHtml(word.notes)}</div>
+</div>
             <div class="tab-content-modern" id="tab-practice">
                 <div class="practice-stats-modern">
                     <div class="practice-circle-modern">
@@ -2718,7 +2962,6 @@ setupSearchEventListeners() {
     // ========== جستجوی سریع (همینطور که تایپ میکنی) - فقط پیشنهادات ==========
     this.setupQuickSearch();
 }
-
 async addWord(wordData) {
     return new Promise((resolve, reject) => {
         if (!wordData.german || !wordData.persian) {
@@ -2739,7 +2982,7 @@ async addWord(wordData) {
                 return;
             }
             
-            // ساخت آبجکت نهایی با تمام فیلدها - سازگار با دیتابیس قدیمی
+            // ساخت آبجکت نهایی با تمام فیلدها
             const finalWord = {
                 id: Date.now(),
                 german: wordData.german.trim(),
@@ -2748,6 +2991,9 @@ async addWord(wordData) {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
+            
+            // ========== فیلد توضیحات ==========
+            if (wordData.notes) finalWord.notes = wordData.notes;
             
             // ========== فیلدهای اسم ==========
             if (wordData.type === 'noun') {
@@ -2827,26 +3073,25 @@ async addWord(wordData) {
         };
     });
 }
-    // ========== ویرایش کلمه ==========
-    async updateWord(wordData) {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['words'], 'readwrite');
-            const store = transaction.objectStore('words');
-            const request = store.put(wordData);
-            
-            request.onsuccess = () => {
-                this.showToast('✅ لغت با موفقیت ویرایش شد', 'success');
-                this.renderWordList();
-                this.updateStats();
-                resolve();
-            };
-            
-            request.onerror = (event) => {
-                this.showToast('❌ خطا در ویرایش لغت', 'error');
-                reject(event.target.error);
-            };
-        });
-    }
+  async updateWord(wordData) {
+    return new Promise((resolve, reject) => {
+        const transaction = this.db.transaction(['words'], 'readwrite');
+        const store = transaction.objectStore('words');
+        const request = store.put(wordData);
+        
+        request.onsuccess = () => {
+            this.showToast('✅ لغت با موفقیت ویرایش شد', 'success');
+            this.renderWordList();
+            this.updateStats();
+            resolve();
+        };
+        
+        request.onerror = (event) => {
+            this.showToast('❌ خطا در ویرایش لغت', 'error');
+            reject(event.target.error);
+        };
+    });
+}
 
     // ========== حذف کلمه ==========
     async deleteWord(id) {
@@ -8049,52 +8294,106 @@ async performAutoTranslation(text) {
     }
 }
 async _puterChat(messages, options = {}) {
-  const GROQ_KEY = this.getGroqApiKey();
+    let lastError = null;
+    let attempts = 0;
+    const maxAttempts = this.apiKeyManager?.keys.filter(k => k.isActive).length || 1;
     
-    if (!GROQ_KEY) {
-        throw new Error('API Key یافت نشد. لطفاً در بخش تنظیمات، کلید API خود را وارد کنید.');
+    while (attempts < maxAttempts) {
+        const apiKey = this.getGroqApiKey();
+        if (!apiKey) {
+            throw new Error('API Key یافت نشد. لطفاً در بخش تنظیمات، کلید API خود را وارد کنید.');
+        }
+        
+        const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+        
+        let msgs = [];
+        if (typeof messages === 'string') {
+            msgs = [{ role: 'user', content: messages }];
+        } else if (Array.isArray(messages)) {
+            msgs = messages.map(m => ({
+                role: m.role,
+                content: typeof m.content === 'string'
+                    ? m.content
+                    : Array.isArray(m.content)
+                        ? m.content.map(c => c.text || '').join('')
+                        : ''
+            })).filter(m => m.content);
+        }
+        
+        const hasSystem = msgs.some(m => m.role === 'system');
+        if (!hasSystem) {
+            msgs.unshift({
+                role: 'system',
+                content: 'شما یک دستیار هوشمند هستید که فقط به زبان فارسی پاسخ می‌دهید. هرگز از کاراکترهای چینی، روسی یا سایر زبان‌ها استفاده نکنید. حتی اگر کاربر به زبان دیگری سوال پرسید، شما باز هم به فارسی پاسخ دهید. تمام خروجی‌های شما باید فقط با حروف فارسی (عربی-فارسی) باشد.'
+            });
+        }
+        
+        try {
+            const res = await fetch(GROQ_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: msgs,
+                    max_tokens: 2000,
+                    stream: false,
+                    temperature: 0.3
+                })
+            });
+            
+            // بررسی وضعیت پاسخ
+            if (!res.ok) {
+                const errorText = await res.text();
+                let errorStatus = res.status;
+                
+                // خطای Rate Limit یا Quota
+                if (errorStatus === 429 || errorStatus === 401 || errorStatus === 403) {
+                    console.warn(`⚠️ خطای ${errorStatus} با کلید فعلی. تلاش برای سوئیچ به کلید بعدی...`);
+                    if (this.apiKeyManager) {
+                        this.apiKeyManager.reportError(errorStatus);
+                    }
+                    attempts++;
+                    continue; // تلاش مجدد با کلید بعدی
+                }
+                
+                throw new Error(`Groq error: ${errorStatus} ${errorText}`);
+            }
+            
+            const data = await res.json();
+            const text = data.choices?.[0]?.message?.content || '';
+            
+            // بروزرسانی سهمیه باقیمانده (اگر در هدر باشد)
+            const remaining = res.headers.get('x-ratelimit-remaining-requests');
+            if (remaining && this.apiKeyManager) {
+                this.apiKeyManager.updateQuota(parseInt(remaining));
+            }
+            
+            return { message: { content: [{ text }] } };
+            
+        } catch (error) {
+            console.error('خطا در درخواست:', error);
+            lastError = error;
+            attempts++;
+            
+            // اگر خطای شبکه بود، به کلید بعدی برو
+            if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('network'))) {
+                if (this.apiKeyManager) {
+                    this.apiKeyManager.moveToNextKey();
+                }
+                continue;
+            }
+            
+            // اگر خطای دیگری بود، بعد از تلاش‌های مجدد throw کن
+            if (attempts >= maxAttempts) {
+                throw error;
+            }
+        }
     }
     
-    // بقیه کد متد به همان صورت قبلی باقی می‌ماند
-    const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
-    let msgs = [];
-
-    if (typeof messages === 'string') {
-        msgs = [{ role: 'user', content: messages }];
-    } else if (Array.isArray(messages)) {
-        msgs = messages.map(m => ({
-            role: m.role,
-            content: typeof m.content === 'string'
-                ? m.content
-                : Array.isArray(m.content)
-                    ? m.content.map(c => c.text || '').join('')
-                    : ''
-        })).filter(m => m.content);
-    }
-
-    const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${GROQ_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: msgs,
-            max_tokens: 1000,
-            stream: false
-        })
-    });
-
-    if (!res.ok) {
-        const err = await res.text();
-        throw new Error('Groq error: ' + res.status + ' ' + err);
-    }
-
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content || '';
-    return { message: { content: [{ text }] } };
+    throw lastError || new Error('همه کلیدهای API با خطا مواجه شدند');
 }
 // ================================================
 // مدیریت API Key (ذخیره در localStorage با رمزگذاری ساده)
@@ -8110,6 +8409,13 @@ setGroqApiKey(key) {
 }
 
 getGroqApiKey() {
+    // استفاده از سیستم مدیریت چندین کلید
+    if (this.apiKeyManager && this.apiKeyManager.keys.length > 0) {
+        const key = this.apiKeyManager.getKeyForRequest();
+        if (key) return key;
+    }
+    
+    // Fallback به روش قدیمی
     const encrypted = localStorage.getItem('groq_api_key_encrypted');
     if (encrypted) {
         try {
@@ -10091,57 +10397,84 @@ if (!document.getElementById('lock-modal')) {
     </div>
 
    
-    <div class="settings-group">
-        <h3><i class="fas fa-key"></i> ${isGerman ? 'تنظیمات API' : 'API Settings'}</h3>
-        
-        <div class="api-key-section">
-            <div class="form-group">
-                <label for="groq-api-key-input">
-                    <i class="fas fa-brain"></i> 
-                    Groq API Key
-                    <small style="display: block; font-size: 11px; color: var(--gray-500); margin-top: 4px;">
-                        ${isGerman ? 'برای استفاده از هوش مصنوعی و ترجمه پیشرفته لازم است' : 'Required for AI and advanced translation'}
-                    </small>
-                </label>
-                <div class="api-key-input-wrapper">
-                    <input type="password" id="groq-api-key-input" class="form-control modern-input" 
-                           placeholder="gsk_..." 
-                           value="${this.escapeHtml(currentApiKey)}"
-                           autocomplete="off">
-                    <button type="button" id="toggle-api-key-visibility" class="toggle-visibility-btn" title="${isGerman ? 'نمایش/مخفی کردن' : 'Show/Hide'}">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
+<div class="settings-group">
+    <h3><i class="fas fa-keys"></i> مدیریت کلیدهای API</h3>
+    
+    <!-- فرم افزودن کلید جدید -->
+    <div class="api-keys-add-section" style="margin-bottom: 20px; padding: 15px; background: var(--gray-50); border-radius: 16px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 2; min-width: 200px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 13px;">کلید جدید (gsk_...)</label>
+                <input type="password" id="new-api-key-input" class="form-control" placeholder="gsk_...">
             </div>
-            
-            <div class="api-key-status" id="api-key-status" style="display: none;">
-                <i class="fas fa-check-circle"></i>
-                <span id="api-status-text"></span>
+            <div style="flex: 1; min-width: 120px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 13px;">نام (اختیاری)</label>
+                <input type="text" id="new-api-key-name" class="form-control" placeholder="مثال: کلید شماره ۱">
             </div>
-            
-            <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 15px;">
-                <button id="save-api-key-btn" class="btn btn-primary">
-                    <i class="fas fa-save"></i> ${isGerman ? 'ذخیره کلید API' : 'Save API Key'}
+            <div>
+                <button id="add-api-key-btn" class="btn btn-primary" style="padding: 10px 20px;">
+                    <i class="fas fa-plus"></i> افزودن کلید
                 </button>
-                <button id="test-api-key-btn" class="btn btn-outline">
-                    <i class="fas fa-vial"></i> ${isGerman ? 'تست اتصال' : 'Test Connection'}
-                </button>
-                <button id="clear-api-key-btn" class="btn btn-outline">
-                    <i class="fas fa-trash"></i> ${isGerman ? 'پاک کردن' : 'Clear'}
-                </button>
-                        <button class="btn btn-outline" id="clear-cache-btn">
-    <i class="fas fa-broom"></i> ${isGerman ? 'پاک کردن کش و رفرش' : 'Clear Cache & Refresh'}
-</button>
-            </div>
-            
-            <div class="api-key-info" style="margin-top: 15px; padding: 10px; background: var(--gray-50); border-radius: 12px; font-size: 12px; color: var(--gray-600);">
-                <i class="fas fa-info-circle"></i>
-                ${isGerman ? 
-                    'برای دریافت کلید API به سایت <a href="https://console.groq.com/keys" target="_blank" style="color: var(--primary);">console.groq.com</a> مراجعه کنید. کلید با gsk_ شروع می‌شود.' : 
-                    'Get your API key from <a href="https://console.groq.com/keys" target="_blank" style="color: var(--primary);">console.groq.com</a>. The key starts with gsk_.'}
             </div>
         </div>
+        <div class="api-key-info" style="margin-top: 10px; font-size: 12px; color: var(--gray-500);">
+            <i class="fas fa-info-circle"></i> می‌توانید چندین کلید اضافه کنید. در صورت تمام شدن سهمیه یا خطا، سیستم به طور خودکار به کلید بعدی سوئیچ می‌کند.
+        </div>
     </div>
+    
+    <!-- لیست کلیدها -->
+    <div id="api-keys-list-container" style="max-height: 300px; overflow-y: auto;">
+        <!-- کلیدها توسط JavaScript پر می‌شوند -->
+    </div>
+    
+<div class="api-key-guide" style="
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-radius: 16px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        ">
+            <i class="fas fa-key" style="color: white; font-size: 22px;"></i>
+        </div>
+        <div>
+            <div style="font-weight: 700; font-size: 15px; color: #1e293b;">نیاز به کلید API دارید؟</div>
+            <div style="font-size: 12px; color: #475569;">برای استفاده از هوش مصنوعی، یک کلید رایگان دریافت کنید</div>
+        </div>
+    </div>
+    <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" id="get-api-key-link" style="
+        background: linear-gradient(135deg, #4361ee, #3a0ca3);
+        color: white;
+        padding: 10px 24px;
+        border-radius: 40px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: none;
+    ">
+        <i class="fas fa-external-link-alt"></i>
+        دریافت کلید رایگان
+    </a>
+</div>
+</div>
 
             <!-- ========== درباره برنامه ========== -->
             <div class="settings-group">
@@ -10456,6 +10789,170 @@ document.getElementById('export-words-to-image-btn')?.addEventListener('click', 
             this.resetData();
         }
     });
+    // ========== مدیریت چندین API Key ==========
+const renderApiKeysList = () => {
+    const container = document.getElementById('api-keys-list-container');
+    if (!container) return;
+    
+    const keys = this.apiKeyManager?.getAllKeys() || [];
+    const currentKey = this.apiKeyManager?.getCurrentKey();
+    const isGerman = LanguageSystem.isGerman();
+    
+    if (keys.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding: 30px;">
+                <i class="fas fa-key" style="font-size: 40px; color: var(--gray-400);"></i>
+                <p style="margin-top: 10px;">${isGerman ? 'هیچ کلید API اضافه نشده است' : 'No API keys added'}</p>
+                <small>${isGerman ? 'با افزودن کلید، هوش مصنوعی فعال می‌شود' : 'Add an API key to enable AI'}</small>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = keys.map((key, idx) => {
+        const isCurrent = currentKey && currentKey.key === key.key;
+        const keyPreview = key.key.substring(0, 15) + '...' + key.key.substring(key.key.length - 8);
+        const addedDate = new Date(key.addedAt).toLocaleDateString('fa-IR');
+        
+        let statusClass = '';
+        let statusText = '';
+        let statusColor = '';
+        
+        if (!key.isActive) {
+            statusClass = 'disabled';
+            statusText = isGerman ? '❌ غیرفعال' : 'Disabled';
+            statusColor = '#ef4444';
+        } else if (isCurrent) {
+            statusClass = 'active';
+            statusText = isGerman ? '✅ فعال' : 'Active';
+            statusColor = '#10b981';
+        } else {
+            statusClass = 'standby';
+            statusText = isGerman ? '⏳ آماده' : 'Standby';
+            statusColor = '#f59e0b';
+        }
+        
+        const quotaText = key.remainingQuota !== null ? ` - ${key.remainingQuota} ${isGerman ? 'درخواست باقیمانده' : 'requests left'}` : '';
+        
+        return `
+            <div class="api-key-item" data-index="${idx}" style="
+                background: var(--white);
+                border: 1px solid var(--gray-200);
+                border-radius: 12px;
+                padding: 12px 15px;
+                margin-bottom: 10px;
+                transition: all 0.2s ease;
+                ${isCurrent ? 'border-right: 3px solid #10b981;' : ''}
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <strong style="font-size: 14px;">${this.escapeHtml(key.name)}</strong>
+                            <code style="font-size: 11px; background: var(--gray-100); padding: 2px 6px; border-radius: 6px;">${keyPreview}</code>
+                            <span style="font-size: 11px; color: ${statusColor};">${statusText}</span>
+                            ${key.remainingQuota ? `<span style="font-size: 10px; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 20px;">${key.remainingQuota}</span>` : ''}
+                        </div>
+                        <div style="font-size: 10px; color: var(--gray-500); margin-top: 5px;">
+                            <i class="far fa-calendar-alt"></i> ${addedDate}${quotaText}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        ${!key.isActive ? `
+                            <button class="api-key-enable-btn" data-index="${idx}" title="${isGerman ? 'فعال کردن' : 'Enable'}" style="
+                                background: none; border: none; color: #10b981; cursor: pointer; font-size: 16px; padding: 6px;
+                            ">
+                                <i class="fas fa-play-circle"></i>
+                            </button>
+                        ` : `
+                            <button class="api-key-disable-btn" data-index="${idx}" title="${isGerman ? 'غیرفعال کردن' : 'Disable'}" style="
+                                background: none; border: none; color: #f59e0b; cursor: pointer; font-size: 16px; padding: 6px;
+                            ">
+                                <i class="fas fa-pause-circle"></i>
+                            </button>
+                        `}
+                        <button class="api-key-delete-btn" data-index="${idx}" title="${isGerman ? 'حذف' : 'Delete'}" style="
+                            background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; padding: 6px;
+                        ">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // رویدادهای دکمه‌ها
+    document.querySelectorAll('.api-key-enable-btn').forEach(btn => {
+        btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            this.apiKeyManager.enableKey(idx);
+            renderApiKeysList();
+            this.showToast('✅ کلید فعال شد', 'success');
+        };
+    });
+    
+    document.querySelectorAll('.api-key-disable-btn').forEach(btn => {
+        btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            this.apiKeyManager.disableKey(idx);
+            renderApiKeysList();
+            this.showToast('⏸ کلید غیرفعال شد', 'info');
+        };
+    });
+    
+    document.querySelectorAll('.api-key-delete-btn').forEach(btn => {
+        btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            if (confirm('آیا از حذف این کلید مطمئن هستید؟')) {
+                this.apiKeyManager.removeKey(idx);
+                renderApiKeysList();
+                this.showToast('🗑️ کلید حذف شد', 'success');
+            }
+        };
+    });
+};
+
+// افزودن کلید جدید
+const addKeyBtn = document.getElementById('add-api-key-btn');
+const newKeyInput = document.getElementById('new-api-key-input');
+const newKeyName = document.getElementById('new-api-key-name');
+
+if (addKeyBtn) {
+    addKeyBtn.onclick = async () => {
+        const newKey = newKeyInput?.value.trim();
+        if (!newKey) {
+            this.showToast('⚠️ لطفاً کلید API را وارد کنید', 'warning');
+            return;
+        }
+        
+        if (!newKey.startsWith('gsk_')) {
+            this.showToast('⚠️ کلید API باید با gsk_ شروع شود', 'warning');
+            return;
+        }
+        
+        // تست اعتبار کلید قبل از افزودن
+        this.showToast('🔄 در حال بررسی کلید...', 'info');
+        
+        try {
+            const testResult = await this.testGroqApiKey(newKey);
+            if (testResult.success) {
+                const name = newKeyName?.value.trim() || `کلید ${this.apiKeyManager.keys.length + 1}`;
+                this.apiKeyManager.addKey(newKey, name);
+                if (newKeyInput) newKeyInput.value = '';
+                if (newKeyName) newKeyName.value = '';
+                renderApiKeysList();
+                this.showToast('✅ کلید با موفقیت اضافه شد', 'success');
+            } else {
+                this.showToast(`❌ کلید نامعتبر است: ${testResult.message}`, 'error');
+            }
+        } catch (e) {
+            this.showToast('❌ خطا در بررسی کلید', 'error');
+        }
+    };
+}
+
+// بارگذاری اولیه لیست
+renderApiKeysList();
 }
 // ================================================
 // خروجی تصویری لغات - نسخه نهایی با تمام قابلیت‌ها
@@ -15011,7 +15508,6 @@ async sortWordList(filter, sortType) {
     
     this.setupWordListEventListeners();
 }
-
 async saveWord() {
     try {
         const german = document.getElementById('german-word')?.value.trim();
@@ -15031,6 +15527,10 @@ async saveWord() {
             type: type,
             createdAt: new Date().toISOString()
         };
+        
+        // ========== فیلد توضیحات (Notes) ==========
+        const notes = document.getElementById('word-notes')?.value.trim();
+        if (notes) wordData.notes = notes;
         
         // ========== جمع‌آوری داده‌های اسم ==========
         if (type === 'noun') {
@@ -15403,6 +15903,10 @@ setupWordDetailsEventListeners(word) {
                         <label class="form-label"><i class="fas fa-tags"></i> برچسب‌ها</label>
                         <input type="text" id="edit-tags" class="form-control modern-input" value="${word.tags ? word.tags.join(', ') : ''}" placeholder="A1, Haushalt, Alltag">
                     </div>
+                    <div class="form-group">
+    <label class="form-label"><i class="fas fa-sticky-note"></i> توضیحات (Notes)</label>
+    <textarea id="edit-notes" class="form-control modern-input" rows="3" placeholder="توضیحات اضافه، نکات گرامری...">${this.escapeHtml(word.notes || '')}</textarea>
+</div>
                 </div>
             </div>
         </div>
@@ -15480,6 +15984,10 @@ async updateWordFromEditForm(wordId) {
         updatedAt: new Date().toISOString()
     };
     
+    // ========== فیلد توضیحات ==========
+    const notes = document.getElementById('edit-notes')?.value.trim();
+    if (notes) updatedWord.notes = notes;
+    
     // فیلدهای اسم
     if (type === 'noun') {
         const activeGender = document.querySelector('.edit-gender-selector .gender-option.active');
@@ -15538,19 +16046,21 @@ async updateWordFromEditForm(wordId) {
 // === پیشنهاد مثال هوشمند با AI =========
 // ========================================
 
-async fetchAIExampleSuggestion(germanWord, forceRefresh = false) {
+async fetchAIExampleSuggestion(germanWord, forceRefresh = false, retryCount = 0) {
     this._aiExampleSuggestion = null;
     this._aiExampleWord = germanWord;
 
     this.showAIExampleLoading(forceRefresh);
 
     const prompt = `یک جمله مثال ساده آلمانی (سطح A1-B1) برای لغت "${germanWord}" بساز.
+⚠️ بسیار مهم: ترجمه فارسی جمله را **فقط با حروف فارسی** بنویس. از حروف چینی، روسی، ژاپنی، کره‌ای یا هر زبان دیگر استفاده نکن.
+اگر به هر دلیلی نتوانستی ترجمه فارسی خالص تولید کنی، به جای آن بنویس "ترجمه در دسترس نیست".
+
 فقط یک JSON برگردان، هیچ توضیح اضافه‌ای نده:
 {"example":"جمله آلمانی","translation":"ترجمه فارسی جمله"}`;
 
     try {
         const response = await this._puterChat(prompt, {});
-
         let rawText = '';
         if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
         else if (typeof response === 'string') rawText = response;
@@ -15568,10 +16078,29 @@ async fetchAIExampleSuggestion(germanWord, forceRefresh = false) {
             parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
         } catch {
             this.hideAIExampleLoading();
+            if (retryCount < 2) {
+                console.log(`تلاش مجدد برای مثال (${retryCount + 1})...`);
+                setTimeout(() => this.fetchAIExampleSuggestion(germanWord, forceRefresh, retryCount + 1), 500);
+            }
             return;
         }
 
-        if (!parsed?.example || !parsed?.translation) { this.hideAIExampleLoading(); return; }
+        if (!parsed?.example || !parsed?.translation) {
+            this.hideAIExampleLoading();
+            if (retryCount < 2) {
+                setTimeout(() => this.fetchAIExampleSuggestion(germanWord, forceRefresh, retryCount + 1), 500);
+            }
+            return;
+        }
+
+        // اعتبارسنجی ترجمه فارسی: وجود حداقل یک حرف فارسی
+        const hasPersian = /[آ-ی]/g.test(parsed.translation);
+        if (!hasPersian && retryCount < 2) {
+            console.warn('ترجمه مثال فارسی نیست، تلاش مجدد...');
+            this.hideAIExampleLoading();
+            setTimeout(() => this.fetchAIExampleSuggestion(germanWord, forceRefresh, retryCount + 1), 500);
+            return;
+        }
 
         this._aiExampleSuggestion = parsed;
 
@@ -15585,6 +16114,9 @@ async fetchAIExampleSuggestion(germanWord, forceRefresh = false) {
     } catch (err) {
         console.warn('AI example fetch failed:', err);
         this.hideAIExampleLoading();
+        if (retryCount < 2) {
+            setTimeout(() => this.fetchAIExampleSuggestion(germanWord, forceRefresh, retryCount + 1), 1000);
+        }
     }
 }
 
@@ -16001,22 +16533,25 @@ async aiSmartFillAll() {
 نوع فعلی که کاربر انتخاب کرده: ${activeType}
 اگر نوع اشتباه بود، نوع صحیح را در فیلد "correct_type" بنویس.
 
+⚠️ توجه مهم: تمام ترجمه‌های فارسی باید **فقط به زبان فارسی** باشند. از نوشتن ترجمه به چینی، روسی یا هر زبان دیگر خودداری کن.
+
 فقط یک JSON برگردان، بدون هیچ توضیح اضافه:
 {
   "word": "${word}",
   "correct_type": "noun یا verb یا adjective یا adverb یا preposition یا other",
   "persian_meaning": "معنی فارسی",
   "pronunciation": "تلفظ آوانویسی مثل [haʊs]",
-  "example": "جمله مثال آلمانی ساده A1-B1",
-  "example_translation": "ترجمه فارسی جمله",
+  "example": "جمله مثال آلمانی ساده A1-B1 (فقط آلمانی)",
+  "example_translation": "ترجمه فارسی جمله (فقط فارسی)",
   "tags": "مثل A1,Alltag (با کاما)",
-  
+  "notes": "توضیحات اضافی، نکات گرامری، موارد استفاده، کلمات مرتبط و غیره (به فارسی)",
+
   "noun": {
     "gender": "masculine یا feminine یا neuter",
     "plural": "شکل جمع"
   },
   
-"verb": {
+  "verb": {
     "present": "فقط صرف کامل: ich lerne / du lernst / er lernt / wir lernen / ihr lernt / sie lernen",
     "past": "فقط صرف کامل: ich lernte / du lerntest / er lernte / wir lernten",
     "perfect": "فقط Partizip II بدون فعل کمکی: gelernt یا gegangen",
@@ -16034,13 +16569,12 @@ async aiSmartFillAll() {
   
   "preposition": {
     "case": "Akkusativ یا Dativ یا Genitiv یا Wechsel",
-    "meanings": "معانی مختلف با کاما"
+    "meanings": "معانی مختلف با کاما (فقط فارسی)"
   }
 }`;
 
     try {
-      const response = await this._puterChat(prompt, {});
-
+        const response = await this._puterChat(prompt, {});
         let rawText = '';
         if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
         else if (typeof response === 'string') rawText = response;
@@ -16070,39 +16604,46 @@ async aiSmartFillAll() {
             if (correctCard) {
                 correctCard.classList.add('active');
                 this.toggleTypeFields(correctType);
-                // آپدیت badge
-                const typeNames = {
-                    noun:'📘 اسم', verb:'⚡ فعل', adjective:'✨ صفت',
-                    adverb:'📌 قید', preposition:'🔗 حرف اضافه', other:'📎 سایر'
-                };
+                const typeNames = { noun:'📘 اسم', verb:'⚡ فعل', adjective:'✨ صفت', adverb:'📌 قید', preposition:'🔗 حرف اضافه', other:'📎 سایر' };
                 const typeBadge = document.getElementById('word-type-badge');
                 if (typeBadge) typeBadge.innerHTML = typeNames[correctType] || '📘 اسم';
             }
         }
 
-        // پر کردن فیلدهای مشترک
-       this._setAlways('persian-meaning', parsed.persian_meaning);
-       this._setAlways('pronunciation', parsed.pronunciation);
-       this._setAlways('example', parsed.example);
-       this._setAlways('example-translation', parsed.example_translation);
-       this._setAlways('word-tags', parsed.tags);
+        // پر کردن فیلدهای مشترک (با اعتبارسنجی فارسی برای ترجمه مثال)
+        this._setAlways('persian-meaning', parsed.persian_meaning);
+        this._setAlways('pronunciation', parsed.pronunciation);
+        this._setAlways('example', parsed.example);
+        // اطمینان از فارسی بودن ترجمه مثال (در صورت امکان بازنویسی هوشمند)
+        let exampleTrans = parsed.example_translation;
+        if (exampleTrans && !/[آ-ی]/g.test(exampleTrans)) {
+            // اگر ترجمه فارسی نبود، یک بار دیگر از AI بخواهید یا خالی بگذارید
+            exampleTrans = '';
+            console.warn('ترجمه مثال به فارسی نبود، خالی گذاشته شد');
+        }
+        this._setAlways('example-translation', exampleTrans);
+        this._setAlways('word-tags', parsed.tags);
+        
+        // ========== پر کردن فیلد توضیحات (Notes) ==========
+        if (parsed.notes) {
+            this._setAlways('word-notes', parsed.notes);
+        }
 
         // پر کردن فیلدهای اختصاصی بر اساس نوع صحیح
         if (correctType === 'noun' && parsed.noun) {
-            // جنسیت
             if (parsed.noun.gender) {
                 document.querySelectorAll('.gender-option').forEach(opt => opt.classList.remove('active'));
                 const gBtn = document.querySelector(`.gender-option[data-gender="${parsed.noun.gender}"]`);
                 if (gBtn) gBtn.classList.add('active');
             }
-           this._setAlways('noun-plural', parsed.noun.plural);
+            this._setAlways('noun-plural', parsed.noun.plural);
         }
 
         if (correctType === 'verb' && parsed.verb) {
-          this._setAlways('verb-present', parsed.verb.present);
+            this._setAlways('verb-present', parsed.verb.present);
             this._setAlways('verb-past', parsed.verb.past);
-          this._setAlways('verb-perfect', parsed.verb.perfect);
-          this._setAlways('verb-future', parsed.verb.future);
+            this._setAlways('verb-perfect', parsed.verb.perfect);
+            this._setAlways('verb-future', parsed.verb.future);
             this._setAlways('verb-konjunktiv', parsed.verb.konjunktiv);
             if (parsed.verb.helper) {
                 const hVal = parsed.verb.helper.toLowerCase().includes('sein') ? 'sein' : 'haben';
@@ -16116,9 +16657,9 @@ async aiSmartFillAll() {
         }
 
         if (correctType === 'adjective' && parsed.adjective) {
-          this._setAlways('adj-komparativ', parsed.adjective.komparativ);
-           this._setAlways('adj-superlativ', parsed.adjective.superlativ);
-           this._setAlways('adj-antonym', parsed.adjective.antonym);
+            this._setAlways('adj-komparativ', parsed.adjective.komparativ);
+            this._setAlways('adj-superlativ', parsed.adjective.superlativ);
+            this._setAlways('adj-antonym', parsed.adjective.antonym);
         }
 
         if (correctType === 'preposition' && parsed.preposition) {
@@ -16126,7 +16667,7 @@ async aiSmartFillAll() {
                 const prepCase = document.getElementById('prep-case');
                 if (prepCase) prepCase.value = parsed.preposition.case;
             }
-           this._setAlways('prep-meanings', parsed.preposition.meanings);
+            this._setAlways('prep-meanings', parsed.preposition.meanings);
         }
 
         // پاک کردن پیشنهادهای قدیمی inline
@@ -16145,8 +16686,7 @@ async aiSmartFillAll() {
             btn.classList.remove('loading');
         }, 2500);
 
-        const filledCount = document.querySelectorAll('#add-word-section .modern-input, #add-word-section textarea')
-            .length;
+        const filledCount = document.querySelectorAll('#add-word-section .modern-input, #add-word-section textarea').length;
         this.showToast(`✅ ${filledCount} فیلد توسط هوش مصنوعی پر شد`, 'success');
 
     } catch (err) {

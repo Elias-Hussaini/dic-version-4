@@ -4949,3 +4949,71 @@ button:disabled {
         padding-left: 15px;
     }
 }
+/* ========== استایل بخش توضیحات در جزئیات لغت ========== */
+.notes-section-modern {
+    background: var(--gray-50);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+}
+
+.notes-section-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.notes-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+}
+
+.notes-header i {
+    font-size: 20px;
+    color: var(--primary);
+}
+
+.notes-header span {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.notes-content {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--gray-700);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* دارک مود */
+.dark-mode .notes-section-modern {
+    background: var(--bg-tertiary);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .notes-header span {
+    color: var(--text-primary);
+}
+
+.dark-mode .notes-content {
+    color: var(--text-secondary);
+}
+
+   .api-key-item:hover {
+        transform: translateX(-5px);
+        border-color: var(--primary) !important;
+        box-shadow: var(--shadow-md);
+    }
+    .api-key-enable-btn:hover,
+    .api-key-disable-btn:hover,
+    .api-key-delete-btn:hover {
+        transform: scale(1.1);
+    }
