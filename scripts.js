@@ -8198,9 +8198,9 @@ async _puterChat(messages, options = {}) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
+                    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
                     messages: msgs,
-                    max_tokens: 2000,
+                    max_tokens: 5000,
                     stream: false,
                     temperature: 0.7
                 }),
