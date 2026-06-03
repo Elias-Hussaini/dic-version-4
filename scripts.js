@@ -1,69 +1,14 @@
-// start scripts.js
-// ================================================
-// سیستم مدیریت چندین API Key با قابلیت Failover
-// ================================================
-
 class APIKeyManager {
     constructor() {
-        this.keys = [];        // [{key, name, addedAt, isActive, remainingQuota}]
+        this.keys = [];
         this.currentIndex = 0;
-        this.failedKeys = new Set(); // کلیدهایی که موقتاً خطا داده‌اند
-        this.failedUntil = new Map(); // زمان انقضای خطا
+        this.failedKeys = new Set();
+        this.failedUntil = new Map();
     }
 
-    // بارگذاری کلیدها از localStorage
-    loadKeys() {
-        try {
-            const saved = localStorage.getItem('api_keys_list');
-            if (saved) {
-                this.keys = JSON.parse(saved);
-                // تنظیم مجدد وضعیت فعال برای کلیدها
-                this.keys.forEach(key => {
-                    key.isActive = key.isActive !== false;
-                });
-                console.log(`🔑 ${this.keys.length} API Key بارگذاری شد`);
-            } else {
-                // کلید پیش‌فرض اگر وجود داشته باشد
-                const defaultKey = localStorage.getItem('groq_api_key_encrypted');
-                if (defaultKey) {
-                    try {
-                        const decrypted = atob(defaultKey);
-                        this.addKey(decrypted, 'پیش‌فرض');
-                        localStorage.removeItem('groq_api_key_encrypted'); // حذف کلید قدیمی
-                    } catch(e) {}
-                }
-            }
-            this.currentIndex = 0;
-            return this.keys;
-        } catch(e) {
-            console.error('خطا در بارگذاری کلیدها:', e);
-            this.keys = [];
-            return [];
-        }
-    }
-
-    // ذخیره کلیدها در localStorage
-    saveKeys() {
-        try {
-            const toSave = this.keys.map(k => ({
-                key: k.key,
-                name: k.name,
-                addedAt: k.addedAt,
-                isActive: k.isActive !== false,
-                remainingQuota: k.remainingQuota
-            }));
-            localStorage.setItem('api_keys_list', JSON.stringify(toSave));
-        } catch(e) {
-            console.error('خطا در ذخیره کلیدها:', e);
-        }
-    }
-
-    // اضافه کردن کلید جدید
     addKey(apiKey, name = null) {
         if (!apiKey || !apiKey.trim()) return false;
         const trimmedKey = apiKey.trim();
-        
-        // بررسی تکراری نبودن
         const exists = this.keys.some(k => k.key === trimmedKey);
         if (exists) return false;
         
@@ -74,108 +19,21 @@ class APIKeyManager {
             isActive: true,
             remainingQuota: null
         });
-        this.saveKeys();
         return true;
     }
 
-    // حذف کلید
-    removeKey(index) {
-        if (index >= 0 && index < this.keys.length) {
-            const removed = this.keys.splice(index, 1)[0];
-            if (this.currentIndex >= this.keys.length) this.currentIndex = 0;
-            if (this.currentIndex === index && this.currentIndex >= this.keys.length) {
-                this.currentIndex = 0;
-            }
-            this.saveKeys();
-            return true;
-        }
-        return false;
-    }
-
-    // غیرفعال کردن کلید
-    disableKey(index) {
-        if (this.keys[index]) {
-            this.keys[index].isActive = false;
-            this.saveKeys();
-            return true;
-        }
-        return false;
-    }
-
-    // فعال کردن کلید
-    enableKey(index) {
-        if (this.keys[index]) {
-            this.keys[index].isActive = true;
-            this.keys[index].remainingQuota = null;
-            this.saveKeys();
-            return true;
-        }
-        return false;
-    }
-
-    // دریافت کلید فعال بعدی (Round-Robin با احتساب خطاها)
-    getNextActiveKey() {
-        const activeKeys = this.keys.filter((k, idx) => 
-            k.isActive && !this.failedKeys.has(idx) && 
-            (!this.failedUntil.has(idx) || this.failedUntil.get(idx) < Date.now())
-        );
-        
-        if (activeKeys.length === 0) return null;
-        
-        // پیدا کردن ایندکس فعلی در بین کلیدهای فعال
-        const currentActiveIndex = activeKeys.findIndex(k => k.key === this.keys[this.currentIndex]?.key);
-        const nextIndex = (currentActiveIndex + 1) % activeKeys.length;
-        const nextKey = activeKeys[nextIndex];
-        
-        // به‌روزرسانی currentIndex به ایندکس اصلی
-        this.currentIndex = this.keys.findIndex(k => k.key === nextKey.key);
-        
-        return nextKey;
-    }
-
-    // گزارش خطا برای کلید فعلی
-    reportError(errorType) {
-        const currentKey = this.getCurrentKey();
-        if (!currentKey) return false;
-        
-        const currentIdx = this.keys.findIndex(k => k.key === currentKey.key);
-        
-        // خطای 429 (Rate Limit) - کلید را برای 60 ثانیه غیرفعال کن
-        if (errorType === 429 || (errorType.message && errorType.message.includes('rate_limit'))) {
-            this.failedKeys.add(currentIdx);
-            this.failedUntil.set(currentIdx, Date.now() + 60000); // 60 ثانیه
-            console.log(`⏳ کلید ${currentKey.name} به دلیل Rate Limit برای 60 ثانیه غیرفعال شد`);
-            return true;
-        }
-        
-        // خطای 401 (Invalid Key) - کلید را دائماً غیرفعال کن
-        if (errorType === 401 || (errorType.message && errorType.message.includes('invalid'))) {
-            this.disableKey(currentIdx);
-            console.log(`❌ کلید ${currentKey.name} نامعتبر است و غیرفعال شد`);
-            return true;
-        }
-        
-        // خطای 429 (Quota exceeded) - کلید را غیرفعال کن
-        if (errorType === 429 || (errorType.message && errorType.message.includes('quota'))) {
-            this.disableKey(currentIdx);
-            console.log(`⚠️ سهمیه کلید ${currentKey.name} تمام شد و غیرفعال شد`);
-            return true;
-        }
-        
-        // خطای موقتی - کلید را برای 30 ثانیه غیرفعال کن
-        this.failedKeys.add(currentIdx);
-        this.failedUntil.set(currentIdx, Date.now() + 30000);
-        return true;
-    }
-
-    // دریافت کلید فعلی
     getCurrentKey() {
         if (this.keys.length === 0) return null;
         if (this.currentIndex >= this.keys.length) this.currentIndex = 0;
         return this.keys[this.currentIndex];
     }
 
-    // گرفتن کلید برای استفاده (با failover خودکار)
+    moveToNextKey() {
+        if (this.keys.length === 0) return false;
+        this.currentIndex = (this.currentIndex + 1) % this.keys.length;
+        return true;
+    }
+
     getKeyForRequest() {
         let attempts = 0;
         const maxAttempts = this.keys.filter(k => k.isActive).length || 1;
@@ -184,7 +42,6 @@ class APIKeyManager {
             const current = this.getCurrentKey();
             if (!current) return null;
             
-            // بررسی فعال بودن و عدم خطا
             const idx = this.keys.findIndex(k => k.key === current.key);
             const isFailed = this.failedKeys.has(idx);
             const failedExpired = this.failedUntil.has(idx) && this.failedUntil.get(idx) < Date.now();
@@ -197,7 +54,6 @@ class APIKeyManager {
                 return current.key;
             }
             
-            // رفتن به کلید بعدی
             this.moveToNextKey();
             attempts++;
         }
@@ -205,45 +61,48 @@ class APIKeyManager {
         return null;
     }
 
-    // حرکت به کلید بعدی
-    moveToNextKey() {
-        if (this.keys.length === 0) return false;
-        this.currentIndex = (this.currentIndex + 1) % this.keys.length;
+    reportError(errorType) {
+        const currentKey = this.getCurrentKey();
+        if (!currentKey) return false;
+        
+        const currentIdx = this.keys.findIndex(k => k.key === currentKey.key);
+        
+        if (errorType === 429 || (errorType.message && errorType.message.includes('rate_limit'))) {
+            this.failedKeys.add(currentIdx);
+            this.failedUntil.set(currentIdx, Date.now() + 60000);
+            console.log(`⏳ کلید ${currentKey.name} به دلیل Rate Limit برای 60 ثانیه غیرفعال شد`);
+            return true;
+        }
+        
+        if (errorType === 401 || (errorType.message && errorType.message.includes('invalid'))) {
+            this.disableKey(currentIdx);
+            console.log(`❌ کلید ${currentKey.name} نامعتبر است و غیرفعال شد`);
+            return true;
+        }
+        
+        this.failedKeys.add(currentIdx);
+        this.failedUntil.set(currentIdx, Date.now() + 30000);
         return true;
     }
 
-    // ریست وضعیت خطاها
-    resetErrors() {
-        this.failedKeys.clear();
-        this.failedUntil.clear();
-    }
-
-    // بروزرسانی سهمیه باقیمانده (از هدر پاسخ)
-    updateQuota(remaining, keyIndex = null) {
-        const idx = keyIndex !== null ? keyIndex : this.currentIndex;
-        if (this.keys[idx]) {
-            this.keys[idx].remainingQuota = remaining;
-            this.saveKeys();
+    disableKey(index) {
+        if (this.keys[index]) {
+            this.keys[index].isActive = false;
+            return true;
         }
+        return false;
     }
 
-    // گرفتن همه کلیدها
     getAllKeys() {
         return this.keys;
     }
 }
 
-// اضافه کردن instance به کلاس GermanDictionary
-// در constructor کلاس GermanDictionary اضافه کنید:
-// this.apiKeyManager = new APIKeyManager();
-
-
 class GermanDictionary {
     constructor() {
      
 this.uploadedImageUrl = null;
-        this.apiKeyManager = new APIKeyManager();
-        this.apiKeyManager.loadKeys();
+       
         this.dbName = 'GermanPersianDictionary';
         this.dbVersion = 5;
         this.db = null;
@@ -8296,12 +8155,12 @@ async performAutoTranslation(text) {
 async _puterChat(messages, options = {}) {
     let lastError = null;
     let attempts = 0;
-    const maxAttempts = this.apiKeyManager?.keys.filter(k => k.isActive).length || 1;
+    const maxAttempts = this.apiKeyManager?.keys.filter(k => k.isActive).length || 3;
     
     while (attempts < maxAttempts) {
         const apiKey = this.getGroqApiKey();
         if (!apiKey) {
-            throw new Error('API Key یافت نشد. لطفاً در بخش تنظیمات، کلید API خود را وارد کنید.');
+            throw new Error('API Key یافت نشد');
         }
         
         const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -8324,11 +8183,14 @@ async _puterChat(messages, options = {}) {
         if (!hasSystem) {
             msgs.unshift({
                 role: 'system',
-                content: 'شما یک دستیار هوشمند هستید که فقط به زبان فارسی پاسخ می‌دهید. هرگز از کاراکترهای چینی، روسی یا سایر زبان‌ها استفاده نکنید. حتی اگر کاربر به زبان دیگری سوال پرسید، شما باز هم به فارسی پاسخ دهید. تمام خروجی‌های شما باید فقط با حروف فارسی (عربی-فارسی) باشد.'
+                content: 'شما یک دستیار هوشمند هستید که فقط به زبان فارسی پاسخ می‌دهید. هرگز از کاراکترهای چینی، روسی یا سایر زبان‌ها استفاده نکنید.'
             });
         }
         
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            
             const res = await fetch(GROQ_URL, {
                 method: 'POST',
                 headers: {
@@ -8340,36 +8202,33 @@ async _puterChat(messages, options = {}) {
                     messages: msgs,
                     max_tokens: 2000,
                     stream: false,
-                    temperature: 0.3
-                })
+                    temperature: 0.7
+                }),
+                signal: controller.signal
             });
             
-            // بررسی وضعیت پاسخ
+            clearTimeout(timeoutId);
+            
             if (!res.ok) {
                 const errorText = await res.text();
-                let errorStatus = res.status;
+                const errorStatus = res.status;
                 
-                // خطای Rate Limit یا Quota
+                // خطای Rate Limit یا Quota - برو به کلید بعدی
                 if (errorStatus === 429 || errorStatus === 401 || errorStatus === 403) {
-                    console.warn(`⚠️ خطای ${errorStatus} با کلید فعلی. تلاش برای سوئیچ به کلید بعدی...`);
+                    console.warn(`⚠️ خطای ${errorStatus} با کلید فعلی. سوئیچ به کلید بعدی...`);
                     if (this.apiKeyManager) {
                         this.apiKeyManager.reportError(errorStatus);
+                        this.apiKeyManager.moveToNextKey();
                     }
                     attempts++;
-                    continue; // تلاش مجدد با کلید بعدی
+                    continue;
                 }
                 
-                throw new Error(`Groq error: ${errorStatus} ${errorText}`);
+                throw new Error(`Groq error: ${errorStatus}`);
             }
             
             const data = await res.json();
             const text = data.choices?.[0]?.message?.content || '';
-            
-            // بروزرسانی سهمیه باقیمانده (اگر در هدر باشد)
-            const remaining = res.headers.get('x-ratelimit-remaining-requests');
-            if (remaining && this.apiKeyManager) {
-                this.apiKeyManager.updateQuota(parseInt(remaining));
-            }
             
             return { message: { content: [{ text }] } };
             
@@ -8378,22 +8237,17 @@ async _puterChat(messages, options = {}) {
             lastError = error;
             attempts++;
             
-            // اگر خطای شبکه بود، به کلید بعدی برو
-            if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('network'))) {
-                if (this.apiKeyManager) {
-                    this.apiKeyManager.moveToNextKey();
-                }
-                continue;
+            if (this.apiKeyManager) {
+                this.apiKeyManager.moveToNextKey();
             }
             
-            // اگر خطای دیگری بود، بعد از تلاش‌های مجدد throw کن
             if (attempts >= maxAttempts) {
                 throw error;
             }
         }
     }
     
-    throw lastError || new Error('همه کلیدهای API با خطا مواجه شدند');
+    throw lastError || new Error('همه کلیدها با خطا مواجه شدند');
 }
 // ================================================
 // مدیریت API Key (ذخیره در localStorage با رمزگذاری ساده)
@@ -8409,21 +8263,34 @@ setGroqApiKey(key) {
 }
 
 getGroqApiKey() {
-    // استفاده از سیستم مدیریت چندین کلید
-    if (this.apiKeyManager && this.apiKeyManager.keys.length > 0) {
-        const key = this.apiKeyManager.getKeyForRequest();
-        if (key) return key;
+    // لیست کلیدهای ثابت - اگر یکی تموم شد خودکار به بعدی می‌ره
+    const API_KEYS = [
+        { key: "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", name: "کلید اصلی", isActive: true },
+        { key: "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", name: "کلید پشتیبان 1", isActive: true },
+        { key: "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", name: "کلید پشتیبان 2", isActive: true }
+    ];
+    
+    // اگر apiKeyManager وجود نداره، بسازش
+    if (!this.apiKeyManager) {
+        this.apiKeyManager = new APIKeyManager();
     }
     
-    // Fallback به روش قدیمی
-    const encrypted = localStorage.getItem('groq_api_key_encrypted');
-    if (encrypted) {
-        try {
-            return atob(encrypted);
-        } catch(e) {
-            return null;
+    // اگر کلیدها توی apiKeyManager نیست، اضافه کن
+    if (this.apiKeyManager.keys.length === 0) {
+        for (const k of API_KEYS) {
+            this.apiKeyManager.addKey(k.key, k.name);
         }
     }
+    
+    // گرفتن کلید فعال بعدی
+    const key = this.apiKeyManager.getKeyForRequest();
+    if (key) return key;
+    
+    // fallback - اولین کلید معتبر رو برگردون
+    for (const k of API_KEYS) {
+        if (k.isActive) return k.key;
+    }
+    
     return null;
 }
 
@@ -10396,84 +10263,68 @@ if (!document.getElementById('lock-modal')) {
         </div>
     </div>
 
-   
-<div class="settings-group">
-    <h3><i class="fas fa-keys"></i> مدیریت کلیدهای API</h3>
+      <!-- ========== پاک کردن کش و به‌روزرسانی ========== -->
+<div class="settings-group" style="background: var(--gray-50); border-radius: 20px; padding: 25px; margin-bottom: 25px;">
+    <h3 style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; color: var(--gray-800);">
+        <i class="fas fa-broom" style="color: #f59e0b; font-size: 22px;"></i>
+        <span style="font-size: 18px; font-weight: 700;">${isGerman ? 'پاکسازی کش' : 'Clear Cache'}</span>
+    </h3>
     
-    <!-- فرم افزودن کلید جدید -->
-    <div class="api-keys-add-section" style="margin-bottom: 20px; padding: 15px; background: var(--gray-50); border-radius: 16px;">
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
-            <div style="flex: 2; min-width: 200px;">
-                <label style="display: block; margin-bottom: 5px; font-size: 13px;">کلید جدید (gsk_...)</label>
-                <input type="password" id="new-api-key-input" class="form-control" placeholder="gsk_...">
-            </div>
-            <div style="flex: 1; min-width: 120px;">
-                <label style="display: block; margin-bottom: 5px; font-size: 13px;">نام (اختیاری)</label>
-                <input type="text" id="new-api-key-name" class="form-control" placeholder="مثال: کلید شماره ۱">
-            </div>
-            <div>
-                <button id="add-api-key-btn" class="btn btn-primary" style="padding: 10px 20px;">
-                    <i class="fas fa-plus"></i> افزودن کلید
-                </button>
-            </div>
-        </div>
-        <div class="api-key-info" style="margin-top: 10px; font-size: 12px; color: var(--gray-500);">
-            <i class="fas fa-info-circle"></i> می‌توانید چندین کلید اضافه کنید. در صورت تمام شدن سهمیه یا خطا، سیستم به طور خودکار به کلید بعدی سوئیچ می‌کند.
-        </div>
-    </div>
-    
-    <!-- لیست کلیدها -->
-    <div id="api-keys-list-container" style="max-height: 300px; overflow-y: auto;">
-        <!-- کلیدها توسط JavaScript پر می‌شوند -->
-    </div>
-    
-<div class="api-key-guide" style="
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-    border-radius: 16px;
-    padding: 15px 20px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 15px;
-">
-    <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="
-            width: 45px;
-            height: 45px;
-            background: linear-gradient(135deg, #4361ee, #3a0ca3);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        ">
-            <i class="fas fa-key" style="color: white; font-size: 22px;"></i>
-        </div>
-        <div>
-            <div style="font-weight: 700; font-size: 15px; color: #1e293b;">نیاز به کلید API دارید؟</div>
-            <div style="font-size: 12px; color: #475569;">برای استفاده از هوش مصنوعی، یک کلید رایگان دریافت کنید</div>
-        </div>
-    </div>
-    <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" id="get-api-key-link" style="
-        background: linear-gradient(135deg, #4361ee, #3a0ca3);
-        color: white;
-        padding: 10px 24px;
-        border-radius: 40px;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 14px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        border: none;
+    <div style="
+        background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05));
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid rgba(245,158,11,0.25);
+        transition: all 0.3s ease;
     ">
-        <i class="fas fa-external-link-alt"></i>
-        دریافت کلید رایگان
-    </a>
-</div>
+        <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+            <div style="
+                width: 55px;
+                height: 55px;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                border-radius: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 6px 15px rgba(245,158,11,0.35);
+                flex-shrink: 0;
+            ">
+                <i class="fas fa-broom" style="font-size: 26px; color: white;"></i>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 16px; margin-bottom: 5px; color: var(--gray-800);">
+                    ${isGerman ? 'پاکسازی کش و به‌روزرسانی' : 'Clear Cache & Refresh'}
+                </div>
+                <div style="font-size: 12px; color: var(--gray-500); line-height: 1.5;">
+                    ${isGerman ? 'رفع مشکلات نمایشی و اعمال آخرین تغییرات' : 'Fix display issues & apply latest changes'}
+                </div>
+            </div>
+            <button id="clear-cache-btn" style="
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                border: none;
+                border-radius: 40px;
+                padding: 10px 24px;
+                color: white;
+                font-weight: 600;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 4px 12px rgba(245,158,11,0.35);
+                flex-shrink: 0;
+            ">
+                <i class="fas fa-sync-alt"></i>
+                <span>${isGerman ? 'پاکسازی' : 'Clear'}</span>
+            </button>
+        </div>
+        
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(245,158,11,0.2); font-size: 11px; color: var(--gray-500); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 12px;"></i>
+            <span>${isGerman ? 'پس از پاکسازی، صفحه مجدداً بارگذاری می‌شود' : 'Page will reload after clearing'}</span>
+        </div>
+    </div>
 </div>
 
             <!-- ========== درباره برنامه ========== -->
@@ -10575,126 +10426,36 @@ if (!document.getElementById('lock-modal')) {
 // ================================================
 
 setupSettingsEventListeners() {
-    // ========== مدیریت API Key ==========
-const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-const testApiKeyBtn = document.getElementById('test-api-key-btn');
-const clearApiKeyBtn = document.getElementById('clear-api-key-btn');
-const apiKeyInput = document.getElementById('groq-api-key-input');
-const toggleVisibilityBtn = document.getElementById('toggle-api-key-visibility');
-const apiKeyStatus = document.getElementById('api-key-status');
-const apiStatusText = document.getElementById('api-status-text');
 
-if (saveApiKeyBtn) {
-    saveApiKeyBtn.onclick = () => {
-        const newKey = apiKeyInput?.value.trim();
-        if (newKey && !newKey.startsWith('gsk_')) {
-            this.showToast('⚠️ کلید API باید با gsk_ شروع شود', 'warning');
-            return;
-        }
-        
-        if (newKey) {
-            this.setGroqApiKey(newKey);
-            this.showToast('✅ API Key با موفقیت ذخیره شد', 'success');
-            if (apiKeyStatus) {
-                apiKeyStatus.style.display = 'flex';
-                apiStatusText.textContent = 'کلید ذخیره شد';
-                apiKeyStatus.style.background = 'rgba(16, 185, 129, 0.1)';
-                apiKeyStatus.style.color = '#10b981';
-                setTimeout(() => {
-                    apiKeyStatus.style.display = 'none';
-                }, 3000);
-            }
-        } else {
-            this.showToast('❌ لطفاً API Key معتبر وارد کنید', 'error');
-        }
-    };
-}
-
-if (clearApiKeyBtn) {
-    clearApiKeyBtn.onclick = () => {
-        if (confirm('آیا از حذف API Key مطمئن هستید؟ هوش مصنوعی بدون آن کار نخواهد کرد.')) {
-            this.clearGroqApiKey();
-            if (apiKeyInput) apiKeyInput.value = '';
-            this.showToast('🗑️ API Key حذف شد', 'info');
-            if (apiKeyStatus) {
-                apiKeyStatus.style.display = 'flex';
-                apiStatusText.textContent = 'کلید حذف شد';
-                apiKeyStatus.style.background = 'rgba(239, 68, 68, 0.1)';
-                apiKeyStatus.style.color = '#ef4444';
-                setTimeout(() => {
-                    apiKeyStatus.style.display = 'none';
-                }, 3000);
-            }
-        }
-    };
-}
-
-if (testApiKeyBtn) {
-    testApiKeyBtn.onclick = async () => {
-        const key = apiKeyInput?.value.trim() || this.getGroqApiKey();
-        if (!key) {
-            this.showToast('❌ ابتدا API Key را وارد کنید', 'warning');
-            return;
-        }
-        
-        testApiKeyBtn.disabled = true;
-        testApiKeyBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> در حال تست...';
-        
-        const result = await this.testGroqApiKey(key);
-        
-        testApiKeyBtn.disabled = false;
-        testApiKeyBtn.innerHTML = '<i class="fas fa-vial"></i> تست اتصال';
-        
-        if (result.success) {
-            this.showToast('✅ ' + result.message, 'success');
-            if (apiKeyStatus) {
-                apiKeyStatus.style.display = 'flex';
-                apiStatusText.textContent = result.message;
-                apiKeyStatus.style.background = 'rgba(16, 185, 129, 0.1)';
-                apiKeyStatus.style.color = '#10b981';
-                setTimeout(() => {
-                    apiKeyStatus.style.display = 'none';
-                }, 3000);
-            }
-        } else {
-            this.showToast('❌ ' + result.message, 'error');
-            if (apiKeyStatus) {
-                apiKeyStatus.style.display = 'flex';
-                apiStatusText.textContent = result.message;
-                apiKeyStatus.style.background = 'rgba(239, 68, 68, 0.1)';
-                apiKeyStatus.style.color = '#ef4444';
-            }
-        }
-    };
-}
-
-if (toggleVisibilityBtn && apiKeyInput) {
-    toggleVisibilityBtn.onclick = () => {
-        const type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        apiKeyInput.setAttribute('type', type);
-        toggleVisibilityBtn.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
-    };
-}
 // ========== پاک کردن کش Service Worker ==========
 const clearCacheBtn = document.getElementById('clear-cache-btn');
 if (clearCacheBtn) {
-    clearCacheBtn.onclick = async () => {
-        if (confirm('⚠️ با پاک کردن کش، برنامه مجدداً بارگذاری می‌شود. آیا مطمئن هستید؟')) {
-            // حذف همه کش‌ها
-            if ('caches' in window) {
-                const keys = await caches.keys();
-                await Promise.all(keys.map(key => caches.delete(key)));
-                console.log('✅ همه کش‌ها پاک شدند');
+    const newBtn = clearCacheBtn.cloneNode(true);
+    clearCacheBtn.parentNode.replaceChild(newBtn, clearCacheBtn);
+    
+    newBtn.onclick = async () => {
+        if (confirm('⚠️ آیا از پاک کردن کش و به‌روزرسانی برنامه مطمئن هستید؟')) {
+            const originalHtml = newBtn.innerHTML;
+            newBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>در حال...</span>';
+            newBtn.disabled = true;
+            newBtn.style.opacity = '0.7';
+            
+            try {
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(key => caches.delete(key)));
+                }
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                }
+                setTimeout(() => window.location.reload(true), 500);
+            } catch (error) {
+                newBtn.innerHTML = originalHtml;
+                newBtn.disabled = false;
+                newBtn.style.opacity = '1';
+                alert('❌ خطا در پاک کردن کش');
             }
-            // حذف Service Worker قدیمی
-            if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(registrations.map(reg => reg.unregister()));
-                console.log('✅ Service Worker لغو ثبت شد');
-            }
-            // رفرش کامل صفحه
-            localStorage.setItem('force_refresh', Date.now());
-            window.location.reload(true);
         }
     };
 }
@@ -10912,44 +10673,6 @@ const renderApiKeysList = () => {
     });
 };
 
-// افزودن کلید جدید
-const addKeyBtn = document.getElementById('add-api-key-btn');
-const newKeyInput = document.getElementById('new-api-key-input');
-const newKeyName = document.getElementById('new-api-key-name');
-
-if (addKeyBtn) {
-    addKeyBtn.onclick = async () => {
-        const newKey = newKeyInput?.value.trim();
-        if (!newKey) {
-            this.showToast('⚠️ لطفاً کلید API را وارد کنید', 'warning');
-            return;
-        }
-        
-        if (!newKey.startsWith('gsk_')) {
-            this.showToast('⚠️ کلید API باید با gsk_ شروع شود', 'warning');
-            return;
-        }
-        
-        // تست اعتبار کلید قبل از افزودن
-        this.showToast('🔄 در حال بررسی کلید...', 'info');
-        
-        try {
-            const testResult = await this.testGroqApiKey(newKey);
-            if (testResult.success) {
-                const name = newKeyName?.value.trim() || `کلید ${this.apiKeyManager.keys.length + 1}`;
-                this.apiKeyManager.addKey(newKey, name);
-                if (newKeyInput) newKeyInput.value = '';
-                if (newKeyName) newKeyName.value = '';
-                renderApiKeysList();
-                this.showToast('✅ کلید با موفقیت اضافه شد', 'success');
-            } else {
-                this.showToast(`❌ کلید نامعتبر است: ${testResult.message}`, 'error');
-            }
-        } catch (e) {
-            this.showToast('❌ خطا در بررسی کلید', 'error');
-        }
-    };
-}
 
 // بارگذاری اولیه لیست
 renderApiKeysList();
@@ -13956,19 +13679,49 @@ if (!apiKey) {
 
 
 
-        // system prompt
-  // system prompt
+// داخل sendAIMessage، قسمت systemMsg رو اینطور عوض کن
 const systemMsg = {
     role: 'system',
-    content: `تو یک دستیار هوشمند به نام "الیاس" هستی که در برنامه دیکشنری آلمانی-فارسی کمک می‌کنی.
-پاسخ‌هایت را همیشه تمیز، منظم و خوانا بنویس. از Markdown استفاده کن: **متن بولد**، # عنوان، - برای لیست، \`کد\`.
-فقط به سوال فعلی پاسخ بده مگر اینکه کاربر به قبل اشاره کند.
-اگر پرسیدند سازنده‌ات کیست: "من توسط الیاس حسینی ساخته شده‌ام، یک برنامه‌نویس و توسعه‌دهنده وب."
+    content: `تو یک دستیار هوشمند به نام "الیاس" هستی. خیلی صمیمی و دوستانه صحبت کن. حتماً از ایموجی‌های مناسب استفاده کن مثل 📚 🎯 💡 ✨ ⭐ ✅ ❌ ⚠️ 🎉 🔥 🚀.
+  هیچ وقت از نوشته های عجیب غریب استفاده نکن مثل چینی یا انگلیسی یا  روسی 需要  هیچی 
+⚠️ قانون مهم در مورد فرمت پاسخ:
+حتماً از Markdown استفاده کن برای زیباتر شدن پاسخ‌ها:
 
-=== اطلاعات دیکشنری کاربر ===
-${await this._getDictionaryContext()}`
+- برای **عنوان اصلی**: # عنوان (بزرگ و پررنگ) با ایموجی مناسب
+- برای **زیرعنوان**: ## عنوان (متوسط)
+- برای **بولد کردن متن مهم**: **متن**
+- برای **ایتالیک**: *متن*
+- برای **لیست**: - مورد اول / - مورد دوم
+- برای **لیست شماره‌دار**: 1. متن / 2. متن
+- برای **نقل قول**: > متن نقل قول
+- برای **کد**: \`کد\`
+- برای **جدول**: | ستون1 | ستون2 | و سپس خط تیره و محتوا
+
+مثال پاسخ خوب:
+# 📚 راهنمای یادگیری آلمانی
+
+سلام دوست عزیز! 😊 خوشحالم که به دنبال یادگیری آلمانی هستی.
+
+**نکته مهم**: برای یادگیری بهتر این مراحل رو دنبال کن:
+
+1. ✨ **لغات پایه** رو حفظ کن (هر روز ۱۰ لغت جدید)
+2. 📖 **گرامر** رو قدم به قدم یاد بگیر
+3. 🎯 هر روز **تمرین** کن (فلش‌کارت خیلی کمک میکنه)
+
+> "تکرار، مادر مهارت است" 💪
+
+| سطح | تعداد لغت | زمان پیشنهادی |
+|-----|---------|--------------|
+| A1 | 500 | ۲ ماه |
+| A2 | 1000 | ۳ ماه |
+
+**موفق باشی!** 🌟 هر سوالی داری بپرس.
+
+اطلاعات دیکشنری کاربر:
+${await this._getDictionaryContext()}
+
+❗ یادت نره: فقط زمانی که کاربر به طور مشخص درخواست رفتن به یک بخش کرد، دکمه مناسب رو نشون بده.`
 };
-
         // ساختن messages array با حافظه
         const historyMsgs = this.getMemoryForAI();
         // آخرین پیام user رو که الان فرستادیم از history حذف کن (چون الان اضافه میشه)
@@ -14032,30 +13785,36 @@ async _getDictionaryContext() {
         const adjs  = words.filter(w => w.type === 'adjective').length;
         const srsKeys = Object.keys(this.srsData || {});
         const learned = srsKeys.filter(k => (this.srsData[k]?.level || 0) >= 3).length;
-        const recent = words.slice(-5).map(w => `${w.german} (${w.persian})`).join('، ');
-
-        return `
+        const recent = words.slice(-3).map(w => `${w.german} (${w.persian})`).join('، ');
+        
+        return `اطلاعات دیکشنری کاربر:
 تعداد کل لغات: ${total} (${nouns} اسم، ${verbs} فعل، ${adjs} صفت)
 لغات یاد گرفته: ${learned}
 آخرین لغات: ${recent || 'هنوز لغتی اضافه نشده'}
 
-بخش‌های برنامه:
-- جستجو → search-section
-- افزودن لغت → add-word-section
-- مترجم → translate-section
-- تمرین → practice-section
-- فلش‌کارت → flashcards-section
-- لیست لغات → word-list-section
-- پیشرفت → progress-section
-- تنظیمات → settings-section
+بخش‌های برنامه (آیدی هر بخش): 
+- search-section (جستجو)
+- add-word-section (افزودن لغت) 
+- translate-section (مترجم)
+- practice-section (تمرین)
+- flashcards-section (فلش‌کارت)
+- word-list-section (لیست لغات)
+- progress-section (پیشرفت)
+- settings-section (تنظیمات)
 
-قانون لینک دادن به بخش‌ها — دقیقاً این HTML را بنویس (SECTION_ID و نام فارسی را عوض کن):
+❗ قانون مهم: 
+فقط و فقط زمانی که کاربر به طور مشخص درخواست رفتن به یک بخش را کرد، دکمه مناسب را نشان بده.
+مثال: کاربر گفت "میخوام برم به بخش مترجم" -> آن وقت دکمه مترجم را نشون بده.
+اگر کاربر فقط یک سوال عادی پرسید، مثل "حالت چطوره" یا "هالو یعنی چی"، بدون هیچ دکمه‌ای پاسخ بده.
+
+برای نمایش دکمه از این کد استفاده کن (فقط زمانی که کاربر خواست):
 <button onclick="dictionaryApp.showSection('SECTION_ID')" style="background:linear-gradient(135deg,#4361ee,#7c3aed);color:white;border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-family:Vazirmatn,sans-serif;font-size:12px;margin:4px 0;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-arrow-left"></i> رفتن به نام‌بخش</button>
 
-مثال برای لیست لغات:
-<button onclick="dictionaryApp.showSection('word-list-section')" style="background:linear-gradient(135deg,#4361ee,#7c3aed);color:white;border:none;border-radius:20px;padding:5px 14px;cursor:pointer;font-family:Vazirmatn,sans-serif;font-size:12px;margin:4px 0;display:inline-flex;align-items:center;gap:5px;"><i class="fas fa-arrow-left"></i> رفتن به لیست لغات</button>
+مثال: رفتن به لیست لغات -> SECTION_ID = word-list-section
+مثال: رفتن به مترجم -> SECTION_ID = translate-section
+مثال: رفتن به تنظیمات -> SECTION_ID = settings-section
 
-هیچوقت HTML دکمه را داخل backtick یا کد بلاک قرار نده. مستقیم بنویس.`;
+هیچوقت برای پاسخ به سلام یا احوالپرسی از دکمه استفاده نکن.`;
     } catch {
         return 'اطلاعات دیکشنری در دسترس نیست';
     }
@@ -14189,61 +13948,121 @@ _typewriterEffect(container, fullText, scroll = true) {
 }
 _formatAIMessage(text) {
     if (!text) return '';
-
-    // دکمه‌های HTML رو قبل از هر کاری استخراج کن
+    
+    // استخراج دکمه‌ها
     const btnPlaceholders = [];
     let t = text.replace(/<button[\s\S]*?<\/button>/gi, (match) => {
         const idx = btnPlaceholders.length;
         btnPlaceholders.push(match);
         return `%%BTN_${idx}%%`;
     });
-
-    // escapeHtml روی باقی متن
-    t = this.escapeHtml(t);
-
-    // عناوین
-    t = t.replace(/^### (.+)$/gm, '<h4 style="margin:8px 0 4px;color:var(--primary,#4361ee);font-size:13px;">$1</h4>');
-    t = t.replace(/^## (.+)$/gm,  '<h3 style="margin:10px 0 6px;color:var(--primary,#4361ee);font-size:14px;">$1</h3>');
-    t = t.replace(/^# (.+)$/gm,   '<h2 style="margin:12px 0 6px;color:var(--primary,#4361ee);font-size:15px;">$1</h2>');
-
+    
+    // ایموجی‌ها و آیکون‌های خاص
+    const emojiMap = {
+        '✅': '<span style="color: #10b981;">✅</span>',
+        '❌': '<span style="color: #ef4444;">❌</span>',
+        '⚠️': '<span style="color: #f59e0b;">⚠️</span>',
+        '📚': '<span style="color: #8b5cf6;">📚</span>',
+        '🎯': '<span style="color: #f59e0b;">🎯</span>',
+        '💡': '<span style="color: #fbbf24;">💡</span>',
+        '✨': '<span style="color: #ec4899;">✨</span>',
+        '⭐': '<span style="color: #fbbf24;">⭐</span>',
+        '🎉': '<span style="color: #f59e0b;">🎉</span>',
+        '🔥': '<span style="color: #ef4444;">🔥</span>',
+        '🚀': '<span style="color: #3b82f6;">🚀</span>',
+        '🌟': '<span style="color: #fbbf24;">🌟</span>',
+        '💪': '<span style="color: #ef4444;">💪</span>',
+        '😊': '<span style="color: #f59e0b;">😊</span>',
+        '📖': '<span style="color: #8b5cf6;">📖</span>',
+        '🔑': '<span style="color: #fbbf24;">🔑</span>',
+        '🎓': '<span style="color: #8b5cf6;">🎓</span>',
+        '🏆': '<span style="color: #fbbf24;">🏆</span>'
+    };
+    
+    for (const [emoji, html] of Object.entries(emojiMap)) {
+        t = t.split(emoji).join(html);
+    }
+    
+    // هدرها
+    t = t.replace(/^# (.*$)/gm, '<h1 style="font-size: 24px; font-weight: 800; margin: 20px 0 12px; background: linear-gradient(135deg, #4361ee, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; border-bottom: 2px solid #4361ee; display: inline-block; padding-bottom: 5px;">$1</h1>');
+    t = t.replace(/^## (.*$)/gm, '<h2 style="font-size: 20px; font-weight: 700; margin: 16px 0 10px; color: #4361ee; border-right: 4px solid #4361ee; padding-right: 12px;">$1</h2>');
+    t = t.replace(/^### (.*$)/gm, '<h3 style="font-size: 17px; font-weight: 600; margin: 14px 0 8px; color: #5b21b6; display: flex; align-items: center; gap: 8px;"><span style="background: #8b5cf6; width: 6px; height: 20px; display: inline-block; border-radius: 3px;"></span> $1</h3>');
+    
     // بولد و ایتالیک
-    t = t.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-    t = t.replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>');
-    t = t.replace(/\*(.+?)\*/g,         '<em>$1</em>');
-
-    // کد inline
-    t = t.replace(/`(.+?)`/g, '<code style="background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px;font-size:11px;font-family:monospace;">$1</code>');
-
-    // لیست
-    t = t.replace(/^[-•]\s+(.+)$/gm, '<li style="margin:3px 0;padding-right:2px;font-size:13px;">$1</li>');
-    t = t.replace(/^(\d+)\.\s+(.+)$/gm, '<li style="margin:3px 0;font-size:13px;"><strong>$1.</strong> $2</li>');
-    t = t.replace(/(<li[^>]*>[\s\S]*?<\/li>\n?)+/g, m => `<ul style="padding-right:16px;margin:6px 0;">${m}</ul>`);
-
-    // خط افقی
-    t = t.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:8px 0;">');
-
-    // پاراگراف
+    t = t.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em style="color: #ec4899;">$1</em></strong>');
+    t = t.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #4361ee; font-weight: 700;">$1</strong>');
+    t = t.replace(/\*(.*?)\*/g, '<em style="font-style: italic; color: #64748b;">$1</em>');
+    
+    // نقل قول
+    t = t.replace(/^> (.*$)/gm, '<blockquote style="border-right: 4px solid #8b5cf6; background: linear-gradient(135deg, rgba(139,92,246,0.05), rgba(67,97,238,0.05)); padding: 12px 18px; margin: 15px 0; border-radius: 16px; font-style: italic; color: #4c1d95;">💬 $1</blockquote>');
+    
+    // لیست بولت پوینت
+    t = t.replace(/^[•\-]\s+(.*$)/gm, '<li style="margin: 8px 0; display: flex; align-items: center; gap: 8px;"><span style="color: #8b5cf6; font-size: 18px;">✨</span><span>$1</span></li>');
+    t = t.replace(/(<li.*<\/li>\n?)+/g, '<ul style="margin: 12px 0; list-style: none; padding-right: 0;">$&</ul>');
+    
+    // لیست شماره‌دار با دایره رنگی
+    t = t.replace(/^(\d+)\.\s+(.*$)/gm, (match, num, content) => {
+        return `<li style="margin: 8px 0; display: flex; align-items: flex-start; gap: 10px;"><span style="background: linear-gradient(135deg, #4361ee, #8b5cf6); color: white; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 700; flex-shrink: 0;">${num}</span><span style="flex: 1;">${content}</span></li>`;
+    });
+    
+    // جدول
+    t = t.replace(/\|(.+)\|/g, (match) => {
+        const rows = match.split('\n');
+        let tableHtml = '<div style="overflow-x: auto; margin: 20px 0; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden;">';
+        let isHeader = true;
+        
+        for (const row of rows) {
+            if (row.includes('---')) continue;
+            const cells = row.split('|').filter(c => c.trim());
+            const tag = isHeader ? 'th' : 'td';
+            tableHtml += '<tr>';
+            cells.forEach((cell, idx) => {
+                const isFirst = idx === 0;
+                tableHtml += `<${tag} style="border: 1px solid #e2e8f0; padding: 12px 15px; ${isHeader ? 'background: linear-gradient(135deg, #4361ee, #8b5cf6); color: white; font-weight: 600;' : ''} ${isFirst && !isHeader ? 'font-weight: 600; color: #4361ee;' : ''}">${cell.trim()}</${tag}>`;
+            });
+            tableHtml += '</tr>';
+            isHeader = false;
+        }
+        tableHtml += '</table></div>';
+        return tableHtml;
+    });
+    
+    // کد اینلاین
+    t = t.replace(/`(.*?)`/g, '<code style="background: #1e293b; color: #e2e8f0; padding: 3px 10px; border-radius: 8px; font-family: monospace; font-size: 13px;">$1</code>');
+    
+    // کد بلوک
+    t = t.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre style="background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 16px; overflow-x: auto; font-family: monospace; font-size: 13px; margin: 15px 0;"><code>${this.escapeHtml(code.trim())}</code></pre>`;
+    });
+    
+    // خطوط افقی گرادینت
+    t = t.replace(/^---+$/gm, '<hr style="border: none; height: 2px; background: linear-gradient(90deg, transparent, #4361ee, #8b5cf6, #4361ee, transparent); margin: 25px 0; border-radius: 2px;">');
+    
+    // پاراگراف‌ها
     const lines = t.split('\n');
     const result = [];
+    
     for (const line of lines) {
-        const l = line.trim();
-        if (!l) continue;
-        if (l.startsWith('<h') || l.startsWith('<ul') || l.startsWith('<hr') || l.startsWith('<li') || l.startsWith('%%BTN_')) {
-            result.push(l);
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        
+        if (trimmed.startsWith('<h') || trimmed.startsWith('<ul') || trimmed.startsWith('<hr') || 
+            trimmed.startsWith('<div') || trimmed.startsWith('<pre') || trimmed.startsWith('<blockquote') ||
+            trimmed.startsWith('<table') || trimmed.startsWith('%%BTN_')) {
+            result.push(trimmed);
         } else {
-            result.push(`<p style="margin:4px 0;line-height:1.65;font-size:13px;">${l}</p>`);
+            result.push(`<p style="margin: 12px 0; line-height: 1.8; font-size: 15px;">${trimmed}</p>`);
         }
     }
+    
     let html = result.join('\n');
-
-    // برگرداندن دکمه‌های HTML
+    
+    // برگردوندن دکمه‌ها
     btnPlaceholders.forEach((btn, idx) => {
-        // اگه داخل <p> گیر کرده، خارجش کن
-        html = html.replace(new RegExp(`<p[^>]*>%%BTN_${idx}%%<\\/p>`, 'g'), btn);
         html = html.replace(`%%BTN_${idx}%%`, btn);
     });
-
-    return html;
+    
+    return `<div class="ai-formatted-response" style="font-family: 'Vazirmatn', sans-serif; direction: rtl; line-height: 1.7;">${html}</div>`;
 }
 
 scrollToBottom() {

@@ -5017,3 +5017,89 @@ button:disabled {
     .api-key-delete-btn:hover {
         transform: scale(1.1);
     }
+    /* ================================================
+   بزرگتر کردن فونت پاسخ‌های AI
+   ================================================ */
+
+/* پیام‌های AI */
+.message.ai-message .message-text {
+    font-size: 16px !important;
+    line-height: 1.75 !important;
+}
+
+.message.ai-message .message-text p {
+    font-size: 16px !important;
+    margin: 10px 0 !important;
+}
+
+.message.ai-message .message-text li {
+    font-size: 15px !important;
+    margin: 6px 0 !important;
+}
+
+.message.ai-message .message-text h2,
+.message.ai-message .message-text h3,
+.message.ai-message .message-text h4 {
+    margin-top: 16px !important;
+    margin-bottom: 10px !important;
+}
+
+.message.ai-message .message-text code {
+    font-size: 14px !important;
+    padding: 3px 8px !important;
+}
+
+.message.ai-message .message-text table td {
+    font-size: 14px !important;
+    padding: 10px 12px !important;
+}
+
+/* پیام‌های کاربر */
+.message.user-message .message-text {
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+}
+
+/* حالت موبایل */
+@media (max-width: 768px) {
+    .message.ai-message .message-text {
+        font-size: 15px !important;
+    }
+    
+    .message.ai-message .message-text p {
+        font-size: 15px !important;
+    }
+    
+    .message.ai-message .message-text li {
+        font-size: 14px !important;
+    }
+}
+/* دارک مود برای دکمه پاکسازی کش */
+.dark-mode .settings-group {
+    background: var(--bg-tertiary) !important;
+}
+
+.dark-mode .settings-group h3 {
+    color: var(--text-primary) !important;
+}
+
+.dark-mode .settings-group h3 i {
+    color: #fbbf24 !important;
+}
+
+.dark-mode [style*="background: linear-gradient(135deg, rgba(245,158,11,0.1)"] {
+    background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.08)) !important;
+    border-color: rgba(245,158,11,0.3) !important;
+}
+
+.dark-mode [style*="color: var(--gray-800)"] {
+    color: var(--text-primary) !important;
+}
+
+.dark-mode [style*="color: var(--gray-500)"] {
+    color: var(--text-tertiary) !important;
+}
+.clear-cache-button,
+[id*="clear-cache"] {
+    font-family: 'Vazirmatn', 'Vazirmatn FD', 'Segoe UI', Tahoma, sans-serif !important;
+}
