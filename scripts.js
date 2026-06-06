@@ -115,6 +115,18 @@ this.uploadedImageUrl = null;
         this.lastPracticeWords = []; 
         this.lastPracticeTime = 0;
         this.srsData = {}; 
+        this.tags = new Map();           
+this.currentTagFilter = null;    
+this.selectedPracticeTag = null; 
+this.exportTagFilter = null;     
+this.bulkSelectedWordIds = new Set();
+this.bulkCurrentPage = 1;        
+this.bulkWordsPerPage = 20;      
+this.bulkAllWords = [];          
+this.bulkFilteredWords = [];     
+
+// بارگذاری تگ‌ها
+this.loadTags();
         this.reviewWords = []; 
         this.lastSrsUpdate = null; 
         this.translateDirection = 'de-fa';
@@ -256,6 +268,14 @@ async init() {
         await this.initDB();
         await this.loadFavorites();
         await this.initSRS();
+        // داخل تابع init، بعد از this.initSRS(); اضافه کن:
+
+// راه‌اندازی سیستم تگ
+this.loadTags();
+this.addTagButtonToWordList();
+this.renderTagFilterBar();
+this.updatePracticeTagFilter();
+this.addTagFilterToExportModal();
         this.setupEventListeners();
         this.loadCustomization();
         this.updateOnlineStatus();
@@ -347,7 +367,176 @@ renderInitialSections() {
     
     console.log('✅ رندر اولیه کامل شد');
 }
+// ================================================
+// توابع پایه مدیریت تگ
+// ================================================
 
+loadTags() {
+    try {
+        const saved = localStorage.getItem('dictionary_tags');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            this.tags = new Map(parsed);
+        } else {
+            this.tags = new Map();
+        }
+        console.log(`✅ ${this.tags.size} تگ بارگذاری شد`);
+    } catch(e) {
+        console.error('Error loading tags:', e);
+        this.tags = new Map();
+    }
+}
+
+saveTags() {
+    try {
+        const toSave = Array.from(this.tags.entries());
+        localStorage.setItem('dictionary_tags', JSON.stringify(toSave));
+    } catch(e) {
+        console.error('Error saving tags:', e);
+    }
+}
+
+getAllTags() {
+    const result = [];
+    for (const [id, tag] of this.tags) {
+        result.push({
+            id: tag.id,
+            name: tag.name,
+            color: tag.color,
+            wordCount: tag.wordIds.length,
+            createdAt: tag.createdAt
+        });
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+}
+
+getTagsForWord(wordId) {
+    const result = [];
+    for (const [id, tag] of this.tags) {
+        if (tag.wordIds.includes(wordId)) {
+            result.push({ id: tag.id, name: tag.name, color: tag.color });
+        }
+    }
+    return result;
+}
+
+addWordToTag(tagId, wordId) {
+    const tag = this.tags.get(tagId);
+    if (!tag) return false;
+    if (!tag.wordIds.includes(wordId)) {
+        tag.wordIds.push(wordId);
+        this.saveTags();
+        return true;
+    }
+    return false;
+}
+
+removeWordFromTag(tagId, wordId) {
+    const tag = this.tags.get(tagId);
+    if (!tag) return false;
+    const index = tag.wordIds.indexOf(wordId);
+    if (index !== -1) {
+        tag.wordIds.splice(index, 1);
+        this.saveTags();
+        return true;
+    }
+    return false;
+}
+
+async getWordsByTag(tagId) {
+    const tag = this.tags.get(tagId);
+    if (!tag || tag.wordIds.length === 0) return [];
+    const allWords = await this.getAllWords();
+    const wordMap = new Map(allWords.map(w => [w.id, w]));
+    const result = tag.wordIds.map(id => wordMap.get(id)).filter(w => w);
+    
+    // اعمال سورت فعلی روی نتیجه (مهم برای سورت جدیدترین)
+    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
+    this.applySortToFilteredWords(result, savedSort);
+    return result;
+}
+
+createTag(name, color = null) {
+    if (!name || name.trim() === '') {
+        return { success: false, message: 'نام تگ نمی‌تواند خالی باشد' };
+    }
+    for (const [id, tag] of this.tags) {
+        if (tag.name === name.trim()) {
+            return { success: false, message: 'تگی با این نام قبلاً وجود دارد' };
+        }
+    }
+    const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+    let maxId = 0;
+    for (const [id] of this.tags) {
+        const numId = parseInt(id);
+        if (!isNaN(numId) && numId > maxId) maxId = numId;
+    }
+    const newId = String(maxId + 1);
+    
+    this.tags.set(newId, {
+        id: newId,
+        name: name.trim(),
+        wordIds: [],
+        color: color || colors[Math.floor(Math.random() * colors.length)],
+        createdAt: new Date().toISOString()
+    });
+    this.saveTags();
+    return { success: true, tagId: newId, tag: this.tags.get(newId) };
+}
+
+deleteTag(tagId) {
+    if (this.tags.has(tagId)) {
+        this.tags.delete(tagId);
+        this.saveTags();
+        return { success: true };
+    }
+    return { success: false };
+}
+
+renameTag(tagId, newName) {
+    const tag = this.tags.get(tagId);
+    if (!tag) return false;
+    tag.name = newName.trim();
+    this.saveTags();
+    return true;
+}
+
+changeTagColor(tagId, color) {
+    const tag = this.tags.get(tagId);
+    if (!tag) return false;
+    tag.color = color;
+    this.saveTags();
+    return true;
+}
+
+addMultipleWordsToTag(tagId, wordIds) {
+    const tag = this.tags.get(tagId);
+    if (!tag) return 0;
+    let added = 0;
+    for (const wordId of wordIds) {
+        if (!tag.wordIds.includes(wordId)) {
+            tag.wordIds.push(wordId);
+            added++;
+        }
+    }
+    if (added > 0) this.saveTags();
+    return added;
+}
+
+removeMultipleWordsFromTag(tagId, wordIds) {
+    const tag = this.tags.get(tagId);
+    if (!tag) return 0;
+    let removed = 0;
+    for (const wordId of wordIds) {
+        const index = tag.wordIds.indexOf(wordId);
+        if (index !== -1) {
+            tag.wordIds.splice(index, 1);
+            removed++;
+        }
+    }
+    if (removed > 0) this.saveTags();
+    return removed;
+}
 renderSearchSection() {
     const container = document.getElementById('search-section');
     if (!container) return;
@@ -3116,6 +3305,10 @@ updateFieldCount() {
         countBadge.innerHTML = `${count} فیلد تکمیل شده`;
     }
 }
+// ================================================
+// تابع sortWordListAdvanced - با سورت درست
+// ================================================
+
 async sortWordListAdvanced(filter, sortType) {
     const words = await this.getAllWords();
     const container = document.getElementById('word-list-container');
@@ -3127,36 +3320,38 @@ async sortWordListAdvanced(filter, sortType) {
     
     let filteredWords = [];
     
-    switch(filter) {
-        case 'favorites':
-            filteredWords = words.filter(word => this.favorites.has(word.id));
-            break;
-        case 'nouns':
-            filteredWords = words.filter(word => word.type === 'noun');
-            break;
-        case 'verbs':
-            filteredWords = words.filter(word => word.type === 'verb');
-            break;
-        case 'adjectives':
-            filteredWords = words.filter(word => word.type === 'adjective');
-            break;
-        case 'adverbs':
-            filteredWords = words.filter(word => word.type === 'adverb');
-            break;
-        default:
-            filteredWords = [...words];
+    if (this.currentTagFilter && this.currentTagFilter !== 'all') {
+        const tagWords = await this.getWordsByTag(this.currentTagFilter);
+        const tagWordIds = new Set(tagWords.map(w => w.id));
+        filteredWords = words.filter(word => tagWordIds.has(word.id));
+    } else {
+        switch(filter) {
+            case 'favorites':
+                filteredWords = words.filter(word => this.favorites.has(word.id));
+                break;
+            case 'nouns':
+                filteredWords = words.filter(word => word.type === 'noun');
+                break;
+            case 'verbs':
+                filteredWords = words.filter(word => word.type === 'verb');
+                break;
+            case 'adjectives':
+                filteredWords = words.filter(word => word.type === 'adjective');
+                break;
+            case 'adverbs':
+                filteredWords = words.filter(word => word.type === 'adverb');
+                break;
+            default:
+                filteredWords = [...words];
+        }
     }
     
-    // ========== مرتب‌سازی یکسان با renderWordList ==========
+    // مرتب‌سازی با روش درست (بر اساس id برای جدیدترین)
     if (sortType === 'date-desc') {
-        // جدیدترین: بزرگترین ID اول
         filteredWords.sort((a, b) => b.id - a.id);
-        console.log('✅ جدیدترین (بر اساس ID):', filteredWords.slice(0, 5).map(w => ({id: w.id, word: w.german})));
     } 
     else if (sortType === 'date-asc') {
-        // قدیمی‌ترین: کوچکترین ID اول
         filteredWords.sort((a, b) => a.id - b.id);
-        console.log('✅ قدیمی‌ترین (بر اساس ID):', filteredWords.slice(0, 5).map(w => ({id: w.id, word: w.german})));
     }
     else if (sortType === 'alphabetical') {
         filteredWords.sort((a, b) => a.german.localeCompare(b.german, 'de'));
@@ -3166,6 +3361,17 @@ async sortWordListAdvanced(filter, sortType) {
     }
     else if (sortType === 'srs-level') {
         filteredWords.sort((a, b) => (this.srsData[b.id]?.level || 0) - (this.srsData[a.id]?.level || 0));
+    }
+    else if (sortType === 'tag') {
+        filteredWords.sort((a, b) => {
+            const tagsA = this.getTagsForWord(a.id);
+            const tagsB = this.getTagsForWord(b.id);
+            if (tagsA.length !== tagsB.length) return tagsB.length - tagsA.length;
+            if (tagsA.length > 0 && tagsB.length > 0) {
+                return tagsA[0].name.localeCompare(tagsB[0].name, 'fa');
+            }
+            return 0;
+        });
     }
     else if (sortType === 'random') {
         for (let i = filteredWords.length - 1; i > 0; i--) {
@@ -3184,7 +3390,11 @@ async sortWordListAdvanced(filter, sortType) {
     container.innerHTML = '';
     const fragment = document.createDocumentFragment();
     
-    filteredWords.forEach((word, index) => {
+    for (let index = 0; index < filteredWords.length; index++) {
+        const word = filteredWords[index];
+        const wordTags = this.getTagsForWord(word.id);
+        const hasTag = wordTags.length > 0;
+        
         const div = document.createElement('div');
         div.className = 'word-list-item';
         div.setAttribute('data-id', word.id);
@@ -3197,6 +3407,15 @@ async sortWordListAdvanced(filter, sortType) {
                     <span class="word-list-item-title">${this.escapeHtml(word.german)}</span>
                     ${word.gender ? `<span class="word-gender ${word.gender}">${this.getGenderSymbol(word.gender)}</span>` : ''}
                     ${word.type ? `<span class="word-type">${this.getTypeLabel(word.type)}</span>` : ''}
+                    ${hasTag ? `
+                        <div class="word-tag-icons">
+                            ${wordTags.map(tag => `
+                                <span class="tag-icon" style="background: ${tag.color};" title="${this.escapeHtml(tag.name)}">
+                                    <i class="fas fa-tag"></i>
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
             <div class="word-list-item-meaning">${this.escapeHtml(word.persian)}</div>
@@ -3207,13 +3426,17 @@ async sortWordListAdvanced(filter, sortType) {
                 <button class="btn btn-sm btn-outline practice-word" data-id="${word.id}">
                     <i class="fas fa-brain"></i> ${LanguageSystem.t('practice.start')}
                 </button>
+                <button class="tag-word-btn ${hasTag ? 'has-tag' : ''}" data-id="${word.id}" data-word="${this.escapeHtml(word.german)}" title="${isGerman ? 'مدیریت پوشه‌ها' : 'Manage folders'}">
+                    <i class="fas fa-folder-plus"></i>
+                </button>
             </div>
         `;
         fragment.appendChild(div);
-    });
+    }
     
     container.appendChild(fragment);
     this.setupWordListEventListeners();
+    this.setupTagWordButtons();
     
     const modal = document.getElementById('sort-modal');
     if (modal) modal.style.display = 'none';
@@ -3224,10 +3447,988 @@ async sortWordListAdvanced(filter, sortType) {
         'date-desc': 'جدیدترین',
         'date-asc': 'قدیمی‌ترین',
         'srs-level': 'سطح یادگیری',
+        'tag': 'پوشه',
         'random': 'تصادفی'
     };
     this.showToast(`مرتب‌سازی بر اساس ${sortNames[sortType] || sortType}`, 'success');
 }
+// ================================================
+// تابع renderWordList - نمایش لیست لغات با تگ‌ها
+// ================================================
+// ================================================
+// نوار فیلتر تگ کشویی - با اعمال فیلتر مستقیم
+// ================================================
+
+renderTagFilterBar() {
+    const wordListSection = document.getElementById('word-list-section');
+    const existingBar = wordListSection.querySelector('.tag-filter-bar');
+    if (existingBar) existingBar.remove();
+    
+    const tags = this.getAllTags();
+    if (tags.length === 0) return;
+    
+    const isGerman = LanguageSystem.isGerman();
+    const currentTag = this.currentTagFilter ? tags.find(t => t.id === this.currentTagFilter) : null;
+    
+    const filterBar = document.createElement('div');
+    filterBar.className = 'tag-filter-bar';
+    filterBar.innerHTML = `
+        <div class="tag-filter-dropdown">
+            <button id="tag-filter-toggle-btn" class="tag-filter-toggle">
+                <i class="fas fa-filter"></i>
+                <span>${currentTag ? currentTag.name : (isGerman ? 'فیلتر بر اساس پوشه' : 'Filter by folder')}</span>
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <div id="tag-filter-menu" class="tag-filter-menu" style="display: none;">
+                <button class="tag-filter-option ${!this.currentTagFilter ? 'active' : ''}" data-tag-id="all">
+                    <i class="fas fa-globe"></i> ${isGerman ? 'همه لغات' : 'All words'}
+                </button>
+                ${tags.map(tag => `
+                    <button class="tag-filter-option ${this.currentTagFilter === tag.id ? 'active' : ''}" data-tag-id="${tag.id}" style="border-right: 3px solid ${tag.color};">
+                        <span class="tag-option-dot" style="background: ${tag.color};"></span>
+                        ${this.escapeHtml(tag.name)}
+                        <span class="tag-option-count">(${tag.wordCount})</span>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+        ${this.currentTagFilter ? `<button id="clear-tag-filter" class="btn-clear-filter"><i class="fas fa-times"></i> ${isGerman ? 'پاک کردن فیلتر' : 'Clear filter'}</button>` : ''}
+    `;
+    
+    const filterButtons = wordListSection.querySelector('.filter-buttons');
+    if (filterButtons) {
+        filterButtons.insertAdjacentElement('afterend', filterBar);
+    }
+    
+    // رویداد باز/بستن dropdown
+    const toggleBtn = document.getElementById('tag-filter-toggle-btn');
+    const filterMenu = document.getElementById('tag-filter-menu');
+    
+    if (toggleBtn && filterMenu) {
+        toggleBtn.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = filterMenu.style.display === 'block';
+            filterMenu.style.display = isOpen ? 'none' : 'block';
+        };
+        
+        document.addEventListener('click', (e) => {
+            if (!filterBar.contains(e.target)) {
+                filterMenu.style.display = 'none';
+            }
+        });
+    }
+    
+    // رویدادهای گزینه‌های فیلتر - اعمال مستقیم فیلتر و رندر مجدد
+    document.querySelectorAll('.tag-filter-option').forEach(btn => {
+        btn.onclick = () => {
+            const tagId = btn.dataset.tagId;
+            this.currentTagFilter = tagId === 'all' ? null : tagId;
+            filterMenu.style.display = 'none';
+            
+            // رندر مجدد لیست با فیلتر جدید (سورت فعلی حفظ می‌شود)
+            this.renderWordList();
+            
+            if (this.currentTagFilter) {
+                const tag = tags.find(t => t.id === tagId);
+                this.showToast(`📁 نمایش لغات پوشه "${tag.name}"`, 'info');
+            } else {
+                this.showToast(`🌍 نمایش همه لغات`, 'info');
+            }
+        };
+    });
+    
+    const clearBtn = document.getElementById('clear-tag-filter');
+    if (clearBtn) {
+        clearBtn.onclick = () => {
+            this.currentTagFilter = null;
+            this.renderWordList();
+            this.showToast(`🌍 فیلتر حذف شد`, 'info');
+        };
+    }
+}
+// ================================================
+// مودال مدیریت تگ
+// ================================================
+
+createTagManagerModal() {
+    if (document.getElementById('tag-manager-modal')) return;
+    
+    const modalHTML = `
+        <div id="tag-manager-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="max-width: 900px; max-height: 85vh;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-folder-tree"></i> مدیریت پوشه‌ها</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body" style="overflow-y: auto;"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline close-modal-btn">بستن</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const modal = document.getElementById('tag-manager-modal');
+    modal.querySelectorAll('.close-modal, .close-modal-btn').forEach(btn => {
+        btn.onclick = () => modal.style.display = 'none';
+    });
+}
+
+showTagManagerModal() {
+    let modal = document.getElementById('tag-manager-modal');
+    if (!modal) {
+        this.createTagManagerModal();
+        modal = document.getElementById('tag-manager-modal');
+    }
+    
+    const tags = this.getAllTags();
+    const isGerman = LanguageSystem.isGerman();
+    
+    this.getAllWords().then(async allWords => {
+        const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
+        this.applySortToFilteredWords(allWords, savedSort);
+        this.bulkAllWords = allWords;
+        this.bulkFilteredWords = [...allWords];
+        this.bulkSelectedWordIds.clear();
+        this.bulkCurrentPage = 1;
+        
+        const modalBody = modal.querySelector('.modal-body');
+   modalBody.innerHTML = `
+    <div class="tag-manager-header">
+        <div class="add-tag-section">
+            <input type="text" id="new-tag-name" class="form-control" placeholder="${isGerman ? 'نام پوشه جدید...' : 'New folder name...'}">
+            <input type="color" id="new-tag-color" class="tag-color-picker" value="#667eea">
+            <button id="create-tag-btn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> ${isGerman ? 'ایجاد' : 'Create'}
+            </button>
+        </div>
+    </div>
+    
+    <div class="tags-list-header">
+        <span><i class="fas fa-folder"></i> ${isGerman ? 'پوشه‌های شما' : 'Your Folders'} (${tags.length})</span>
+        <button id="refresh-tags-list" class="btn btn-sm btn-outline"><i class="fas fa-sync-alt"></i></button>
+    </div>
+    <div class="tags-list-container" id="tags-list-container">
+        ${this.renderTagsListHTML()}
+    </div>
+    
+    <div class="bulk-tag-section">
+        <div class="bulk-header">
+            <h4><i class="fas fa-layer-group"></i> ${isGerman ? 'انتخاب دسته‌جمعی لغات' : 'Bulk Select Words'}</h4>
+            <div class="bulk-selection-controls">
+                <button id="bulk-select-all" class="btn btn-sm btn-outline">${isGerman ? 'همه' : 'All'}</button>
+                <button id="bulk-select-favorites" class="btn btn-sm btn-outline"><i class="fas fa-star"></i> ${isGerman ? 'علاقه‌مندی‌ها' : 'Favorites'}</button>
+                <button id="bulk-select-range" class="btn btn-sm btn-outline"><i class="fas fa-arrows-alt-h"></i> ${isGerman ? 'محدوده' : 'Range'}</button>
+                <button id="bulk-clear-selection" class="btn btn-sm btn-outline">${isGerman ? 'لغو' : 'Clear'}</button>
+            </div>
+        </div>
+        
+        <div id="bulk-range-inputs" class="bulk-range-inputs" style="display: none;">
+            <div class="range-input-wrapper">
+                <input type="number" id="bulk-range-start" class="form-control range-input" placeholder="${isGerman ? 'از لغت شماره' : 'From word #'}" min="1">
+                <span class="range-separator">-</span>
+                <input type="number" id="bulk-range-end" class="form-control range-input" placeholder="${isGerman ? 'تا لغت شماره' : 'To word #'}" min="1">
+                <button id="bulk-apply-range" class="btn btn-sm btn-primary">${isGerman ? 'اعمال' : 'Apply'}</button>
+            </div>
+        </div>
+        
+        <div class="bulk-search">
+            <input type="text" id="bulk-word-search" class="form-control" placeholder="${isGerman ? 'جستجوی لغت...' : 'Search word...'}">
+        </div>
+        
+        <div class="bulk-words-list" id="bulk-words-list"></div>
+        
+        <div class="bulk-pagination" id="bulk-pagination"></div>
+        
+        <div class="bulk-footer">
+            <div class="bulk-selected-info" id="bulk-selected-info">0 ${isGerman ? 'لغت انتخاب شده' : 'words selected'}</div>
+            <div class="bulk-actions">
+                <select id="bulk-tag-select" class="form-control" style="min-width: 160px; width: auto; padding: 8px 12px; font-family: 'Vazirmatn', sans-serif;">
+                    <option value="">${isGerman ? '📁 انتخاب پوشه...' : '📁 Select folder...'}</option>
+                    ${tags.map(t => `<option value="${t.id}" style="border-right: 3px solid ${t.color};">📂 ${this.escapeHtml(t.name)} (${t.wordCount})</option>`).join('')}
+                </select>
+                <button id="bulk-add-to-tag" class="btn btn-success" style="padding: 8px 16px;">
+                    <i class="fas fa-plus"></i> ${isGerman ? 'اضافه' : 'Add'}
+                </button>
+                <button id="bulk-remove-from-tag" class="btn btn-danger" style="padding: 8px 16px;">
+                    <i class="fas fa-trash"></i> ${isGerman ? 'حذف' : 'Remove'}
+                </button>
+            </div>
+        </div>
+    </div>
+`;
+        modal.style.display = 'flex';
+        this.renderBulkWordsList();
+        this.setupTagManagerEvents();
+        this.setupBulkSelectionEvents();
+    });
+}
+
+renderTagsListHTML() {
+    const tags = this.getAllTags();
+    const isGerman = LanguageSystem.isGerman();
+    
+    if (tags.length === 0) {
+        return `<div class="empty-state-tags">${isGerman ? 'هیچ پوشه‌ای وجود ندارد' : 'No folders yet'}</div>`;
+    }
+    
+    return tags.map(tag => `
+        <div class="tag-item" data-tag-id="${tag.id}">
+            <div class="tag-info">
+                <div class="tag-color-dot" style="background: ${tag.color};"></div>
+                <div class="tag-name">${this.escapeHtml(tag.name)}</div>
+                <div class="tag-word-count">(${tag.wordCount})</div>
+            </div>
+            <div class="tag-actions">
+                <button class="tag-action-btn edit-tag" data-id="${tag.id}" data-name="${this.escapeHtml(tag.name)}" data-color="${tag.color}" title="${isGerman ? 'ویرایش' : 'Edit'}">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button class="tag-action-btn delete-tag" data-id="${tag.id}" title="${isGerman ? 'حذف' : 'Delete'}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+setupTagManagerEvents() {
+    const createBtn = document.getElementById('create-tag-btn');
+    if (createBtn) {
+        createBtn.onclick = () => {
+            const name = document.getElementById('new-tag-name').value.trim();
+            const color = document.getElementById('new-tag-color').value;
+            if (name) {
+                const result = this.createTag(name, color);
+                if (result.success) {
+                    this.showToast(`✅ پوشه "${name}" ایجاد شد`, 'success');
+                    document.getElementById('new-tag-name').value = '';
+                    this.showTagManagerModal();
+                    this.renderTagFilterBar();
+                    this.updatePracticeTagFilter();
+                    this.addTagFilterToExportModal();
+                    this.renderWordList(); // بروزرسانی لیست لغات
+                } else {
+                    this.showToast(result.message, 'error');
+                }
+            }
+        };
+    }
+    
+    const refreshBtn = document.getElementById('refresh-tags-list');
+    if (refreshBtn) {
+        refreshBtn.onclick = () => this.showTagManagerModal();
+    }
+    
+    document.querySelectorAll('.edit-tag').forEach(btn => {
+        btn.onclick = () => {
+            const tagId = btn.dataset.id;
+            const currentName = btn.dataset.name;
+            const currentColor = btn.dataset.color;
+            
+            const newName = prompt('نام جدید:', currentName);
+            if (newName && newName.trim()) {
+                this.renameTag(tagId, newName);
+            }
+            
+            const newColor = prompt('رنگ جدید (مثل #ff0000):', currentColor);
+            if (newColor && newColor.match(/^#[0-9A-Fa-f]{6}$/)) {
+                this.changeTagColor(tagId, newColor);
+            }
+            
+            this.showTagManagerModal();
+            this.renderTagFilterBar();
+            this.updatePracticeTagFilter();
+            this.addTagFilterToExportModal();
+            this.renderWordList();
+        };
+    });
+    
+    document.querySelectorAll('.delete-tag').forEach(btn => {
+        btn.onclick = async () => {
+            const tagId = btn.dataset.id;
+            const tag = this.getAllTags().find(t => t.id === tagId);
+            if (tag && confirm(`آیا از حذف پوشه "${tag.name}" مطمئن هستید؟`)) {
+                this.deleteTag(tagId);
+                this.showTagManagerModal();
+                this.renderTagFilterBar();
+                this.updatePracticeTagFilter();
+                this.addTagFilterToExportModal();
+                this.renderWordList();
+                this.showToast(`🗑️ پوشه "${tag.name}" حذف شد`, 'success');
+            }
+        };
+    });
+}
+// ================================================
+// صفحه‌بندی و انتخاب دسته‌جمعی
+// ================================================
+
+renderBulkWordsList() {
+    const container = document.getElementById('bulk-words-list');
+    if (!container) return;
+    
+    const searchTerm = document.getElementById('bulk-word-search')?.value.toLowerCase() || '';
+    let filtered = this.bulkAllWords;
+    
+    if (searchTerm) {
+        filtered = this.bulkAllWords.filter(w => 
+            w.german.toLowerCase().includes(searchTerm) || 
+            w.persian.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    this.bulkFilteredWords = filtered;
+    const totalPages = Math.ceil(filtered.length / this.bulkWordsPerPage);
+    const start = (this.bulkCurrentPage - 1) * this.bulkWordsPerPage;
+    const end = start + this.bulkWordsPerPage;
+    const pageWords = filtered.slice(start, end);
+    
+    container.innerHTML = pageWords.map((word, idx) => {
+        const globalIndex = start + idx + 1;
+        return `
+            <label class="bulk-word-item" data-word-id="${word.id}">
+                <input type="checkbox" class="bulk-word-checkbox" value="${word.id}" ${this.bulkSelectedWordIds.has(word.id) ? 'checked' : ''}>
+                <span class="bulk-word-number">${globalIndex}</span>
+                <span class="bulk-word-german">${this.escapeHtml(word.german)}</span>
+                <span class="bulk-word-persian">${this.escapeHtml(word.persian)}</span>
+                ${this.favorites.has(word.id) ? '<span class="favorite-star"><i class="fas fa-star"></i></span>' : ''}
+            </label>
+        `;
+    }).join('');
+    
+    if (pageWords.length === 0) {
+        container.innerHTML = `<div class="empty-bulk-words">${searchTerm ? 'نتیجه‌ای یافت نشد' : 'هیچ لغتی موجود نیست'}</div>`;
+    }
+    
+    this.renderBulkPagination(totalPages);
+    
+    document.querySelectorAll('.bulk-word-checkbox').forEach(cb => {
+        cb.onchange = (e) => {
+            const wordId = parseInt(cb.value);
+            if (cb.checked) {
+                this.bulkSelectedWordIds.add(wordId);
+            } else {
+                this.bulkSelectedWordIds.delete(wordId);
+            }
+            document.getElementById('bulk-selected-info').innerHTML = `${this.bulkSelectedWordIds.size} لغت انتخاب شده`;
+        };
+    });
+}
+
+renderBulkPagination(totalPages) {
+    const container = document.getElementById('bulk-pagination');
+    if (!container) return;
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let pages = [];
+    let startPage = Math.max(1, this.bulkCurrentPage - 4);
+    let endPage = Math.min(totalPages, startPage + 9);
+    
+    if (endPage - startPage < 9) {
+        startPage = Math.max(1, endPage - 9);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        pages.push(`
+            <button class="bulk-page-btn ${this.bulkCurrentPage === i ? 'active' : ''}" data-page="${i}">
+                ${i}
+            </button>
+        `);
+    }
+    
+    container.innerHTML = `
+        <button class="bulk-page-btn prev" ${this.bulkCurrentPage === 1 ? 'disabled' : ''} data-page="${this.bulkCurrentPage - 1}">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        ${pages.join('')}
+        <button class="bulk-page-btn next" ${this.bulkCurrentPage === totalPages ? 'disabled' : ''} data-page="${this.bulkCurrentPage + 1}">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    document.querySelectorAll('.bulk-page-btn').forEach(btn => {
+        btn.onclick = () => {
+            const page = parseInt(btn.dataset.page);
+            if (!isNaN(page) && page >= 1 && page <= totalPages) {
+                this.bulkCurrentPage = page;
+                this.renderBulkWordsList();
+            }
+        };
+    });
+}
+
+setupBulkSelectionEvents() {
+    const selectRangeBtn = document.getElementById('bulk-select-range');
+    const rangeInputs = document.getElementById('bulk-range-inputs');
+    
+    if (selectRangeBtn && rangeInputs) {
+        selectRangeBtn.onclick = () => {
+            const isVisible = rangeInputs.style.display === 'flex';
+            rangeInputs.style.display = isVisible ? 'none' : 'flex';
+            if (!isVisible) {
+                setTimeout(() => {
+                    document.getElementById('bulk-range-start')?.focus();
+                }, 100);
+            }
+        };
+    }
+    
+    const applyRangeBtn = document.getElementById('bulk-apply-range');
+    if (applyRangeBtn) {
+        applyRangeBtn.onclick = () => {
+            const start = parseInt(document.getElementById('bulk-range-start').value);
+            const end = parseInt(document.getElementById('bulk-range-end').value);
+            
+            if (isNaN(start) || isNaN(end) || start < 1 || end < start) {
+                this.showToast('محدوده نامعتبر', 'error');
+                return;
+            }
+            
+            const words = this.bulkFilteredWords || this.bulkAllWords;
+            for (let i = start - 1; i < Math.min(end, words.length); i++) {
+                if (words[i]) this.bulkSelectedWordIds.add(words[i].id);
+            }
+            document.getElementById('bulk-selected-info').innerHTML = `${this.bulkSelectedWordIds.size} لغت انتخاب شده`;
+            this.renderBulkWordsList();
+            rangeInputs.style.display = 'none';
+            document.getElementById('bulk-range-start').value = '';
+            document.getElementById('bulk-range-end').value = '';
+            
+            this.showToast(`✅ ${this.bulkSelectedWordIds.size} لغت از محدوده ${start} تا ${end} انتخاب شد`, 'success');
+        };
+    }
+    
+    document.getElementById('bulk-select-all')?.addEventListener('click', () => {
+        const words = this.bulkFilteredWords || this.bulkAllWords;
+        words.forEach(w => this.bulkSelectedWordIds.add(w.id));
+        document.getElementById('bulk-selected-info').innerHTML = `${this.bulkSelectedWordIds.size} لغت انتخاب شده`;
+        this.renderBulkWordsList();
+        this.showToast(`✅ همه ${this.bulkSelectedWordIds.size} لغت انتخاب شد`, 'success');
+    });
+    
+    document.getElementById('bulk-select-favorites')?.addEventListener('click', () => {
+        const words = this.bulkFilteredWords || this.bulkAllWords;
+        words.forEach(w => {
+            if (this.favorites.has(w.id)) this.bulkSelectedWordIds.add(w.id);
+        });
+        document.getElementById('bulk-selected-info').innerHTML = `${this.bulkSelectedWordIds.size} لغت انتخاب شده`;
+        this.renderBulkWordsList();
+        this.showToast(`✅ ${this.bulkSelectedWordIds.size} لغت مورد علاقه انتخاب شد`, 'success');
+    });
+    
+    document.getElementById('bulk-clear-selection')?.addEventListener('click', () => {
+        this.bulkSelectedWordIds.clear();
+        document.getElementById('bulk-selected-info').innerHTML = `0 لغت انتخاب شده`;
+        this.renderBulkWordsList();
+        this.showToast(`🗑️ همه انتخاب‌ها لغو شد`, 'info');
+    });
+    
+    const searchInput = document.getElementById('bulk-word-search');
+    if (searchInput) {
+        searchInput.oninput = () => {
+            this.bulkCurrentPage = 1;
+            this.renderBulkWordsList();
+        };
+    }
+    
+    document.getElementById('bulk-add-to-tag')?.addEventListener('click', () => {
+        const tagId = document.getElementById('bulk-tag-select').value;
+        if (!tagId) {
+            this.showToast('لطفاً یک پوشه انتخاب کنید', 'warning');
+            return;
+        }
+        if (this.bulkSelectedWordIds.size === 0) {
+            this.showToast('هیچ لغتی انتخاب نشده', 'warning');
+            return;
+        }
+        const added = this.addMultipleWordsToTag(tagId, Array.from(this.bulkSelectedWordIds));
+        this.showToast(`✅ ${added} لغت به پوشه اضافه شد`, 'success');
+        this.bulkSelectedWordIds.clear();
+        document.getElementById('bulk-selected-info').innerHTML = `0 لغت انتخاب شده`;
+        this.renderBulkWordsList();
+        this.renderTagFilterBar();
+        this.updatePracticeTagFilter();
+        this.addTagFilterToExportModal();
+        this.renderWordList(); // بروزرسانی لیست لغات
+    });
+    
+    document.getElementById('bulk-remove-from-tag')?.addEventListener('click', () => {
+        const tagId = document.getElementById('bulk-tag-select').value;
+        if (!tagId) {
+            this.showToast('لطفاً یک پوشه انتخاب کنید', 'warning');
+            return;
+        }
+        if (this.bulkSelectedWordIds.size === 0) {
+            this.showToast('هیچ لغتی انتخاب نشده', 'warning');
+            return;
+        }
+        const removed = this.removeMultipleWordsFromTag(tagId, Array.from(this.bulkSelectedWordIds));
+        this.showToast(`🗑️ ${removed} لغت از پوشه حذف شد`, 'success');
+        this.bulkSelectedWordIds.clear();
+        document.getElementById('bulk-selected-info').innerHTML = `0 لغت انتخاب شده`;
+        this.renderBulkWordsList();
+        this.renderTagFilterBar();
+        this.updatePracticeTagFilter();
+        this.addTagFilterToExportModal();
+        this.renderWordList();
+    });
+}
+addTagFilterToExportModal() {
+    setTimeout(() => {
+        const modal = document.getElementById('export-words-modal');
+        if (!modal) {
+            console.log('❌ مودال خروجی تصویری پیدا نشد');
+            return;
+        }
+        
+        const tags = this.getAllTags();
+        if (tags.length === 0) {
+            console.log('❌ هیچ تگی برای نمایش در خروجی تصویری وجود ندارد');
+            return;
+        }
+        
+        const isGerman = LanguageSystem.isGerman();
+        
+        // حذف فیلتر قبلی اگر وجود داشت
+        const existingFilter = modal.querySelector('.export-tag-filter');
+        if (existingFilter) existingFilter.remove();
+        
+        // پیدا کردن toolbar
+        let toolbar = modal.querySelector('.export-toolbar');
+        
+        // اگه toolbar وجود نداره، خودمون می‌سازیم
+        if (!toolbar) {
+            const modalHeader = modal.querySelector('.export-modal-header');
+            if (modalHeader) {
+                toolbar = document.createElement('div');
+                toolbar.className = 'export-toolbar';
+                toolbar.style.cssText = 'display: flex; flex-wrap: wrap; gap: 12px; padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; align-items: center;';
+                modalHeader.insertAdjacentElement('afterend', toolbar);
+            }
+        }
+        
+        if (!toolbar) {
+            console.log('❌ toolbar در مودال خروجی تصویری پیدا نشد');
+            return;
+        }
+        
+        const tagFilterSection = document.createElement('div');
+        tagFilterSection.className = 'export-tag-filter';
+        tagFilterSection.style.marginLeft = 'auto';
+        
+        const currentTag = this.exportTagFilter ? tags.find(t => t.id === this.exportTagFilter) : null;
+        
+        tagFilterSection.innerHTML = `
+            <div class="export-tag-dropdown" style="position: relative; display: inline-block;">
+                <button id="export-tag-filter-btn" class="export-tag-filter-toggle" style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 30px; cursor: pointer; font-size: 13px; font-family: 'Vazirmatn', sans-serif;">
+                    <i class="fas fa-folder"></i>
+                    <span id="export-tag-selected-name">${currentTag ? currentTag.name : (isGerman ? 'انتخاب پوشه' : 'Select folder')}</span>
+                    <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+                </button>
+                <div id="export-tag-filter-menu" class="export-tag-filter-menu" style="display: none; position: absolute; top: 100%; right: 0; min-width: 220px; background: var(--white); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; margin-top: 5px; border: 1px solid var(--gray-200); overflow: hidden;">
+                    <button class="export-tag-option ${!this.exportTagFilter ? 'active' : ''}" data-tag-id="all" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; font-family: 'Vazirmatn', sans-serif; transition: all 0.2s; border-right: 3px solid transparent;">
+                        <i class="fas fa-globe"></i> ${isGerman ? 'همه لغات' : 'All words'}
+                    </button>
+                    ${tags.map(tag => `
+                        <button class="export-tag-option ${this.exportTagFilter === tag.id ? 'active' : ''}" data-tag-id="${tag.id}" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; font-family: 'Vazirmatn', sans-serif; transition: all 0.2s; border-right: 3px solid ${tag.color};">
+                            <span class="tag-option-dot" style="width: 10px; height: 10px; border-radius: 50%; background: ${tag.color}; display: inline-block;"></span>
+                            ${this.escapeHtml(tag.name)}
+                            <span class="tag-option-count" style="font-size: 11px; color: var(--gray-500); margin-right: auto;">(${tag.wordCount})</span>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        toolbar.appendChild(tagFilterSection);
+        
+        const toggleBtn = document.getElementById('export-tag-filter-btn');
+        const filterMenu = document.getElementById('export-tag-filter-menu');
+        const selectedNameSpan = document.getElementById('export-tag-selected-name');
+        
+        if (toggleBtn && filterMenu) {
+            toggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isOpen = filterMenu.style.display === 'block';
+                filterMenu.style.display = isOpen ? 'none' : 'block';
+            };
+            
+            document.addEventListener('click', (e) => {
+                if (!tagFilterSection.contains(e.target)) {
+                    if (filterMenu) filterMenu.style.display = 'none';
+                }
+            });
+        }
+        
+        document.querySelectorAll('.export-tag-option').forEach(btn => {
+            btn.onclick = async () => {
+                const tagId = btn.dataset.tagId;
+                console.log('📁 انتخاب پوشه در خروجی تصویری:', tagId);
+                
+                this.exportTagFilter = tagId === 'all' ? null : tagId;
+                if (filterMenu) filterMenu.style.display = 'none';
+                
+                if (this.exportTagFilter) {
+                    const tagWords = await this.getWordsByTag(this.exportTagFilter);
+                    this.allWordsForExport = tagWords;
+                    this.filteredWordsForExport = [...tagWords];
+                    const tag = tags.find(t => t.id === tagId);
+                    if (selectedNameSpan && tag) selectedNameSpan.textContent = tag.name;
+                    this.showToast(`📁 نمایش لغات پوشه "${tag.name}"`, 'info');
+                } else {
+                    this.allWordsForExport = await this.getAllWords();
+                    this.filteredWordsForExport = [...this.allWordsForExport];
+                    if (selectedNameSpan) selectedNameSpan.textContent = isGerman ? 'انتخاب پوشه' : 'Select folder';
+                    this.showToast(`🌍 نمایش همه لغات`, 'info');
+                }
+                
+                const sortSelect = document.getElementById('export-sort-select');
+                if (sortSelect) {
+                    this.applyExportSort(this.filteredWordsForExport, sortSelect.value);
+                }
+                this.renderExportWordsList();
+                this.updateSelectedCountDisplay();
+                
+                // بروزرسانی کلاس active
+                document.querySelectorAll('.export-tag-option').forEach(b => {
+                    b.classList.remove('active');
+                    if (b.dataset.tagId === tagId) b.classList.add('active');
+                });
+                
+                // ذخیره در localStorage
+                if (this.exportTagFilter) {
+                    localStorage.setItem('exportTagFilter', this.exportTagFilter);
+                } else {
+                    localStorage.removeItem('exportTagFilter');
+                }
+            };
+        });
+        
+        // بازیابی انتخاب قبلی از localStorage
+        const savedExportTag = localStorage.getItem('exportTagFilter');
+        if (savedExportTag && this.tags.has(savedExportTag)) {
+            this.exportTagFilter = savedExportTag;
+            const tag = tags.find(t => t.id === savedExportTag);
+            if (selectedNameSpan && tag) selectedNameSpan.textContent = tag.name;
+            setTimeout(async () => {
+                const tagWords = await this.getWordsByTag(savedExportTag);
+                this.allWordsForExport = tagWords;
+                this.filteredWordsForExport = [...tagWords];
+                const sortSelect = document.getElementById('export-sort-select');
+                if (sortSelect) {
+                    this.applyExportSort(this.filteredWordsForExport, sortSelect.value);
+                }
+                this.renderExportWordsList();
+                this.updateSelectedCountDisplay();
+                const activeOpt = document.querySelector(`.export-tag-option[data-tag-id="${savedExportTag}"]`);
+                if (activeOpt) {
+                    document.querySelectorAll('.export-tag-option').forEach(b => b.classList.remove('active'));
+                    activeOpt.classList.add('active');
+                }
+            }, 100);
+        }
+        
+        console.log('✅ فیلتر پوشه به خروجی تصویری اضافه شد');
+        
+    }, 500);
+}
+// ================================================
+// مودال انتخاب تگ برای یک لغت
+// ================================================
+
+createTagSelectionModal() {
+    if (document.getElementById('tag-selection-modal')) return;
+    
+    const isGerman = LanguageSystem.isGerman();
+    const modalHTML = `
+        <div id="tag-selection-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="max-width: 450px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-folder-plus"></i> ${isGerman ? 'مدیریت پوشه‌ها' : 'Manage folders'}</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="tag-selection-list" class="tag-selection-list"></div>
+                    <button id="create-tag-from-selection" class="btn btn-outline btn-sm" style="margin-top: 15px; width: 100%;">
+                        <i class="fas fa-plus"></i> ${isGerman ? 'پوشه جدید' : 'New folder'}
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline close-selection-modal">${isGerman ? 'بستن' : 'Close'}</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const modal = document.getElementById('tag-selection-modal');
+    modal.querySelectorAll('.close-modal, .close-selection-modal').forEach(btn => {
+        btn.onclick = () => modal.style.display = 'none';
+    });
+}
+
+showTagSelectionForWord(wordId, wordGerman) {
+    let modal = document.getElementById('tag-selection-modal');
+    if (!modal) {
+        this.createTagSelectionModal();
+        modal = document.getElementById('tag-selection-modal');
+    }
+    
+    const tags = this.getAllTags();
+    const currentTags = this.getTagsForWord(wordId);
+    const currentTagIds = new Set(currentTags.map(t => t.id));
+    const isGerman = LanguageSystem.isGerman();
+    
+    const container = document.getElementById('tag-selection-list');
+    container.innerHTML = tags.map(tag => `
+        <div class="tag-select-item" data-tag-id="${tag.id}">
+            <div class="tag-select-info">
+                <div class="tag-color-dot" style="background: ${tag.color};"></div>
+                <span class="tag-select-name">${this.escapeHtml(tag.name)}</span>
+                <span class="tag-select-count">(${tag.wordCount})</span>
+            </div>
+            <button class="tag-select-toggle ${currentTagIds.has(tag.id) ? 'active' : ''}" data-tag-id="${tag.id}" style="background: ${currentTagIds.has(tag.id) ? tag.color : '#ccc'};">
+                ${currentTagIds.has(tag.id) ? '<i class="fas fa-check"></i>' : '<i class="fas fa-plus"></i>'}
+            </button>
+        </div>
+    `).join('');
+    
+    if (tags.length === 0) {
+        container.innerHTML = `<div class="empty-state-tags">${isGerman ? 'هیچ پوشه‌ای وجود ندارد. ابتدا پوشه بسازید.' : 'No folders yet.'}</div>`;
+    }
+    
+    modal.querySelector('.modal-header h3').innerHTML = `<i class="fas fa-folder-plus"></i> ${isGerman ? 'مدیریت پوشه‌ها' : 'Manage folders'} - ${this.escapeHtml(wordGerman)}`;
+    modal.style.display = 'flex';
+    
+    document.querySelectorAll('.tag-select-toggle').forEach(btn => {
+        btn.onclick = () => {
+            const tagId = btn.dataset.tagId;
+            const isActive = btn.classList.contains('active');
+            const tag = tags.find(t => t.id === tagId);
+            
+            if (isActive) {
+                this.removeWordFromTag(tagId, wordId);
+                btn.classList.remove('active');
+                btn.style.background = '#ccc';
+                btn.innerHTML = '<i class="fas fa-plus"></i>';
+                this.showToast(`🗑️ از پوشه "${tag.name}" حذف شد`, 'info');
+            } else {
+                this.addWordToTag(tagId, wordId);
+                btn.classList.add('active');
+                btn.style.background = tag.color;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                this.showToast(`✅ به پوشه "${tag.name}" اضافه شد`, 'success');
+            }
+            
+            // بروزرسانی نمایش در لیست لغات و رنگ دکمه
+            this.renderTagFilterBar();
+            this.updatePracticeTagFilter();
+            this.addTagFilterToExportModal();
+            this.renderWordList(); // رندر مجدد برای بروزرسانی آیکون تگ و رنگ دکمه
+        };
+    });
+    
+    document.getElementById('create-tag-from-selection')?.addEventListener('click', () => {
+        modal.style.display = 'none';
+        this.showTagManagerModal();
+    });
+}
+// ================================================
+// دکمه تگ در لیست لغات
+// ================================================
+
+addTagButtonToWordList() {
+    setTimeout(() => {
+        const sortBtn = document.getElementById('floating-sort-btn');
+        if (!sortBtn) return;
+        if (document.getElementById('floating-tag-btn')) return;
+        
+        const tagBtn = document.createElement('button');
+        tagBtn.id = 'floating-tag-btn';
+        tagBtn.className = 'floating-tag-btn';
+        tagBtn.innerHTML = '<i class="fas fa-folder-tree"></i>';
+        tagBtn.title = 'مدیریت پوشه‌ها';
+        tagBtn.onclick = () => this.showTagManagerModal();
+        
+        sortBtn.parentNode.insertBefore(tagBtn, sortBtn.nextSibling);
+        console.log('✅ دکمه تگ اضافه شد');
+    }, 500);
+}
+updatePracticeTagFilter() {
+    setTimeout(() => {
+        const practiceSection = document.getElementById('practice-section');
+        if (!practiceSection) return;
+        
+        const tags = this.getAllTags();
+        if (tags.length === 0) return;
+        
+        const isGerman = LanguageSystem.isGerman();
+        
+        let rangeButtons = practiceSection.querySelector('.range-buttons');
+        if (!rangeButtons) {
+            setTimeout(() => this.updatePracticeTagFilter(), 500);
+            return;
+        }
+        
+        // حذف دکمه قبلی اگر وجود داشت
+        const existingWrapper = rangeButtons.querySelector('.practice-tag-dropdown-wrapper');
+        if (existingWrapper) existingWrapper.remove();
+        
+        // ایجاد دکمه جدید
+        const tagDropdownWrapper = document.createElement('div');
+        tagDropdownWrapper.className = 'practice-tag-dropdown-wrapper';
+        tagDropdownWrapper.style.display = 'inline-block';
+        tagDropdownWrapper.style.position = 'relative';
+        tagDropdownWrapper.style.marginRight = '10px';
+        
+        const currentTag = this.selectedPracticeTag ? tags.find(t => t.id === this.selectedPracticeTag) : null;
+        
+     tagDropdownWrapper.innerHTML = `
+    <div class="practice-tag-dropdown-btn">
+        <button class="range-option" data-range="tag" style="display: flex; align-items: center; gap: 8px; min-width: 130px; justify-content: space-between;">
+            <i class="fas fa-folder"></i> 
+            <span id="practice-tag-selected-name">${currentTag ? currentTag.name : (isGerman ? 'پوشه' : 'Folder')}</span>
+            <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+        </button>
+        <div class="practice-tag-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; min-width: 220px; background: var(--white); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; margin-top: 5px; border: 1px solid var(--gray-200); overflow: hidden;">
+            <button class="practice-tag-option ${!this.selectedPracticeTag ? 'active' : ''}" data-tag-id="all" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; transition: all 0.2s; border-right: 3px solid transparent;">
+                <i class="fas fa-globe"></i> ${isGerman ? 'همه پوشه‌ها' : 'All folders'}
+            </button>
+            ${tags.map(tag => `
+                <button class="practice-tag-option ${this.selectedPracticeTag === tag.id ? 'active' : ''}" data-tag-id="${tag.id}" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; transition: all 0.2s; border-right: 3px solid ${tag.color};">
+                    <span class="tag-dot" style="width: 10px; height: 10px; border-radius: 50%; background: ${tag.color}; display: inline-block;"></span>
+                    ${this.escapeHtml(tag.name)}
+                    <span class="tag-count" style="font-size: 11px; color: var(--gray-500); margin-right: auto;">(${tag.wordCount})</span>
+                    ${this.selectedPracticeTag === tag.id ? '<i class="fas fa-check" style="margin-right: 5px;"></i>' : ''}
+                </button>
+            `).join('')}
+        </div>
+    </div>
+`;
+        
+        rangeButtons.appendChild(tagDropdownWrapper);
+        
+        const dropdownBtn = tagDropdownWrapper.querySelector('.practice-tag-dropdown-btn > button');
+        const dropdownMenu = tagDropdownWrapper.querySelector('.practice-tag-dropdown-menu');
+        const selectedNameSpan = tagDropdownWrapper.querySelector('#practice-tag-selected-name');
+        
+        if (dropdownBtn && dropdownMenu) {
+            dropdownBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = dropdownMenu.style.display === 'block';
+                dropdownMenu.style.display = isOpen ? 'none' : 'block';
+            };
+            
+            document.addEventListener('click', (e) => {
+                if (!tagDropdownWrapper.contains(e.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        }
+        
+        document.querySelectorAll('.practice-tag-option').forEach(opt => {
+            opt.onclick = (e) => {
+                e.stopPropagation();
+                const tagId = opt.dataset.tagId;
+                
+                console.log('📁 انتخاب پوشه در تمرین:', tagId); // برای دیباگ
+                
+                if (tagId === 'all') {
+                    this.selectedPracticeTag = null;
+                    if (selectedNameSpan) selectedNameSpan.textContent = isGerman ? 'پوشه' : 'Folder';
+                    this.showToast(`📁 تمرین از همه پوشه‌ها`, 'info');
+                } else {
+                    this.selectedPracticeTag = tagId;
+                    const tag = tags.find(t => t.id === tagId);
+                    if (selectedNameSpan && tag) selectedNameSpan.textContent = tag.name;
+                    this.showToast(`📁 تمرین از پوشه "${tag.name}"`, 'success');
+                    console.log('✅ selectedPracticeTag set to:', this.selectedPracticeTag); // برای دیباگ
+                }
+                
+                dropdownMenu.style.display = 'none';
+                
+                // بروزرسانی کلاس active
+                document.querySelectorAll('.practice-tag-option').forEach(o => {
+                    o.classList.remove('active');
+                    const checkIcon = o.querySelector('.fa-check');
+                    if (checkIcon) checkIcon.remove();
+                });
+                if (tagId !== 'all') {
+                    opt.classList.add('active');
+                    opt.insertAdjacentHTML('beforeend', '<i class="fas fa-check" style="margin-right: 5px;"></i>');
+                } else {
+                    opt.classList.add('active');
+                }
+                
+                // ذخیره در localStorage برای یادآوری
+                if (this.selectedPracticeTag) {
+                    localStorage.setItem('selectedPracticeTag', this.selectedPracticeTag);
+                } else {
+                    localStorage.removeItem('selectedPracticeTag');
+                }
+                
+                // برای اطمینان از اعمال شدن، دکمه range-option رو فعال نگه دار
+                const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+                if (tagRangeBtn) {
+                    document.querySelectorAll('.range-option').forEach(btn => btn.classList.remove('active'));
+                    tagRangeBtn.classList.add('active');
+                }
+            };
+        });
+        
+        // بازیابی انتخاب قبلی از localStorage
+        const savedTag = localStorage.getItem('selectedPracticeTag');
+        if (savedTag && this.tags.has(savedTag)) {
+            this.selectedPracticeTag = savedTag;
+            const tag = tags.find(t => t.id === savedTag);
+            if (selectedNameSpan && tag) selectedNameSpan.textContent = tag.name;
+            // بروزرسانی کلاس active
+            setTimeout(() => {
+                const activeOpt = document.querySelector(`.practice-tag-option[data-tag-id="${savedTag}"]`);
+                if (activeOpt) {
+                    document.querySelectorAll('.practice-tag-option').forEach(o => {
+                        o.classList.remove('active');
+                        const checkIcon = o.querySelector('.fa-check');
+                        if (checkIcon) checkIcon.remove();
+                    });
+                    activeOpt.classList.add('active');
+                    activeOpt.insertAdjacentHTML('beforeend', '<i class="fas fa-check" style="margin-right: 5px;"></i>');
+                }
+                // دکمه range رو هم فعال کن
+                const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+                if (tagRangeBtn) {
+                    document.querySelectorAll('.range-option').forEach(btn => btn.classList.remove('active'));
+                    tagRangeBtn.classList.add('active');
+                }
+            }, 100);
+        }
+        
+        const otherRangeBtns = rangeButtons.querySelectorAll('.range-option[data-range="all"], .range-option[data-range="favorites"], .range-option[data-range="recent"], .range-option[data-range="custom"]');
+        otherRangeBtns.forEach(btn => {
+            const oldOnClick = btn.onclick;
+            btn.onclick = (e) => {
+                if (oldOnClick) oldOnClick(e);
+                if (dropdownMenu) dropdownMenu.style.display = 'none';
+                // وقتی گزینه دیگه‌ای انتخاب شد، انتخاب پوشه رو لغو کن
+                this.selectedPracticeTag = null;
+                localStorage.removeItem('selectedPracticeTag');
+                if (selectedNameSpan) selectedNameSpan.textContent = isGerman ? 'پوشه' : 'Folder';
+            };
+        });
+        
+    }, 300);
+}
+
+
+
 async renderWordList(filter = 'all') {
     const words = await this.getAllWords();
     const container = document.getElementById('word-list-container');
@@ -3237,59 +4438,36 @@ async renderWordList(filter = 'all') {
     
     container.innerHTML = `<div class="loading-spinner"><i class="fas fa-spinner fa-pulse"></i> بارگذاری...</div>`;
     
-    // فیلتر
     let filteredWords = [...words];
     
-    switch(filter) {
-        case 'favorites':
-            filteredWords = filteredWords.filter(w => this.favorites.has(w.id));
-            break;
-        case 'nouns':
-            filteredWords = filteredWords.filter(w => w.type === 'noun');
-            break;
-        case 'verbs':
-            filteredWords = filteredWords.filter(w => w.type === 'verb');
-            break;
-        case 'adjectives':
-            filteredWords = filteredWords.filter(w => w.type === 'adjective');
-            break;
-        case 'adverbs':
-            filteredWords = filteredWords.filter(w => w.type === 'adverb');
-            break;
-    }
-    
-    // ========== مرتب‌سازی ==========
-    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
-    
-    if (savedSort === 'date-desc') {
-        // جدیدترین: بزرگترین ID اول (چون ID از Date.now ساخته شده)
-        filteredWords.sort((a, b) => b.id - a.id);
-        console.log('🔍 جدیدترین بر اساس ID:', filteredWords.slice(0, 5).map(w => ({id: w.id, german: w.german})));
-    } 
-    else if (savedSort === 'date-asc') {
-        // قدیمی‌ترین: کوچکترین ID اول
-        filteredWords.sort((a, b) => a.id - b.id);
-        console.log('🔍 قدیمی‌ترین بر اساس ID:', filteredWords.slice(0, 5).map(w => ({id: w.id, german: w.german})));
-    }
-    else if (savedSort === 'alphabetical') {
-        filteredWords.sort((a, b) => a.german.localeCompare(b.german, 'de'));
-    }
-    else if (savedSort === 'alphabetical-persian') {
-        filteredWords.sort((a, b) => a.persian.localeCompare(b.persian, 'fa'));
-    }
-    else if (savedSort === 'srs-level') {
-        filteredWords.sort((a, b) => {
-            const levelA = this.srsData[a.id]?.level || 0;
-            const levelB = this.srsData[b.id]?.level || 0;
-            return levelB - levelA;
-        });
-    }
-    else if (savedSort === 'random') {
-        for (let i = filteredWords.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [filteredWords[i], filteredWords[j]] = [filteredWords[j], filteredWords[i]];
+    // فیلتر بر اساس تگ (اگر تگ خاصی انتخاب شده)
+    if (this.currentTagFilter && this.currentTagFilter !== 'all') {
+        const tagWords = await this.getWordsByTag(this.currentTagFilter);
+        const tagWordIds = new Set(tagWords.map(w => w.id));
+        filteredWords = filteredWords.filter(w => tagWordIds.has(w.id));
+    } else {
+        switch(filter) {
+            case 'favorites':
+                filteredWords = filteredWords.filter(w => this.favorites.has(w.id));
+                break;
+            case 'nouns':
+                filteredWords = filteredWords.filter(w => w.type === 'noun');
+                break;
+            case 'verbs':
+                filteredWords = filteredWords.filter(w => w.type === 'verb');
+                break;
+            case 'adjectives':
+                filteredWords = filteredWords.filter(w => w.type === 'adjective');
+                break;
+            case 'adverbs':
+                filteredWords = filteredWords.filter(w => w.type === 'adverb');
+                break;
         }
     }
+    
+    // مرتب‌سازی
+    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
+    this.applySortToFilteredWords(filteredWords, savedSort);
     
     document.getElementById('total-words-count').textContent = filteredWords.length;
     
@@ -3298,12 +4476,17 @@ async renderWordList(filter = 'all') {
         return;
     }
     
-    // رندر
     const fragment = document.createDocumentFragment();
-    filteredWords.forEach((word, index) => {
+    
+    for (let index = 0; index < filteredWords.length; index++) {
+        const word = filteredWords[index];
+        const wordTags = this.getTagsForWord(word.id);
+        const hasTag = wordTags.length > 0;
+        
         const div = document.createElement('div');
         div.className = 'word-list-item';
         div.setAttribute('data-id', word.id);
+        
         div.innerHTML = `
             <div class="word-list-item-header">
                 <div class="word-list-item-title-section">
@@ -3313,22 +4496,49 @@ async renderWordList(filter = 'all') {
                     <span class="word-list-item-title">${this.escapeHtml(word.german)}</span>
                     ${word.gender ? `<span class="word-gender ${word.gender}">${this.getGenderSymbol(word.gender)}</span>` : ''}
                     ${word.type ? `<span class="word-type">${this.getTypeLabel(word.type)}</span>` : ''}
+                    ${hasTag ? `
+                        <div class="word-tag-icons">
+                            ${wordTags.map(tag => `
+                                <span class="tag-icon" style="background: ${tag.color};" title="${this.escapeHtml(tag.name)}">
+                                    <i class="fas fa-tag"></i>
+                                </span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
             <div class="word-list-item-meaning">${this.escapeHtml(word.persian)}</div>
             <div class="word-list-item-actions">
-                <button class="btn btn-sm btn-outline view-word" data-id="${word.id}">مشاهده</button>
-                <button class="btn btn-sm btn-outline practice-word" data-id="${word.id}">تمرین</button>
+                <button class="btn btn-sm btn-outline view-word" data-id="${word.id}">${isGerman ? 'مشاهده' : 'View'}</button>
+                <button class="btn btn-sm btn-outline practice-word" data-id="${word.id}">${LanguageSystem.t('practice.start')}</button>
+                <button class="tag-word-btn ${hasTag ? 'has-tag' : ''}" data-id="${word.id}" data-word="${this.escapeHtml(word.german)}" title="${isGerman ? 'مدیریت پوشه‌ها' : 'Manage folders'}">
+                    <i class="fas fa-folder-plus"></i>
+                </button>
             </div>
         `;
+        
         fragment.appendChild(div);
-    });
+    }
     
     container.innerHTML = '';
     container.appendChild(fragment);
     
     this.setupWordListEventListeners();
     this.setupFilterButtons();
+    this.setupTagWordButtons();
+    this.renderTagFilterBar();
+}
+
+// راه‌اندازی دکمه‌های تگ در هر لغت
+setupTagWordButtons() {
+    document.querySelectorAll('.tag-word-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const wordId = parseInt(btn.dataset.id);
+            const wordGerman = btn.dataset.word;
+            this.showTagSelectionForWord(wordId, wordGerman);
+        };
+    });
 }
 getSRSLevelText(level) {
     const texts = {
@@ -3342,6 +4552,9 @@ getSRSLevelText(level) {
     return texts[level] || 'در حال یادگیری';
 }
 
+// ================================================
+// تابع setupFloatingSortButton
+// ================================================
 
 setupFloatingSortButton() {
     const sortBtn = document.getElementById('floating-sort-btn');
@@ -3352,7 +4565,6 @@ setupFloatingSortButton() {
     
     modal.style.display = 'none';
     
-    // بروزرسانی تیک فعال در منو
     const updateActiveSortOption = () => {
         const currentSort = localStorage.getItem('wordListSort') || 'alphabetical';
         document.querySelectorAll('.sort-modal-option').forEach(option => {
@@ -3364,7 +4576,36 @@ setupFloatingSortButton() {
         });
     };
     
-    // باز کردن مودال
+    const modalBody = modal.querySelector('.sort-modal-body');
+    if (modalBody) {
+        modalBody.innerHTML = `
+            <button class="sort-modal-option" data-sort="alphabetical">
+                <i class="fas fa-sort-alpha-down"></i> الفبایی (آلمانی)
+            </button>
+            <button class="sort-modal-option" data-sort="alphabetical-persian">
+                <i class="fas fa-sort-alpha-down"></i> الفبایی (فارسی)
+            </button>
+            <div class="sort-divider"></div>
+            <button class="sort-modal-option" data-sort="date-desc">
+                <i class="fas fa-calendar-plus"></i> جدیدترین
+            </button>
+            <button class="sort-modal-option" data-sort="date-asc">
+                <i class="fas fa-calendar-minus"></i> قدیمی‌ترین
+            </button>
+            <div class="sort-divider"></div>
+            <button class="sort-modal-option" data-sort="srs-level">
+                <i class="fas fa-brain"></i> سطح یادگیری (SRS)
+            </button>
+            <button class="sort-modal-option" data-sort="tag">
+                <i class="fas fa-folder"></i> بر اساس پوشه
+            </button>
+            <div class="sort-divider"></div>
+            <button class="sort-modal-option" data-sort="random">
+                <i class="fas fa-random"></i> تصادفی
+            </button>
+        `;
+    }
+    
     sortBtn.onclick = (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -3372,15 +4613,15 @@ setupFloatingSortButton() {
         modal.style.display = 'flex';
     };
     
-    // بستن مودال
     if (closeBtn) {
-        closeBtn.onclick = (e) => {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.onclick = (e) => {
             e.stopPropagation();
             modal.style.display = 'none';
         };
     }
     
-    // بستن با کلیک روی پس‌زمینه
     modal.onclick = (e) => {
         if (e.target === modal) {
             modal.style.display = 'none';
@@ -3392,18 +4633,21 @@ setupFloatingSortButton() {
         modalContent.onclick = (e) => e.stopPropagation();
     }
     
-    // ========== اصلاح این قسمت ==========
-    // گزینه‌های مرتب‌سازی - ذخیره `self` برای دسترسی به کلاس
     const self = this;
-    document.querySelectorAll('.sort-modal-option').forEach(btn => {
-        btn.onclick = async (e) => {
+    
+    const oldOptions = document.querySelectorAll('.sort-modal-option');
+    oldOptions.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.onclick = async (e) => {
             e.stopPropagation();
-            const sortType = btn.dataset.sort;
+            const sortType = newBtn.dataset.sort;
             const activeFilter = document.querySelector('.filter-btn.active');
             const filter = activeFilter ? activeFilter.dataset.filter : 'all';
             
             localStorage.setItem('wordListSort', sortType);
-            await self.sortWordListAdvanced(filter, sortType);  // ← استفاده از self
+            await self.sortWordListAdvanced(filter, sortType);
             modal.style.display = 'none';
             
             const sortNames = {
@@ -3412,11 +4656,10 @@ setupFloatingSortButton() {
                 'date-desc': 'جدیدترین',
                 'date-asc': 'قدیمی‌ترین',
                 'srs-level': 'سطح یادگیری',
-                'practice-count': 'بیشترین تمرین',
-                'accuracy': 'بیشترین دقت',
+                'tag': 'پوشه',
                 'random': 'تصادفی'
             };
-            self.showToast(`مرتب‌سازی بر اساس ${sortNames[sortType]}`, 'success');  // ← استفاده از self
+            self.showToast(`مرتب‌سازی بر اساس ${sortNames[sortType] || sortType}`, 'success');
         };
     });
 }
@@ -4019,6 +5262,7 @@ document.querySelectorAll('.order-option').forEach(btn => {
         btn.classList.add('active');
     });
 });
+this.updatePracticeTagFilter();
 }
 async startConjugationPractice() {
     const words = await this.getAllWords();
@@ -5544,6 +6788,18 @@ async getWordsForPractice() {
     let rangeFilteredWords = [];
     
     switch(rangeType) {
+        case 'tag':
+    if (this.selectedPracticeTag) {
+        const tagWords = await this.getWordsByTag(this.selectedPracticeTag);
+        if (tagWords.length === 0) {
+            this.showToast('📁 هیچ لغتی در این پوشه وجود ندارد', 'warning');
+            return [];
+        }
+        rangeFilteredWords = tagWords;
+    } else {
+        rangeFilteredWords = [...allWords];
+    }
+    break;
         case 'favorites':
             rangeFilteredWords = filteredWords.filter(word => this.favorites.has(word.id));
             if (rangeFilteredWords.length === 0) {
@@ -10722,6 +11978,7 @@ async showExportWordsModal() {
     // رندر
     this.renderExportWordsList();
     this.renderExportToolbar(modal);
+    this.addTagFilterToExportModal();
     this.updateSelectedCountDisplay();
     
     // دکمه‌ها
@@ -10903,34 +12160,44 @@ filterExportWordsList(query) {
     
     this.renderExportWordsList();
 }
-applySortToFilteredWords(words, sortBy) {
-    switch(sortBy) {
-        case 'alphabetical':
-            words.sort((a, b) => a.german.localeCompare(b.german, 'de'));
-            break;
-        case 'alphabetical-persian':
-            words.sort((a, b) => a.persian.localeCompare(b.persian, 'fa'));
-            break;
-        case 'date-desc':
-            // جدیدترین: تاریخ بزرگتر اول
-            words.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            break;
-        case 'date-asc':
-            // قدیمی‌ترین: تاریخ کوچکتر اول
-            words.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-            break;
-        case 'srs-level':
-            words.sort((a, b) => {
-                const levelA = this.srsData[a.id]?.level || 0;
-                const levelB = this.srsData[b.id]?.level || 0;
-                return levelB - levelA;
-            });
-            break;
-        case 'random':
-            words.sort(() => Math.random() - 0.5);
-            break;
-        default:
-            words.sort((a, b) => a.german.localeCompare(b.german, 'de'));
+// ================================================
+// تابع مرتب‌سازی - با سورت درست برای جدیدترین/قدیمی‌ترین
+// ================================================
+
+applySortToFilteredWords(words, sortType) {
+    if (sortType === 'date-desc') {
+        // جدیدترین: بر اساس id (بزرگترین اول) - چون id از Date.now ساخته شده
+        words.sort((a, b) => b.id - a.id);
+    } 
+    else if (sortType === 'date-asc') {
+        // قدیمی‌ترین: بر اساس id (کوچکترین اول)
+        words.sort((a, b) => a.id - b.id);
+    }
+    else if (sortType === 'alphabetical') {
+        words.sort((a, b) => a.german.localeCompare(b.german, 'de'));
+    }
+    else if (sortType === 'alphabetical-persian') {
+        words.sort((a, b) => a.persian.localeCompare(b.persian, 'fa'));
+    }
+    else if (sortType === 'srs-level') {
+        words.sort((a, b) => (this.srsData[b.id]?.level || 0) - (this.srsData[a.id]?.level || 0));
+    }
+    else if (sortType === 'tag') {
+        words.sort((a, b) => {
+            const tagsA = this.getTagsForWord(a.id);
+            const tagsB = this.getTagsForWord(b.id);
+            if (tagsA.length !== tagsB.length) return tagsB.length - tagsA.length;
+            if (tagsA.length > 0 && tagsB.length > 0) {
+                return tagsA[0].name.localeCompare(tagsB[0].name, 'fa');
+            }
+            return 0;
+        });
+    }
+    else if (sortType === 'random') {
+        for (let i = words.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [words[i], words[j]] = [words[j], words[i]];
+        }
     }
     return words;
 }
@@ -12702,107 +13969,184 @@ formatMusicTime(seconds) {
     // مدیریت داده‌ها (Import/Export)
     // ================================================
 
-    async exportData() {
-        try {
-            const [words, favorites, examples, practiceHistory] = await Promise.all([
-                this.getAllWords(),
-                new Promise(resolve => {
-                    const transaction = this.db.transaction(['favorites'], 'readonly');
-                    const store = transaction.objectStore('favorites');
-                    const request = store.getAll();
-                    request.onsuccess = () => resolve(request.result || []);
-                }),
-                new Promise(resolve => {
-                    const transaction = this.db.transaction(['examples'], 'readonly');
-                    const store = transaction.objectStore('examples');
-                    const request = store.getAll();
-                    request.onsuccess = () => resolve(request.result || []);
-                }),
-                this.getAllPracticeHistory()
-            ]);
-            
-            const data = {
-                words,
-                favorites,
-                examples,
-                practiceHistory,
-                exportedAt: new Date().toISOString(),
-                version: 3
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `elias-dictionary-backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showToast('✅ داده‌ها با موفقیت صادر شد', 'success');
-            
-        } catch (error) {
-            console.error('Export error:', error);
-            this.showToast('❌ خطا در صدور داده‌ها', 'error');
-        }
+// ================================================
+// Export Data - خروجی کامل
+// ================================================
+
+async exportData() {
+    try {
+        this.showSimpleLoadingSpinner();
+        
+        const words = await this.getAllWords();
+        const favorites = Array.from(this.favorites);
+        
+        const examples = await new Promise((resolve) => {
+            const transaction = this.db.transaction(['examples'], 'readonly');
+            const store = transaction.objectStore('examples');
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => resolve([]);
+        });
+        
+        const practiceHistory = await this.getAllPracticeHistory();
+        const tagsData = Array.from(this.tags.entries());
+        const srsData = this.srsData;
+        
+        const settings = {
+            darkMode: localStorage.getItem('darkMode') === 'true',
+            fontSize: localStorage.getItem('fontSize') || 'medium',
+            theme: localStorage.getItem('theme') || 'default',
+            wordListSort: localStorage.getItem('wordListSort') || 'alphabetical',
+            practiceRange: localStorage.getItem('practiceRange') || 'all',
+            practiceCount: localStorage.getItem('practiceCount') || '10',
+            practiceOrder: localStorage.getItem('practiceOrder') || 'random',
+            studyTimePerWord: localStorage.getItem('studyTimePerWord') || '5',
+            musicVolume: localStorage.getItem('musicVolume') || '50',
+            lexiCardStyle: localStorage.getItem('lexiCardStyle') || 'modern',
+            exportWordsPerPage: localStorage.getItem('exportWordsPerPage') || '10',
+            exportSortBy: localStorage.getItem('exportSortBy') || 'alphabetical',
+            exportTheme: localStorage.getItem('exportTheme') || 'light',
+            exportShowGender: localStorage.getItem('exportShowGender') !== 'false',
+            exportShowType: localStorage.getItem('exportShowType') !== 'false',
+            exportHeaderTitle: localStorage.getItem('exportHeaderTitle') || 'Elias.Dictionary'
+        };
+        
+        const allChats = localStorage.getItem('all_chats');
+        const currentChatId = localStorage.getItem('current_chat_id');
+        const permanentMemory = localStorage.getItem('permanent_memory');
+        
+        const musicList = await this.getAllMusic();
+        const books = await this.getAllBooksFromIndexedDB();
+        
+        const exportData = {
+            version: 5,
+            exportedAt: new Date().toISOString(),
+            words: words,
+            favorites: favorites,
+            examples: examples,
+            practiceHistory: practiceHistory,
+            tags: tagsData,
+            srsData: srsData,
+            settings: settings,
+            allChats: allChats,
+            currentChatId: currentChatId,
+            permanentMemory: permanentMemory,
+            music: musicList.map(m => ({
+                id: m.id,
+                name: m.name,
+                audioData: m.audioData,
+                audioType: m.audioType,
+                imageData: m.imageData,
+                uploadDate: m.uploadDate
+            })),
+            books: books.map(b => ({
+                id: b.id,
+                title: b.title,
+                author: b.author,
+                pdfData: b.pdfData,
+                coverData: b.coverData,
+                createdAt: b.createdAt
+            })),
+            totalWords: words.length,
+            totalPractice: practiceHistory.length,
+            totalTags: this.tags.size
+        };
+        
+        const jsonData = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `elias-dictionary-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.hideSimpleLoadingSpinner();
+        this.showToast(`✅ تمام داده‌ها با موفقیت صادر شد (${words.length} لغت، ${this.tags.size} پوشه، ${practiceHistory.length} تمرین)`, 'success');
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        this.hideSimpleLoadingSpinner();
+        this.showToast('❌ خطا در صدور داده‌ها: ' + error.message, 'error');
     }
+}
 
-   async importData(file) {
+
+// ================================================
+// Import Data - ورودی کامل
+// ================================================
+
+async importData(file) {
     if (!file) return;
-
+    
+    this.showSimpleLoadingSpinner();
+    
     try {
         const text = await file.text();
         const data = JSON.parse(text);
-
+        
         if (!data.words || !Array.isArray(data.words)) {
-            throw new Error('فرمت فایل نامعتبر است');
+            throw new Error('فرمت فایل نامعتبر است.');
         }
-
-        if (!confirm(`⚠️ آیا از وارد کردن ${data.words.length} لغت اطمینان دارید؟`)) {
+        
+        const wordCount = data.words.length;
+        const practiceCount = data.practiceHistory?.length || 0;
+        const tagCount = data.tags?.length || 0;
+        
+        const isGerman = LanguageSystem.isGerman();
+        const confirmMessage = isGerman 
+            ? `⚠️ آیا از وارد کردن داده‌ها مطمئن هستید؟\n\n📚 ${wordCount} لغت\n📁 ${tagCount} پوشه\n🎯 ${practiceCount} تمرین\n\n⚠️ توجه: داده‌های فعلی کاملاً حذف می‌شوند.`
+            : `⚠️ Are you sure?\n\n📚 ${wordCount} words\n📁 ${tagCount} folders\n🎯 ${practiceCount} practices\n\n⚠️ Current data will be replaced.`;
+        
+        if (!confirm(confirmMessage)) {
+            this.hideSimpleLoadingSpinner();
             return;
         }
-
-        // پاک کردن همه دیتاهای قبلی
+        
         await this.clearAllData();
-
+        
+        const keysToKeep = ['darkMode', 'fontSize', 'theme', 'learningLang'];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && !keysToKeep.includes(key) && !key.startsWith('groq_')) {
+                localStorage.removeItem(key);
+            }
+        }
+        
         const transaction = this.db.transaction(
             ['words', 'favorites', 'examples', 'practiceHistory'],
             'readwrite'
         );
-
-        // ========== 1. وارد کردن لغات و ذخیره نگاشت آیدی قدیم به جدید ==========
+        
         const wordsStore = transaction.objectStore('words');
-        const idMapping = new Map(); // نگاشت آیدی قدیم به جدید
+        const idMapping = new Map();
         
         for (const word of data.words) {
-            // حذف آیدی قدیم (اجازه بده دیتابیس آیدی جدید بده)
             const oldId = word.id;
             delete word.id;
-            
             const newId = await new Promise((resolve, reject) => {
                 const request = wordsStore.add(word);
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = (e) => reject(e.target.error);
             });
-            
             idMapping.set(oldId, newId);
-            console.log(`🔄 نگاشت آیدی: ${oldId} → ${newId}`);
         }
-
-        // ========== 2. وارد کردن علاقه‌مندی‌ها با آیدی جدید ==========
+        console.log(`✅ ${data.words.length} لغت وارد شد`);
+        
         if (data.favorites && Array.isArray(data.favorites)) {
             const favStore = transaction.objectStore('favorites');
-            for (const fav of data.favorites) {
-                const newWordId = idMapping.get(fav.wordId);
+            for (const favId of data.favorites) {
+                const newWordId = idMapping.get(favId);
                 if (newWordId) {
                     favStore.add({ wordId: newWordId });
+                    this.favorites.add(newWordId);
                 }
             }
         }
-
-        // ========== 3. وارد کردن مثال‌ها با آیدی جدید ==========
+        
         if (data.examples && Array.isArray(data.examples)) {
             const exStore = transaction.objectStore('examples');
             for (const ex of data.examples) {
@@ -12814,8 +14158,7 @@ formatMusicTime(seconds) {
                 }
             }
         }
-
-        // ========== 4. وارد کردن تاریخچه تمرین با آیدی جدید ==========
+        
         if (data.practiceHistory && Array.isArray(data.practiceHistory)) {
             const phStore = transaction.objectStore('practiceHistory');
             for (const record of data.practiceHistory) {
@@ -12827,24 +14170,152 @@ formatMusicTime(seconds) {
                 }
             }
         }
-
+        
         await new Promise((resolve, reject) => {
             transaction.oncomplete = () => resolve();
             transaction.onerror = (event) => reject(event.target.error);
         });
-        await this.rebuildSRSFromHistory();
-        // ========== 5. بازسازی SRS دیتا از practiceHistory ==========
-        await this.rebuildSRSFromHistory();
-
+        
+        if (data.tags && Array.isArray(data.tags)) {
+            this.tags.clear();
+            for (const [oldTagId, tagData] of data.tags) {
+                const updatedWordIds = tagData.wordIds
+                    .map(oldWordId => idMapping.get(oldWordId))
+                    .filter(newId => newId !== undefined);
+                
+                this.tags.set(tagData.id, {
+                    ...tagData,
+                    wordIds: updatedWordIds
+                });
+            }
+            this.saveTags();
+            console.log(`✅ ${this.tags.size} تگ وارد شد`);
+        }
+        
+        if (data.srsData) {
+            this.srsData = {};
+            for (const [oldWordId, srsItem] of Object.entries(data.srsData)) {
+                const newWordId = idMapping.get(parseInt(oldWordId));
+                if (newWordId) {
+                    this.srsData[newWordId] = srsItem;
+                }
+            }
+            this.saveSRSData();
+            this.updateReviewWords();
+        }
+        
+        if (data.settings) {
+            const settings = data.settings;
+            if (settings.darkMode !== undefined) {
+                document.body.classList.toggle('dark-mode', settings.darkMode);
+                localStorage.setItem('darkMode', settings.darkMode);
+            }
+            if (settings.fontSize) {
+                document.body.classList.remove('font-small', 'font-medium', 'font-large', 'font-xlarge', 'font-xxlarge');
+                document.body.classList.add(`font-${settings.fontSize}`);
+                localStorage.setItem('fontSize', settings.fontSize);
+            }
+            if (settings.theme) {
+                this.applyTheme(settings.theme);
+            }
+            if (settings.wordListSort) localStorage.setItem('wordListSort', settings.wordListSort);
+            if (settings.practiceRange) localStorage.setItem('practiceRange', settings.practiceRange);
+            if (settings.practiceCount) localStorage.setItem('practiceCount', settings.practiceCount);
+            if (settings.practiceOrder) localStorage.setItem('practiceOrder', settings.practiceOrder);
+            if (settings.studyTimePerWord) localStorage.setItem('studyTimePerWord', settings.studyTimePerWord);
+            if (settings.musicVolume) localStorage.setItem('musicVolume', settings.musicVolume);
+            if (settings.lexiCardStyle) localStorage.setItem('lexiCardStyle', settings.lexiCardStyle);
+            if (settings.exportWordsPerPage) localStorage.setItem('exportWordsPerPage', settings.exportWordsPerPage);
+            if (settings.exportSortBy) localStorage.setItem('exportSortBy', settings.exportSortBy);
+            if (settings.exportTheme) localStorage.setItem('exportTheme', settings.exportTheme);
+            if (settings.exportShowGender !== undefined) localStorage.setItem('exportShowGender', settings.exportShowGender);
+            if (settings.exportShowType !== undefined) localStorage.setItem('exportShowType', settings.exportShowType);
+            if (settings.exportHeaderTitle) localStorage.setItem('exportHeaderTitle', settings.exportHeaderTitle);
+        }
+        
+        if (data.allChats) localStorage.setItem('all_chats', data.allChats);
+        if (data.currentChatId) localStorage.setItem('current_chat_id', data.currentChatId);
+        if (data.permanentMemory) localStorage.setItem('permanent_memory', data.permanentMemory);
+        
+        if (data.music && Array.isArray(data.music) && data.music.length > 0) {
+            const musicTransaction = this.db.transaction(['music'], 'readwrite');
+            const musicStore = musicTransaction.objectStore('music');
+            for (const music of data.music) {
+                musicStore.add(music);
+            }
+            await new Promise((resolve, reject) => {
+                musicTransaction.oncomplete = () => resolve();
+                musicTransaction.onerror = (e) => reject(e.target.error);
+            });
+        }
+        
+        if (data.books && Array.isArray(data.books) && data.books.length > 0) {
+            const bookTransaction = this.db.transaction(['books'], 'readwrite');
+            const bookStore = bookTransaction.objectStore('books');
+            for (const book of data.books) {
+                bookStore.add(book);
+            }
+            await new Promise((resolve, reject) => {
+                bookTransaction.oncomplete = () => resolve();
+                bookTransaction.onerror = (e) => reject(e.target.error);
+            });
+        }
+        
+        if (!data.srsData && data.practiceHistory && data.practiceHistory.length > 0) {
+            await this.rebuildSRSFromHistory();
+        }
+        
         await this.loadFavorites();
-        this.showToast(`✅ ${data.words.length} لغت با موفقیت وارد شد`, 'success');
+        
         this.renderWordList();
         this.updateStats();
-
+        this.renderTagFilterBar();
+        this.updatePracticeTagFilter();
+        this.addTagFilterToExportModal();
+        
+        this.hideSimpleLoadingSpinner();
+        this.showToast(`✅ تمام داده‌ها با موفقیت وارد شد (${data.words.length} لغت، ${this.tags.size} پوشه)`, 'success');
+        
+        setTimeout(() => {
+            if (confirm('برای اعمال کامل تغییرات، صفحه مجدداً بارگذاری شود؟')) {
+                location.reload();
+            }
+        }, 1000);
+        
     } catch (error) {
         console.error('Import error:', error);
+        this.hideSimpleLoadingSpinner();
         this.showToast('❌ خطا در وارد کردن داده‌ها: ' + error.message, 'error');
     }
+}
+
+async clearAllData() {
+    return new Promise((resolve, reject) => {
+        const transaction = this.db.transaction(
+            ['words', 'favorites', 'examples', 'practiceHistory', 'music', 'books'],
+            'readwrite'
+        );
+        
+        transaction.objectStore('words').clear();
+        transaction.objectStore('favorites').clear();
+        transaction.objectStore('examples').clear();
+        transaction.objectStore('practiceHistory').clear();
+        
+        if (transaction.objectStoreNames.contains('music')) {
+            transaction.objectStore('music').clear();
+        }
+        if (transaction.objectStoreNames.contains('books')) {
+            transaction.objectStore('books').clear();
+        }
+        
+        transaction.oncomplete = () => {
+            this.favorites.clear();
+            this.tags.clear();
+            this.srsData = {};
+            resolve();
+        };
+        transaction.onerror = (event) => reject(event.target.error);
+    });
 }
 
 // تابع جدید برای بازسازی SRS از تاریخچه تمرین

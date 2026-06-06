@@ -5103,3 +5103,774 @@ button:disabled {
 [id*="clear-cache"] {
     font-family: 'Vazirmatn', 'Vazirmatn FD', 'Segoe UI', Tahoma, sans-serif !important;
 }
+/* ================================================
+   سیستم تگ/پوشه - استایل کامل نهایی
+   ================================================ */
+
+/* دکمه تگ کنار دکمه سورت */
+.floating-tag-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #10b981, #059669);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    margin-right: 10px;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.floating-tag-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+}
+
+.floating-tag-btn i {
+    font-size: 18px;
+}
+
+/* آیکون‌های تگ در هدر لغت */
+.word-tag-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 8px;
+}
+
+.tag-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.tag-icon:hover {
+    transform: scale(1.1);
+}
+
+.tag-icon i {
+    font-size: 10px;
+}
+
+/* دکمه تگ در هر لغت */
+.tag-word-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--gray-100) !important;
+    border: 1px solid var(--gray-200) !important;
+    color: var(--gray-600) !important;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif !important;
+}
+
+.tag-word-btn.has-tag {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: white !important;
+}
+
+.tag-word-btn i {
+    margin: 0 !important;
+    font-size: 14px !important;
+}
+
+/* نوار فیلتر تگ کشویی */
+.tag-filter-bar {
+    margin: 15px 0;
+    position: relative;
+}
+
+.tag-filter-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.tag-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.tag-filter-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+.tag-filter-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 220px;
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    z-index: 1000;
+    margin-top: 8px;
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+}
+
+.tag-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: right;
+    font-size: 14px;
+    transition: all 0.2s;
+    border-right: 3px solid transparent;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.tag-filter-option:hover {
+    background: var(--gray-100);
+}
+
+.tag-filter-option.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.tag-option-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.tag-option-count {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-right: auto;
+}
+
+.btn-clear-filter {
+    background: none;
+    border: none;
+    color: var(--gray-500);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 8px 16px;
+    margin-right: 10px;
+    border-radius: 30px;
+    transition: all 0.2s;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.btn-clear-filter:hover {
+    background: var(--gray-100);
+    color: var(--danger);
+}
+
+/* مودال مدیریت تگ */
+.tag-manager-header {
+    margin-bottom: 20px;
+}
+
+.add-tag-section {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.tag-color-picker {
+    width: 50px;
+    height: 40px;
+    border: 2px solid var(--gray-200);
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.tags-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0 10px;
+}
+
+.tags-list-container {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.tag-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: var(--gray-50);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.tag-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tag-color-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+}
+
+.tag-name {
+    font-weight: 600;
+    font-size: 14px;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.tag-word-count {
+    font-size: 11px;
+    color: var(--gray-500);
+}
+
+.tag-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.tag-action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: var(--white);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.tag-action-btn.edit-tag:hover { background: #8b5cf6; color: white; }
+.tag-action-btn.delete-tag:hover { background: #ef4444; color: white; }
+
+/* انتخاب دسته‌جمعی */
+.bulk-tag-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.bulk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.bulk-header h4 {
+    font-size: 14px;
+    margin: 0;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.bulk-selection-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.bulk-range-inputs {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: var(--gray-50);
+    border-radius: 12px;
+}
+
+.range-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.range-input {
+    width: 120px !important;
+    height: 36px !important;
+    padding: 6px 10px !important;
+    text-align: center;
+    font-size: 13px !important;
+}
+
+.range-separator {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--gray-500);
+}
+
+.bulk-search {
+    margin-bottom: 15px;
+}
+
+.bulk-words-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.bulk-word-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bulk-word-item:hover {
+    background: var(--gray-50);
+}
+
+.bulk-word-number {
+    width: 40px;
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.bulk-word-german {
+    font-weight: 600;
+    min-width: 120px;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.bulk-word-persian {
+    color: var(--gray-600);
+    font-size: 13px;
+    flex: 1;
+}
+
+.favorite-star {
+    color: #fbbf24;
+    font-size: 12px;
+}
+
+/* صفحه‌بندی */
+.bulk-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.bulk-page-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.bulk-page-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.bulk-page-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.bulk-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.bulk-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.bulk-selected-info {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.bulk-actions select {
+    width: 160px;
+}
+
+/* مودال انتخاب تگ برای یک لغت */
+.tag-selection-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.tag-select-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: var(--gray-50);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.tag-select-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tag-select-name {
+    font-weight: 500;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.tag-select-count {
+    font-size: 11px;
+    color: var(--gray-500);
+}
+
+.tag-select-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.2s;
+}
+
+.tag-select-toggle:hover {
+    transform: scale(1.05);
+}
+
+/* بخش تمرین - dropdown پوشه */
+.practice-tag-dropdown-wrapper {
+    display: inline-block;
+    position: relative;
+}
+
+.practice-tag-dropdown-btn {
+    position: relative;
+}
+
+.practice-tag-dropdown-btn .range-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.practice-tag-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 200px;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 1000;
+    margin-top: 5px;
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.practice-tag-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: right;
+    font-size: 13px;
+    transition: all 0.2s;
+    border-right: 3px solid transparent;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.practice-tag-option:hover {
+    background: var(--gray-100);
+}
+
+.practice-tag-option.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.practice-tag-option .tag-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.practice-tag-option .tag-count {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-right: auto;
+}
+
+.practice-tag-option i {
+    margin-right: 5px;
+    font-size: 12px;
+}
+
+/* بخش خروجی تصویری - dropdown پوشه */
+.export-tag-filter {
+    margin: 15px 0;
+}
+
+.export-tag-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.export-tag-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.export-tag-filter-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 200px;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 1000;
+    margin-top: 5px;
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.export-tag-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: right;
+    font-size: 13px;
+    transition: all 0.2s;
+    border-right: 3px solid transparent;
+    font-family: 'Vazirmatn', 'Vazirmatn FD', sans-serif;
+}
+
+.export-tag-option:hover {
+    background: var(--gray-100);
+}
+
+.export-tag-option.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* دارک مود */
+.dark-mode .tag-filter-menu,
+.dark-mode .practice-tag-dropdown-menu,
+.dark-mode .export-tag-filter-menu {
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+}
+
+.dark-mode .tag-filter-option:hover,
+.dark-mode .practice-tag-option:hover,
+.dark-mode .export-tag-option:hover {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .tag-filter-option.active,
+.dark-mode .practice-tag-option.active,
+.dark-mode .export-tag-option.active {
+    background: rgba(96, 165, 250, 0.15);
+}
+
+.dark-mode .bulk-word-item {
+    border-bottom-color: var(--border-primary);
+}
+
+.dark-mode .bulk-word-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .tag-item {
+    background: var(--bg-tertiary);
+}
+
+.dark-mode .tag-name {
+    color: var(--text-primary);
+}
+
+.dark-mode .tag-word-btn {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--border-primary) !important;
+    color: var(--text-tertiary) !important;
+}
+
+.dark-mode .tag-word-btn.has-tag {
+    background: #10b981 !important;
+    color: white !important;
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .floating-tag-btn {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .floating-tag-btn i {
+        font-size: 14px;
+    }
+    
+    .tag-filter-menu,
+    .practice-tag-dropdown-menu,
+    .export-tag-filter-menu {
+        position: fixed;
+        top: auto;
+        right: 20px;
+        left: 20px;
+        width: calc(100% - 40px);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .bulk-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .bulk-selection-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .range-input-wrapper {
+        flex-direction: column;
+    }
+    
+    .range-input {
+        width: 100% !important;
+    }
+    
+    .bulk-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .bulk-actions {
+        flex-direction: column;
+    }
+    
+    .bulk-actions select,
+    .bulk-actions button {
+        width: 100%;
+    }
+    
+    .bulk-word-item {
+        flex-wrap: wrap;
+    }
+    
+    .bulk-word-german {
+        min-width: auto;
+        flex: 1;
+    }
+}
+/* رفع مشکل آیکون‌های Font Awesome در بخش تگ‌ها */
+.export-tag-filter-toggle i,
+.export-tag-option i,
+.practice-tag-dropdown-btn i,
+.practice-tag-option i,
+.export-tag-filter-toggle .fa-chevron-down,
+.export-tag-filter-toggle .fa-angle-down,
+.practice-tag-dropdown-btn .fa-chevron-down,
+.export-tag-filter-toggle .fa-folder,
+.export-tag-filter-toggle .fa-folder-open,
+.practice-tag-dropdown-btn .fa-folder,
+.export-tag-option .fa-globe,
+.practice-tag-option .fa-globe,
+.export-tag-option .fa-check,
+.practice-tag-option .fa-check {
+    font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+    font-weight: 900 !important;
+    display: inline-block !important;
+}
+
+.tag-option-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
