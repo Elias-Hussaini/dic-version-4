@@ -9063,108 +9063,984 @@ setupFilterButtons() {
     // مترجم آنلاین
     // ================================================
 
-    renderTranslate() {
+// ================================================
+// ترجمه حرفه‌ای نسخه 4.0 - نهایی و بی‌نقص
+// ================================================
+
+renderTranslate() {
     const container = document.getElementById('translate-section');
     if (!container) return;
     
+    const activeTab = localStorage.getItem('professionalTranslateTab') || 'simple';
+    const isGerman = LanguageSystem.isGerman();
+    
     container.innerHTML = `
-        <div class="word-card">
-            <div class="section-header">
-                <h2><i class="fas fa-language" style="color: var(--primary);"></i> مترجم آنلاین</h2>
-            </div>
-            
-            <div id="online-status" class="online-status online">
-                <i class="fas fa-wifi"></i> آنلاین - سرویس‌های ترجمه فعال
-            </div>
-            
-            <div class="direction-selector">
-                <div class="direction-option active" data-direction="de-fa">
-                    <div class="direction-icon">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
-                    <div class="direction-text">
-                        <span class="direction-title">آلمانی به فارسی</span>
-                        <span class="direction-subtitle">Deutsch → فارسی</span>
-                    </div>
-                    <div class="direction-check">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                </div>
-                <div class="direction-option" data-direction="fa-de">
-                    <div class="direction-icon">
-                        <i class="fas fa-arrow-left"></i>
-                    </div>
-                    <div class="direction-text">
-                        <span class="direction-title">فارسی به آلمانی</span>
-                        <span class="direction-subtitle">فارسی → Deutsch</span>
-                    </div>
-                    <div class="direction-check">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label id="input-label">
-                    <i class="fas fa-keyboard"></i>
-                    <span id="input-title">متن آلمانی:</span>
-                </label>
-                <div class="input-with-clear">
-                    <textarea id="translate-input" class="form-control" rows="3" 
-                              placeholder="متن آلمانی خود را وارد کنید..." dir="ltr"></textarea>
-                    <button class="clear-input" id="clear-input-btn" title="پاک کردن متن">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label id="output-label">
+        <div class="translate-pro-container">
+            <div class="translate-pro-tabs">
+                <button class="translate-pro-tab ${activeTab === 'simple' ? 'active' : ''}" data-tab="simple">
                     <i class="fas fa-language"></i>
-                    <span id="output-title">ترجمه فارسی:</span>
-                </label>
-                <div id="translate-result" class="translate-result">
-                    <div class="empty-result">
-                        <div class="empty-icon">
+                    <span>${isGerman ? 'ترجمه سریع' : 'Quick Translate'}</span>
+                </button>
+                <button class="translate-pro-tab ${activeTab === 'professional' ? 'active' : ''}" data-tab="professional">
+                    <i class="fas fa-crown"></i>
+                    <span>${isGerman ? 'تحلیل حرفه‌ای' : 'Pro Analysis'}</span>
+                </button>
+            </div>
+            
+            <div class="translate-pro-panel ${activeTab === 'simple' ? 'active' : ''}" id="translate-panel-simple">
+                <div class="translate-simple-card">
+                    <div class="translate-online-status" id="translate-online-status">
+                        <span class="online-status-dot"></span>
+                        <span>${isGerman ? 'آنلاین' : 'Online'}</span>
+                    </div>
+                    
+                    <div class="translate-direction-buttons">
+                        <button class="translate-dir-btn ${this.translateDirection === 'de-fa' ? 'active' : ''}" data-dir="de-fa">
+                            <span class="dir-lang">DE</span>
+                            <i class="fas fa-arrow-right"></i>
+                            <span class="dir-lang">FA</span>
+                        </button>
+                        <button class="translate-dir-btn ${this.translateDirection === 'fa-de' ? 'active' : ''}" data-dir="fa-de">
+                            <span class="dir-lang">FA</span>
+                            <i class="fas fa-arrow-left"></i>
+                            <span class="dir-lang">DE</span>
+                        </button>
+                    </div>
+                    
+                    <div class="translate-input-wrapper">
+                        <textarea id="translate-input-field" class="translate-textarea" 
+                            placeholder="${isGerman ? 'متن آلمانی یا فارسی را وارد کنید...' : 'Enter German or Persian text...'}" 
+                            rows="3"></textarea>
+                        <button class="translate-clear-btn" id="translate-clear-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="translate-result-wrapper" id="translate-result-wrapper">
+                        <div class="translate-result-placeholder">
                             <i class="fas fa-exchange-alt"></i>
+                            <p>${isGerman ? 'ترجمه اینجا نمایش داده می‌شود' : 'Translation appears here'}</p>
                         </div>
-                        <p>نتیجه ترجمه اینجا نمایش داده می‌شود</p>
-                        <small>متن را وارد کنید</small>
+                    </div>
+                    
+                    <div class="translate-action-buttons">
+                        <button class="translate-action-btn" id="translate-speak-source">
+                            <i class="fas fa-volume-up"></i>
+                            <span>${isGerman ? 'تلفظ متن' : 'Speak'}</span>
+                        </button>
+                        <button class="translate-action-btn" id="translate-speak-target">
+                            <i class="fas fa-volume-up"></i>
+                            <span>${isGerman ? 'تلفظ ترجمه' : 'Speak trans'}</span>
+                        </button>
+                        <button class="translate-action-btn" id="translate-copy-result">
+                            <i class="fas fa-copy"></i>
+                            <span>${isGerman ? 'کپی' : 'Copy'}</span>
+                        </button>
+                        <button class="translate-action-btn translate-save-btn" id="translate-save-word">
+                            <i class="fas fa-bookmark"></i>
+                            <span>${isGerman ? 'ذخیره' : 'Save'}</span>
+                        </button>
                     </div>
                 </div>
             </div>
             
-            <div class="translate-actions">
-                <div class="action-group">
-                    <button class="action-btn voice-btn" id="speak-input">
-                        <i class="fas fa-volume-up"></i> <span>تلفظ متن</span>
-                    </button>
-                    <button class="action-btn voice-btn" id="speak-output">
-                        <i class="fas fa-volume-up"></i> <span>تلفظ ترجمه</span>
-                    </button>
+            <div class="translate-pro-panel ${activeTab === 'professional' ? 'active' : ''}" id="translate-panel-professional">
+                <div class="translate-pro-card">
+                    <div class="translate-pro-search">
+                        <div class="translate-pro-search-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="translate-pro-search-field">
+                            <input type="text" id="translate-pro-input" class="translate-pro-input" 
+                                placeholder="${isGerman ? 'لغت آلمانی را وارد کنید...' : 'Enter German word...'}"
+                                autocomplete="off">
+                            <button id="translate-pro-clear" class="translate-pro-clear" style="display: none;">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </div>
+                        <div class="translate-pro-status">
+                            <span class="translate-pro-dot"></span>
+                            <span class="translate-pro-status-text">${isGerman ? 'آماده' : 'Ready'}</span>
+                        </div>
+                    </div>
+                    
+                    <div id="translate-pro-suggestions" class="translate-pro-suggestions" style="display: none;"></div>
+                    
+                    <div id="translate-pro-result" class="translate-pro-result" style="display: none;"></div>
+                    
+                    <div id="translate-pro-empty" class="translate-pro-empty">
+                        <div class="translate-pro-empty-icon">
+                            <i class="fas fa-microphone-alt"></i>
+                        </div>
+                        <h3>${isGerman ? 'تحلیلگر حرفه‌ای واژگان' : 'Professional Word Analyzer'}</h3>
+                        <p>${isGerman ? 'یک لغت آلمانی را جستجو کنید تا تحلیل کاملی دریافت کنید' : 'Search a German word for complete analysis'}</p>
+                        <div class="translate-pro-examples">
+                            <span>${isGerman ? 'پیشنهاد:' : 'Try:'}</span>
+                            <button class="translate-pro-example" data-word="der Hund">der Hund</button>
+                            <button class="translate-pro-example" data-word="laufen">laufen</button>
+                            <button class="translate-pro-example" data-word="schön">schön</button>
+                            <button class="translate-pro-example" data-word="das Haus">das Haus</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="action-group">
-                    <button class="action-btn copy-btn" id="copy-result">
-                        <i class="fas fa-copy"></i> <span>کپی ترجمه</span>
-                    </button>
-                    <button class="action-btn save-btn" id="save-translation">
-                        <i class="fas fa-magic"></i> <span>ذخیره هوشمند</span>
-                    </button>
-                </div>
-            </div>
-            
-            <div id="translate-suggestions" class="translate-suggestions" style="display: none;">
-                <div class="suggestions-header">
-                    <i class="fas fa-lightbulb"></i>
-                    <span>پیشنهادات مشابه</span>
-                </div>
-                <div class="suggestions-list" id="suggestions-list"></div>
             </div>
         </div>
     `;
     
-    this.setupTranslateEventListeners();
-    this.updateTranslateUI();
+    this.initTranslateTabs();
+    this.initSimpleTranslate();
+    this.initProTranslate();
+}
+
+initTranslateTabs() {
+    document.querySelectorAll('.translate-pro-tab').forEach(tab => {
+        tab.onclick = () => {
+            const tabName = tab.dataset.tab;
+            localStorage.setItem('professionalTranslateTab', tabName);
+            
+            document.querySelectorAll('.translate-pro-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            document.querySelectorAll('.translate-pro-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(`translate-panel-${tabName}`).classList.add('active');
+        };
+    });
+}
+
+initSimpleTranslate() {
+    const input = document.getElementById('translate-input-field');
+    const resultDiv = document.getElementById('translate-result-wrapper');
+    const clearBtn = document.getElementById('translate-clear-btn');
+    const isGerman = LanguageSystem.isGerman();
+    
+    if (!input) return;
+    
+    let debounceTimer;
+    
+    const translateText = async () => {
+        const text = input.value.trim();
+        
+        if (!text) {
+            resultDiv.innerHTML = `
+                <div class="translate-result-placeholder">
+                    <i class="fas fa-exchange-alt"></i>
+                    <p>${isGerman ? 'ترجمه اینجا نمایش داده می‌شود' : 'Translation appears here'}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        resultDiv.innerHTML = `
+            <div class="translate-result-loading">
+                <div class="translate-spinner"></div>
+                <span>${isGerman ? 'در حال ترجمه...' : 'Translating...'}</span>
+            </div>
+        `;
+        
+        try {
+            const isDeToFa = this.translateDirection === 'de-fa';
+            let translated = null;
+            
+            // جستجو در دیکشنری محلی
+            const allWords = await this.getAllWords();
+            const searchTerm = text.toLowerCase();
+            
+            if (isDeToFa) {
+                const found = allWords.find(w => w.german.toLowerCase() === searchTerm);
+                if (found) translated = found.persian;
+            } else {
+                const found = allWords.find(w => w.persian.toLowerCase() === searchTerm);
+                if (found) translated = found.german;
+            }
+            
+            // اگر در دیکشنری نبود، از گوگل استفاده کن
+            if (!translated) {
+                const sl = isDeToFa ? 'de' : 'fa';
+                const tl = isDeToFa ? 'fa' : 'de';
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    translated = data[0].map(item => item[0]).join('');
+                }
+            }
+            
+            if (translated) {
+                resultDiv.innerHTML = `
+                    <div class="translate-result-content">
+                        <div class="translate-result-text">${this.escapeHtml(translated)}</div>
+                        <div class="translate-result-source">${isGerman ? 'ترجمه خودکار' : 'Auto translation'}</div>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="translate-result-placeholder">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>${isGerman ? 'خطا در ترجمه' : 'Translation error'}</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="translate-result-placeholder">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>${isGerman ? 'خطا در ترجمه' : 'Translation error'}</p>
+                </div>
+            `;
+        }
+    };
+    
+    input.oninput = (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(translateText, 600);
+        
+        if (clearBtn) {
+            clearBtn.style.display = e.target.value ? 'flex' : 'none';
+        }
+    };
+    
+    if (clearBtn) {
+        clearBtn.onclick = () => {
+            input.value = '';
+            clearBtn.style.display = 'none';
+            resultDiv.innerHTML = `
+                <div class="translate-result-placeholder">
+                    <i class="fas fa-exchange-alt"></i>
+                    <p>${isGerman ? 'ترجمه اینجا نمایش داده می‌شود' : 'Translation appears here'}</p>
+                </div>
+            `;
+            input.focus();
+        };
+    }
+    
+    // جهت ترجمه
+    document.querySelectorAll('.translate-dir-btn').forEach(btn => {
+        btn.onclick = () => {
+            const dir = btn.dataset.dir;
+            this.translateDirection = dir;
+            document.querySelectorAll('.translate-dir-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            translateText();
+        };
+    });
+    
+    // دکمه تلفظ متن مبدأ
+    document.getElementById('translate-speak-source')?.addEventListener('click', () => {
+        const text = input.value.trim();
+        if (text) {
+            const lang = this.translateDirection === 'de-fa' ? 'de-DE' : 'fa-IR';
+            this.speakText(text, lang);
+        }
+    });
+    
+    // دکمه تلفظ ترجمه
+    document.getElementById('translate-speak-target')?.addEventListener('click', () => {
+        const resultText = document.querySelector('#translate-result-wrapper .translate-result-text')?.textContent;
+        if (resultText) {
+            const lang = this.translateDirection === 'de-fa' ? 'fa-IR' : 'de-DE';
+            this.speakText(resultText, lang);
+        }
+    });
+    
+    // دکمه کپی
+    document.getElementById('translate-copy-result')?.addEventListener('click', async () => {
+        const resultText = document.querySelector('#translate-result-wrapper .translate-result-text')?.textContent;
+        if (resultText) {
+            await navigator.clipboard.writeText(resultText);
+            this.showToast('✅ کپی شد', 'success');
+        }
+    });
+    
+    // دکمه ذخیره
+    document.getElementById('translate-save-word')?.addEventListener('click', () => {
+        const german = this.translateDirection === 'de-fa' ? input.value.trim() : document.querySelector('#translate-result-wrapper .translate-result-text')?.textContent;
+        const persian = this.translateDirection === 'de-fa' ? document.querySelector('#translate-result-wrapper .translate-result-text')?.textContent : input.value.trim();
+        
+        if (german && persian) {
+            this.showSaveWordDialog(german, persian);
+        } else {
+            this.showToast('❌ متن ترجمه شده‌ای وجود ندارد', 'error');
+        }
+    });
+}
+
+initProTranslate() {
+    const searchInput = document.getElementById('translate-pro-input');
+    const clearBtn = document.getElementById('translate-pro-clear');
+    const suggestionsDiv = document.getElementById('translate-pro-suggestions');
+    const resultDiv = document.getElementById('translate-pro-result');
+    const emptyDiv = document.getElementById('translate-pro-empty');
+    const statusDot = document.querySelector('.translate-pro-dot');
+    const statusText = document.querySelector('.translate-pro-status-text');
+    const isGerman = LanguageSystem.isGerman();
+    
+    if (!searchInput) return;
+    
+    let searchTimeout;
+    let isSearching = false;
+    
+    const hideSuggestions = () => {
+        suggestionsDiv.style.display = 'none';
+    };
+    
+    const showLoading = () => {
+        if (statusDot) statusDot.className = 'translate-pro-dot loading';
+        if (statusText) statusText.textContent = isGerman ? 'در حال جستجو...' : 'Searching...';
+    };
+    
+    const showOnline = () => {
+        if (statusDot) statusDot.className = 'translate-pro-dot online';
+        if (statusText) statusText.textContent = isGerman ? 'آنلاین' : 'Online';
+    };
+    
+    const showOffline = () => {
+        if (statusDot) statusDot.className = 'translate-pro-dot offline';
+        if (statusText) statusText.textContent = isGerman ? 'آفلاین' : 'Offline';
+    };
+    
+    if (clearBtn) {
+        clearBtn.onclick = () => {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            hideSuggestions();
+            resultDiv.style.display = 'none';
+            emptyDiv.style.display = 'flex';
+            searchInput.focus();
+        };
+    }
+    
+    // جستجوی زنده با AI
+    const liveSearch = async (query) => {
+        if (query.length < 2) {
+            hideSuggestions();
+            return;
+        }
+        
+        showLoading();
+        suggestionsDiv.style.display = 'block';
+        suggestionsDiv.innerHTML = `
+            <div class="translate-pro-suggestions-loading">
+                <div class="translate-pro-dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <span>${isGerman ? 'در حال جستجو...' : 'Searching...'}</span>
+            </div>
+        `;
+        
+        try {
+            const prompt = `لیستی از 8 لغت آلمانی پرکاربرد که با "${query}" شروع می‌شوند یا شبیه آن هستند را پیدا کن.
+فقط یک JSON آرایه برگردان به این فرمت:
+[{"word": "Haus", "meaning": "خانه"}, {"word": "Auto", "meaning": "ماشین"}]`;
+            
+            const response = await this._puterChat(prompt, {});
+            let rawText = '';
+            
+            if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+            else if (typeof response === 'string') rawText = response;
+            else if (response?.text) rawText = response.text;
+            
+            let suggestions = [];
+            try {
+                const clean = rawText.replace(/```json|```/g, '').trim();
+                const jsonMatch = clean.match(/\[[\s\S]*\]/);
+                if (jsonMatch) suggestions = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                suggestions = [];
+            }
+            
+            if (suggestions.length === 0) {
+                suggestionsDiv.innerHTML = `
+                    <div class="translate-pro-suggestions-empty">
+                        <i class="fas fa-search"></i>
+                        <span>${isGerman ? 'نتیجه‌ای یافت نشد' : 'No results found'}</span>
+                    </div>
+                `;
+                showOnline();
+                return;
+            }
+            
+            suggestionsDiv.innerHTML = suggestions.map(s => `
+                <div class="translate-pro-suggestion" data-word="${this.escapeHtml(s.word)}">
+                    <div class="translate-pro-suggestion-word">${this.escapeHtml(s.word)}</div>
+                    <div class="translate-pro-suggestion-meaning">${this.escapeHtml(s.meaning || '...')}</div>
+                    <i class="fas fa-chevron-left translate-pro-suggestion-arrow"></i>
+                </div>
+            `).join('');
+            
+            document.querySelectorAll('.translate-pro-suggestion').forEach(item => {
+                item.onclick = () => {
+                    const word = item.dataset.word;
+                    searchInput.value = word;
+                    hideSuggestions();
+                    if (clearBtn) clearBtn.style.display = 'flex';
+                    this.proAnalyzeWord(word);
+                };
+            });
+            
+            showOnline();
+            
+        } catch (error) {
+            console.error('Live search error:', error);
+            suggestionsDiv.innerHTML = `
+                <div class="translate-pro-suggestions-empty">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>${isGerman ? 'خطا در جستجو' : 'Search error'}</span>
+                </div>
+            `;
+            showOffline();
+        }
+    };
+    
+    searchInput.oninput = (e) => {
+        const query = e.target.value.trim();
+        
+        if (clearBtn) {
+            clearBtn.style.display = query ? 'flex' : 'none';
+        }
+        
+        if (isSearching) return;
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            hideSuggestions();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => liveSearch(query), 400);
+    };
+    
+    searchInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) {
+                isSearching = true;
+                hideSuggestions();
+                if (clearBtn) clearBtn.style.display = 'flex';
+                this.proAnalyzeWord(query).finally(() => {
+                    isSearching = false;
+                });
+            }
+        }
+    };
+    
+    // دکمه‌های مثال
+    document.querySelectorAll('.translate-pro-example').forEach(btn => {
+        btn.onclick = () => {
+            const word = btn.dataset.word;
+            searchInput.value = word;
+            if (clearBtn) clearBtn.style.display = 'flex';
+            hideSuggestions();
+            this.proAnalyzeWord(word);
+        };
+    });
+}
+
+async proAnalyzeWord(word) {
+    const resultDiv = document.getElementById('translate-pro-result');
+    const emptyDiv = document.getElementById('translate-pro-empty');
+    const statusDot = document.querySelector('.translate-pro-dot');
+    const statusText = document.querySelector('.translate-pro-status-text');
+    const isGerman = LanguageSystem.isGerman();
+    
+    if (!resultDiv) return;
+    
+    if (statusDot) statusDot.className = 'translate-pro-dot loading';
+    if (statusText) statusText.textContent = isGerman ? 'در حال تحلیل...' : 'Analyzing...';
+    
+    resultDiv.style.display = 'block';
+    emptyDiv.style.display = 'none';
+    
+    resultDiv.innerHTML = `
+        <div class="translate-pro-loading">
+            <div class="translate-pro-spinner"></div>
+            <p>${isGerman ? 'در حال تحلیل لغت...' : 'Analyzing word...'}</p>
+        </div>
+    `;
+    
+    try {
+        const allWords = await this.getAllWords();
+        let foundWord = allWords.find(w => 
+            w.german.toLowerCase() === word.toLowerCase() ||
+            w.german.toLowerCase().includes(word.toLowerCase())
+        );
+        
+        if (foundWord) {
+            await this.renderProWordAnalysis(foundWord);
+        } else {
+            await this.fetchAIWordAnalysis(word);
+        }
+        
+        if (statusDot) statusDot.className = 'translate-pro-dot online';
+        if (statusText) statusText.textContent = isGerman ? 'آنلاین' : 'Online';
+        
+    } catch (error) {
+        console.error('Analysis error:', error);
+        resultDiv.innerHTML = `
+            <div class="translate-pro-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h4>${isGerman ? 'خطا در تحلیل' : 'Analysis Error'}</h4>
+                <p>${isGerman ? 'امکان تحلیل این لغت وجود ندارد' : 'Cannot analyze this word'}</p>
+                <button onclick="dictionaryApp.proAnalyzeWord('${word.replace(/'/g, "\\'")}')" class="translate-pro-retry">
+                    <i class="fas fa-redo-alt"></i> ${isGerman ? 'تلاش مجدد' : 'Retry'}
+                </button>
+            </div>
+        `;
+        if (statusDot) statusDot.className = 'translate-pro-dot offline';
+        if (statusText) statusText.textContent = isGerman ? 'آفلاین' : 'Offline';
+    }
+}
+
+async fetchAIWordAnalysis(word) {
+    const resultDiv = document.getElementById('translate-pro-result');
+    const isGerman = LanguageSystem.isGerman();
+    
+    const prompt = `تحلیل کامل و حرفه‌ای لغت آلمانی "${word}" را انجام بده.
+⚠️ خیلی مهم: تمام متن‌های فارسی را فقط با حروف فارسی بنویس.
+
+لطفاً اطلاعات زیر را به صورت JSON دقیق برگردان:
+
+{
+  "word": "${word}",
+  "type": "noun یا verb یا adjective یا adverb",
+  "persian_meaning": "معنی فارسی اصلی",
+  "pronunciation": "تلفظ آوانویسی (اختیاری)",
+  
+  "noun_info": {
+    "gender": "masculine یا feminine یا neuter",
+    "plural": "شکل جمع"
+  },
+  
+  "verb_info": {
+    "helper": "haben یا sein",
+    "separable": true یا false,
+    "present": {"ich": "...", "du": "...", "er": "...", "wir": "...", "ihr": "...", "sie": "..."},
+    "past": {"ich": "...", "du": "...", "er": "..."},
+    "perfect": "اسم مفعول",
+    "future": {"ich": "...", "du": "...", "er": "..."}
+  },
+  
+  "adjective_info": {
+    "comparative": "حالت برتر",
+    "superlative": "حالت برترین"
+  },
+  
+  "examples": [
+    {"german": "جمله اول آلمانی", "persian": "ترجمه فارسی"},
+    {"german": "جمله دوم آلمانی", "persian": "ترجمه فارسی"}
+  ],
+  
+  "notes": "نکات گرامری (حداکثر یک خط)"
+}`;
+
+    try {
+        const response = await this._puterChat(prompt, {});
+        let rawText = '';
+        
+        if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+        else if (typeof response === 'string') rawText = response;
+        
+        let data;
+        try {
+            const clean = rawText.replace(/```json|```/g, '').trim();
+            const jsonMatch = clean.match(/\{[\s\S]*\}/);
+            data = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+        } catch {
+            throw new Error('Invalid JSON');
+        }
+        
+        await this.renderProWordAnalysis({
+            ...data,
+            isVirtual: true,
+            id: Date.now(),
+            german: data.word,
+            persian: data.persian_meaning
+        });
+        
+    } catch (error) {
+        throw error;
+    }
+}
+
+async renderProWordAnalysis(word) {
+    const resultDiv = document.getElementById('translate-pro-result');
+    const isGerman = LanguageSystem.isGerman();
+    
+    const type = word.type || 'other';
+    const nounInfo = word.noun_info;
+    const verbInfo = word.verb_info;
+    const adjInfo = word.adjective_info;
+    const examples = word.examples || [];
+    const isVerb = type === 'verb' && verbInfo;
+    
+    let html = `
+        <div class="translate-pro-card-result">
+            <div class="translate-pro-header">
+                <div class="translate-pro-title-area">
+                    <h1 class="translate-pro-word">${this.escapeHtml(word.german || word.word || '-')}</h1>
+                    <div class="translate-pro-badges">
+                        <span class="translate-pro-badge translate-pro-badge-${type}">${this.getTypeLabel(type)}</span>
+                        ${nounInfo?.gender ? `<span class="translate-pro-badge translate-pro-gender-${nounInfo.gender}">${this.getGenderSymbol(nounInfo.gender)}</span>` : ''}
+                    </div>
+                </div>
+                <div class="translate-pro-actions">
+                    <button class="translate-pro-action pro-speak-word-btn" data-word="${this.escapeHtml(word.german || word.word)}">
+                        <i class="fas fa-volume-up"></i> <span>${isGerman ? 'تلفظ' : 'Speak'}</span>
+                    </button>
+                    <button class="translate-pro-action pro-copy-word-btn" data-text="${this.escapeHtml(word.german || word.word)}">
+                        <i class="fas fa-copy"></i> <span>${isGerman ? 'کپی' : 'Copy'}</span>
+                    </button>
+                    <button class="translate-pro-action pro-save-word-btn" 
+                        data-german="${this.escapeHtml(word.german || word.word)}"
+                        data-persian="${this.escapeHtml(word.persian || word.persian_meaning || '-')}"
+                        data-type="${type}"
+                        data-gender="${nounInfo?.gender || ''}"
+                        data-plural="${nounInfo?.plural || ''}">
+                        <i class="fas fa-bookmark"></i> <span>${isGerman ? 'ذخیره' : 'Save'}</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="translate-pro-meaning">
+                <div class="translate-pro-meaning-icon"><i class="fas fa-language"></i></div>
+                <div class="translate-pro-meaning-content">
+                    <div class="translate-pro-meaning-label">${isGerman ? 'معنی' : 'Meaning'}</div>
+                    <div class="translate-pro-meaning-text">${this.escapeHtml(word.persian || word.persian_meaning || '-')}</div>
+                    ${word.pronunciation ? `<div class="translate-pro-pronunciation"><i class="fas fa-microphone-alt"></i> ${this.escapeHtml(word.pronunciation)}</div>` : ''}
+                </div>
+            </div>
+    `;
+    
+    // جدول صرف فعل - نسخه حرفه‌ای
+    if (isVerb && verbInfo) {
+        html += `
+            <div class="translate-pro-section">
+                <div class="translate-pro-section-title">
+                    <i class="fas fa-table-list"></i>
+                    <span>${isGerman ? 'صرف فعل' : 'Verb Conjugation'}</span>
+                </div>
+                <div class="translate-pro-conjugation">
+                    <div class="translate-pro-tense-buttons">
+                        <button class="translate-pro-tense-btn active" data-tense="present">Präsens</button>
+                        <button class="translate-pro-tense-btn" data-tense="past">Präteritum</button>
+                        <button class="translate-pro-tense-btn" data-tense="perfect">Perfekt</button>
+                        <button class="translate-pro-tense-btn" data-tense="future">Futur I</button>
+                    </div>
+                    
+                    <div class="translate-pro-tense-panel active" id="pro-tense-present">
+                        <table class="translate-pro-conj-table">
+                            <tr><th>ich</th><td>${verbInfo.present?.ich || '-'}</td></tr>
+                            <tr><th>du</th><td>${verbInfo.present?.du || '-'}</td></tr>
+                            <tr><th>er/sie/es</th><td>${verbInfo.present?.er || '-'}</td></tr>
+                            <tr><th>wir</th><td>${verbInfo.present?.wir || '-'}</td></tr>
+                            <tr><th>ihr</th><td>${verbInfo.present?.ihr || '-'}</td></tr>
+                            <tr><th>sie/Sie</th><td>${verbInfo.present?.sie || '-'}</td></tr>
+                        </table>
+                    </div>
+                    
+                    <div class="translate-pro-tense-panel" id="pro-tense-past">
+                        <table class="translate-pro-conj-table">
+                            <tr><th>ich</th><td>${verbInfo.past?.ich || '-'}</td></tr>
+                            <tr><th>du</th><td>${verbInfo.past?.du || '-'}</td></tr>
+                            <tr><th>er/sie/es</th><td>${verbInfo.past?.er || '-'}</td></tr>
+                        </table>
+                    </div>
+                    
+                    <div class="translate-pro-tense-panel" id="pro-tense-perfect">
+                        <div class="translate-pro-perfect-info">
+                            <div class="translate-pro-perfect-helper">
+                                <span class="translate-pro-helper-label">${isGerman ? 'فعل کمکی' : 'Auxiliary'}</span>
+                                <span class="translate-pro-helper-value">${verbInfo.helper || 'haben'}</span>
+                            </div>
+                            <div class="translate-pro-perfect-participle">
+                                <span class="translate-pro-participle-label">${isGerman ? 'اسم مفعول' : 'Past Participle'}</span>
+                                <span class="translate-pro-participle-value">${verbInfo.perfect || '-'}</span>
+                            </div>
+                        </div>
+                        <div class="translate-pro-perfect-example">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>${verbInfo.helper === 'haben' ? 'ich habe' : 'ich bin'} ${verbInfo.perfect || '-'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="translate-pro-tense-panel" id="pro-tense-future">
+                        <table class="translate-pro-conj-table">
+                            <tr><th>ich</th><td>${verbInfo.future?.ich || `werde ${word.german}`}</td></tr>
+                            <tr><th>du</th><td>${verbInfo.future?.du || `wirst ${word.german}`}</td></tr>
+                            <tr><th>er/sie/es</th><td>${verbInfo.future?.er || `wird ${word.german}`}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                ${verbInfo.separable ? `<div class="translate-pro-separable"><i class="fas fa-cut"></i> ${isGerman ? 'فعل جداشدنی' : 'Separable verb'}</div>` : ''}
+            </div>
+        `;
+    }
+    
+  // ========== اصلاح نمایش جنسیت در کارت اطلاعات ==========
+// داخل تابع renderProWordAnalysis، قسمت اطلاعات اسم را اینطور تغییر دهید:
+
+// اطلاعات اسم
+if (type === 'noun' && nounInfo) {
+    html += `
+        <div class="translate-pro-section">
+            <div class="translate-pro-section-title">
+                <i class="fas fa-venus-mars"></i>
+                <span>${isGerman ? 'اطلاعات اسم' : 'Noun Information'}</span>
+            </div>
+            <div class="translate-pro-info-grid">
+                ${nounInfo.gender ? `
+                <div class="translate-pro-info-card">
+                    <div class="translate-pro-gender-circle translate-pro-gender-${nounInfo.gender}">
+                        <i class="fas fa-${nounInfo.gender === 'masculine' ? 'mars' : nounInfo.gender === 'feminine' ? 'venus' : 'genderless'}"></i>
+                    </div>
+                    <div class="translate-pro-info-text">
+                        <div class="translate-pro-info-label">${isGerman ? 'جنسیت' : 'Gender'}</div>
+                        <div class="translate-pro-info-value">${this.getGenderLabel(nounInfo.gender)}</div>
+                    </div>
+                </div>
+                ` : ''}
+                ${nounInfo.plural ? `
+                <div class="translate-pro-info-card">
+                    <div class="translate-pro-info-icon"><i class="fas fa-copy"></i></div>
+                    <div class="translate-pro-info-text">
+                        <div class="translate-pro-info-label">${isGerman ? 'جمع' : 'Plural'}</div>
+                        <div class="translate-pro-info-value">${this.escapeHtml(nounInfo.plural)}</div>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// ========== اصلاح نمایش مثال‌ها با تقسیم 50%-50% ==========
+// داخل تابع renderProWordAnalysis، قسمت مثال‌ها را اینطور تغییر دهید:
+
+// مثال‌ها
+if (examples.length > 0) {
+    html += `
+        <div class="translate-pro-section">
+            <div class="translate-pro-section-title">
+                <i class="fas fa-quote-right"></i>
+                <span>${isGerman ? 'مثال‌ها' : 'Examples'}</span>
+                <span class="translate-pro-examples-count">(${examples.length})</span>
+            </div>
+            <div class="translate-pro-examples">
+    `;
+    
+    examples.forEach(ex => {
+        html += `
+            <div class="translate-pro-example">
+                <div class="translate-pro-example-german">${this.escapeHtml(ex.german)}</div>
+                <div class="translate-pro-example-persian">${this.escapeHtml(ex.persian)}</div>
+                <button class="translate-pro-example-speak" data-text="${this.escapeHtml(ex.german)}">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    html += `
+            </div>
+        </div>
+    `;
+}
+    
+    // اطلاعات صفت
+    if (type === 'adjective' && adjInfo) {
+        html += `
+            <div class="translate-pro-section">
+                <div class="translate-pro-section-title">
+                    <i class="fas fa-chart-line"></i>
+                    <span>${isGerman ? 'حالت‌های صفت' : 'Adjective Forms'}</span>
+                </div>
+                <div class="translate-pro-info-grid">
+                    ${adjInfo.comparative ? `
+                    <div class="translate-pro-info-card">
+                        <div class="translate-pro-info-icon"><i class="fas fa-level-up-alt"></i></div>
+                        <div class="translate-pro-info-text">
+                            <div class="translate-pro-info-label">Komparativ</div>
+                            <div class="translate-pro-info-value">${this.escapeHtml(adjInfo.comparative)}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    ${adjInfo.superlative ? `
+                    <div class="translate-pro-info-card">
+                        <div class="translate-pro-info-icon"><i class="fas fa-crown"></i></div>
+                        <div class="translate-pro-info-text">
+                            <div class="translate-pro-info-label">Superlativ</div>
+                            <div class="translate-pro-info-value">${this.escapeHtml(adjInfo.superlative)}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+   
+    // یادداشت‌ها
+    if (word.notes) {
+        html += `
+            <div class="translate-pro-section">
+                <div class="translate-pro-section-title">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>${isGerman ? 'نکات' : 'Notes'}</span>
+                </div>
+                <div class="translate-pro-notes">
+                    ${this.escapeHtml(word.notes)}
+                </div>
+            </div>
+        `;
+    }
+    
+    html += `</div>`;
+    resultDiv.innerHTML = html;
+    
+    // رویدادهای تب‌های زمان
+    document.querySelectorAll('.translate-pro-tense-btn').forEach(btn => {
+        btn.onclick = () => {
+            const tense = btn.dataset.tense;
+            document.querySelectorAll('.translate-pro-tense-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.translate-pro-tense-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(`pro-tense-${tense}`).classList.add('active');
+        };
+    });
+    
+    // رویدادهای دکمه‌ها
+    document.querySelectorAll('.pro-speak-word-btn').forEach(btn => {
+        btn.onclick = () => this.speakText(btn.dataset.word, 'de-DE');
+    });
+    
+    document.querySelectorAll('.pro-copy-word-btn').forEach(btn => {
+        btn.onclick = async () => {
+            await navigator.clipboard.writeText(btn.dataset.text);
+            this.showToast('✅ کپی شد', 'success');
+        };
+    });
+    
+    document.querySelectorAll('.pro-save-word-btn').forEach(btn => {
+        btn.onclick = () => {
+            const german = btn.dataset.german;
+            const persian = btn.dataset.persian;
+            this.showSaveWordDialog(german, persian);
+        };
+    });
+    
+    document.querySelectorAll('.translate-pro-example-speak').forEach(btn => {
+        btn.onclick = () => this.speakText(btn.dataset.text, 'de-DE');
+    });
+}
+
+showSaveWordDialog(german, persian) {
+    const isGerman = LanguageSystem.isGerman();
+    
+    // حذف مودال قبلی اگر وجود دارد
+    const existingModal = document.querySelector('.save-word-modal-overlay');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.className = 'save-word-modal-overlay';
+    modal.innerHTML = `
+        <div class="save-word-modal-container">
+            <div class="save-word-modal-header">
+                <h3><i class="fas fa-bookmark"></i> ${isGerman ? 'ذخیره لغت جدید' : 'Save New Word'}</h3>
+                <button class="save-word-modal-close">&times;</button>
+            </div>
+            <div class="save-word-modal-body">
+                <div class="save-word-field">
+                    <label><i class="fas fa-language"></i> ${isGerman ? 'لغت آلمانی' : 'German Word'}</label>
+                    <input type="text" id="save-dialog-german" class="save-word-field-input" value="${this.escapeHtml(german)}">
+                </div>
+                <div class="save-word-field">
+                    <label><i class="fas fa-pencil-alt"></i> ${isGerman ? 'معنی فارسی' : 'Persian Meaning'}</label>
+                    <input type="text" id="save-dialog-persian" class="save-word-field-input" value="${this.escapeHtml(persian)}">
+                </div>
+                <div class="save-word-field">
+                    <label><i class="fas fa-tag"></i> ${isGerman ? 'نوع کلمه' : 'Word Type'}</label>
+                    <div class="save-word-type-buttons">
+                        <button class="save-word-type-btn active" data-type="noun">${isGerman ? 'اسم' : 'Noun'}</button>
+                        <button class="save-word-type-btn" data-type="verb">${isGerman ? 'فعل' : 'Verb'}</button>
+                        <button class="save-word-type-btn" data-type="adjective">${isGerman ? 'صفت' : 'Adjective'}</button>
+                        <button class="save-word-type-btn" data-type="adverb">${isGerman ? 'قید' : 'Adverb'}</button>
+                        <button class="save-word-type-btn" data-type="other">${isGerman ? 'سایر' : 'Other'}</button>
+                    </div>
+                </div>
+                <div id="save-word-gender-container" class="save-word-field" style="display: none;">
+                    <label><i class="fas fa-venus-mars"></i> ${isGerman ? 'جنسیت' : 'Gender'}</label>
+                    <div class="save-word-gender-buttons">
+                        <button class="save-word-gender-btn" data-gender="masculine">der</button>
+                        <button class="save-word-gender-btn" data-gender="feminine">die</button>
+                        <button class="save-word-gender-btn" data-gender="neuter">das</button>
+                    </div>
+                </div>
+            </div>
+            <div class="save-word-modal-footer">
+                <button class="save-word-cancel-btn">${isGerman ? 'انصراف' : 'Cancel'}</button>
+                <button class="save-word-confirm-btn"><i class="fas fa-save"></i> ${isGerman ? 'ذخیره' : 'Save'}</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    let selectedType = 'noun';
+    let selectedGender = null;
+    
+    const typeBtns = modal.querySelectorAll('.save-word-type-btn');
+    const genderContainer = modal.querySelector('#save-word-gender-container');
+    const genderBtns = modal.querySelectorAll('.save-word-gender-btn');
+    
+    typeBtns.forEach(btn => {
+        btn.onclick = () => {
+            typeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedType = btn.dataset.type;
+            genderContainer.style.display = selectedType === 'noun' ? 'block' : 'none';
+        };
+    });
+    
+    genderBtns.forEach(btn => {
+        btn.onclick = () => {
+            genderBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedGender = btn.dataset.gender;
+        };
+    });
+    
+    modal.querySelector('.save-word-modal-close')?.addEventListener('click', () => modal.remove());
+    modal.querySelector('.save-word-cancel-btn')?.addEventListener('click', () => modal.remove());
+    
+    modal.querySelector('.save-word-confirm-btn')?.addEventListener('click', async () => {
+        const germanVal = document.getElementById('save-dialog-german').value.trim();
+        const persianVal = document.getElementById('save-dialog-persian').value.trim();
+        
+        if (!germanVal || !persianVal) {
+            this.showToast('❌ لطفاً هر دو فیلد را پر کنید', 'error');
+            return;
+        }
+        
+        const wordData = {
+            german: germanVal,
+            persian: persianVal,
+            type: selectedType,
+            createdAt: new Date().toISOString()
+        };
+        
+        if (selectedType === 'noun' && selectedGender) {
+            wordData.gender = selectedGender;
+        }
+        
+        try {
+            await this.addWord(wordData);
+            this.showToast(`✅ "${germanVal}" به دیکشنری اضافه شد`, 'success');
+            modal.remove();
+        } catch (error) {
+            this.showToast('❌ خطا در ذخیره سازی', 'error');
+        }
+    });
 }
 
   setupTranslateEventListeners() {
