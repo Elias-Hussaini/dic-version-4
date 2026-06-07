@@ -83,7 +83,7 @@
         menuHeader.innerHTML = `
             <div class="menu-header-content">
                 <i class="fas fa-graduation-cap"></i>
-                <span>Elias.Dictionary</span>
+                <span>DE.Dictionary</span>
             </div>
             <button class="menu-close-btn" id="floating-menu-close">
                 <i class="fas fa-times"></i>

@@ -560,7 +560,7 @@ renderSearchSection() {
                     <div class="empty-icon">
                         <i class="fas fa-book-open"></i>
                     </div>
-                    <h3>به Elias.Dictionary خوش آمدید!</h3>
+                    <h3>به DE.Dictionary خوش آمدید!</h3>
                     <p>برای شروع، یک لغت را جستجو کنید یا از منوی شناور استفاده کنید.</p>
                     <div class="empty-state-hint">
                         <i class="fas fa-arrow-circle-left"></i>
@@ -1312,7 +1312,7 @@ showEmptySearchState() {
                 <div class="empty-icon">
                     <i class="fas fa-book-open"></i>
                 </div>
-                <h3>${isGerman ? 'به Elias.Dictionary خوش آمدید!' : 'Welcome to Elias.Dictionary!'}</h3>
+                <h3>${isGerman ? 'به DE.Dictionary خوش آمدید!' : 'Welcome to Elias.Dictionary!'}</h3>
                 <p>${isGerman ? 'برای جستجو، کلمه مورد نظر را تایپ کنید' : 'Type a word to search'}</p>
                 <div class="empty-state-features">
                     <span><i class="fas fa-robot"></i> ${isGerman ? 'دستیار AI' : 'AI Assistant'}</span>
@@ -14764,7 +14764,7 @@ renderWelcomeMessage() {
             </div>
             <div class="message-content">
                 <div class="message-text">
-                    <h4>🤖 ${isGerman ? 'سلام! به الیاس خوش آمدید' : 'Hello! Welcome to Elias'}</h4>
+                    <h4>🤖 ${isGerman ? 'سلام!  خوش آمدید' : 'Hello! Welcome to Elias'}</h4>
                     <p>${isGerman ? 'من دستیار هوش مصنوعی شما هستم با حافظه کامل - هر چی بگی یادم میاد!' : 'I am your AI assistant with full memory - I remember everything you say!'}</p>
                     <p>${isGerman ? 'می‌تونی از این قابلیت‌ها استفاده کنی:' : 'You can use these features:'}</p>
                     <ul style="margin-top: 10px; padding-right: 20px;">
