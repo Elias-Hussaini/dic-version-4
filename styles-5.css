@@ -5946,3 +5946,48 @@ button:disabled {
     background: #1e293b !important;
     border-color: #334155 !important;
 }
+/* ================================================
+   استایل نهایی AI چت - نسخه دائمی
+   ================================================ */
+
+/* لایت مود - همه متن‌های AI سیاه */
+.ai-formatted-response,
+.ai-formatted-response *,
+.message-text,
+.message-text * {
+    color: #1e293b !important;
+}
+
+/* متن داخل جدول - همیشه سفید (هم لایت هم دارک) */
+.ai-formatted-response td,
+.ai-formatted-response th,
+.ai-formatted-response td *,
+.ai-formatted-response th * {
+    color: #ffffff !important;
+}
+
+/* دکمه‌هایی که به دیکشنری لینک میده - همیشه سفید */
+.ai-formatted-response button,
+.ai-formatted-response a,
+.message-text button,
+.message-text a,
+button[onclick*="showSection"],
+a[onclick*="showSection"] {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #4361ee, #7c3aed) !important;
+    border: none !important;
+}
+
+/* لایت مود - متن کاربر سفید */
+.user-message .message-text,
+.user-message .message-text * {
+    color: #ffffff !important;
+}
+
+/* دارک مود - بقیه متن‌ها سفید */
+.dark-mode .ai-formatted-response,
+.dark-mode .ai-formatted-response *,
+.dark-mode .message-text,
+.dark-mode .message-text * {
+    color: #f1f5f9 !important;
+}
