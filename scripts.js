@@ -9409,30 +9409,29 @@ async performAutoTranslation(text) {
     }
 }
 async _puterChat(messages, options = {}) {
-    // آدرس Worker خودت
     const WORKER_URL = 'https://groq.ysadat180.workers.dev';
     
-    let msgs = [];
-    if (typeof messages === 'string') {
-        msgs = [{ role: 'user', content: messages }];
-    } else if (Array.isArray(messages)) {
-        msgs = messages.map(m => ({
-            role: m.role,
-            content: typeof m.content === 'string'
-                ? m.content
-                : Array.isArray(m.content)
-                    ? m.content.map(c => c.text || '').join('')
-                    : ''
-        })).filter(m => m.content);
-    }
+    // تبدیل messages به فرمت ساده
+    let simpleMessages = [];
     
-    const hasSystem = msgs.some(m => m.role === 'system');
-    if (!hasSystem) {
-        msgs.unshift({
-            role: 'system',
-            content: 'شما یک دستیار هوشمند به نام "الیاس" هستید. فقط به زبان فارسی پاسخ دهید.'
+    if (typeof messages === 'string') {
+        simpleMessages = [{ role: 'user', content: messages }];
+    } else if (Array.isArray(messages)) {
+        simpleMessages = messages.map(m => {
+            if (typeof m.content === 'string') {
+                return { role: m.role, content: m.content };
+            }
+            if (Array.isArray(m.content)) {
+                const text = m.content.filter(c => c.type === 'text').map(c => c.text).join(' ');
+                return { role: m.role, content: text || '...' };
+            }
+            return { role: m.role, content: String(m.content) };
         });
     }
+    
+    simpleMessages = simpleMessages.filter(m => m.content && m.content.trim());
+    
+    console.log('📤 Sending to Worker (Llama 4 Scout):', simpleMessages.length, 'messages');
     
     try {
         const response = await fetch(WORKER_URL, {
@@ -9441,25 +9440,34 @@ async _puterChat(messages, options = {}) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'mixtral-8x7b-32768',
-                messages: msgs,
-                max_tokens: 1000,
+                messages: simpleMessages,
+                max_tokens:5000,
                 temperature: 0.7
             })
         });
         
+        const data = await response.json();
+        
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'خطا در ارتباط با سرور');
+            console.error('Worker error:', data);
+            
+            // اگه خطای Rate Limit بود، پیام مناسب
+            if (response.status === 429) {
+                throw new Error('سرور شلوغ است، لطفاً چند ثانیه بعد دوباره تلاش کنید');
+            }
+            throw new Error(data.error || `HTTP ${response.status}`);
         }
         
-        const data = await response.json();
         const text = data.choices?.[0]?.message?.content || '';
+        
+        if (!text) {
+            throw new Error('پاسخی دریافت نشد');
+        }
         
         return { message: { content: [{ text }] } };
         
     } catch (error) {
-        console.error('خطا:', error);
+        console.error('❌ _puterChat error:', error);
         throw error;
     }
 }
