@@ -9419,7 +9419,7 @@ async _puterChat(messages, options = {}) {
             throw new Error('API Key یافت نشد');
         }
         
-        const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+         const GROQ_URL = 'https://groq.ysadat180.workers.dev';
         
         let msgs = [];
         if (typeof messages === 'string') {
