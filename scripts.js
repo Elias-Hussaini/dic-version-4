@@ -9409,101 +9409,59 @@ async performAutoTranslation(text) {
     }
 }
 async _puterChat(messages, options = {}) {
-    let lastError = null;
-    let attempts = 0;
-    const maxAttempts = this.apiKeyManager?.keys.filter(k => k.isActive).length || 3;
+    // آدرس Worker خودت
+    const WORKER_URL = 'https://groq.ysadat180.workers.dev';
     
-    while (attempts < maxAttempts) {
-        const apiKey = this.getGroqApiKey();
-        if (!apiKey) {
-            throw new Error('API Key یافت نشد');
-        }
-        
-         const GROQ_URL = 'https://groq.ysadat180.workers.dev';
-        
-        let msgs = [];
-        if (typeof messages === 'string') {
-            msgs = [{ role: 'user', content: messages }];
-        } else if (Array.isArray(messages)) {
-            msgs = messages.map(m => ({
-                role: m.role,
-                content: typeof m.content === 'string'
-                    ? m.content
-                    : Array.isArray(m.content)
-                        ? m.content.map(c => c.text || '').join('')
-                        : ''
-            })).filter(m => m.content);
-        }
-        
-        const hasSystem = msgs.some(m => m.role === 'system');
-        if (!hasSystem) {
-            msgs.unshift({
-                role: 'system',
-                content: 'شما یک دستیار هوشمند هستید که فقط به زبان فارسی پاسخ می‌دهید. هرگز از کاراکترهای چینی، روسی یا سایر زبان‌ها استفاده نکنید.'
-            });
-        }
-        
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-            
-            const res = await fetch(GROQ_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-                    messages: msgs,
-                    max_tokens: 5000,
-                    stream: false,
-                    temperature: 0.7
-                }),
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!res.ok) {
-                const errorText = await res.text();
-                const errorStatus = res.status;
-                
-                // خطای Rate Limit یا Quota - برو به کلید بعدی
-                if (errorStatus === 429 || errorStatus === 401 || errorStatus === 403) {
-                    console.warn(`⚠️ خطای ${errorStatus} با کلید فعلی. سوئیچ به کلید بعدی...`);
-                    if (this.apiKeyManager) {
-                        this.apiKeyManager.reportError(errorStatus);
-                        this.apiKeyManager.moveToNextKey();
-                    }
-                    attempts++;
-                    continue;
-                }
-                
-                throw new Error(`Groq error: ${errorStatus}`);
-            }
-            
-            const data = await res.json();
-            const text = data.choices?.[0]?.message?.content || '';
-            
-            return { message: { content: [{ text }] } };
-            
-        } catch (error) {
-            console.error('خطا در درخواست:', error);
-            lastError = error;
-            attempts++;
-            
-            if (this.apiKeyManager) {
-                this.apiKeyManager.moveToNextKey();
-            }
-            
-            if (attempts >= maxAttempts) {
-                throw error;
-            }
-        }
+    let msgs = [];
+    if (typeof messages === 'string') {
+        msgs = [{ role: 'user', content: messages }];
+    } else if (Array.isArray(messages)) {
+        msgs = messages.map(m => ({
+            role: m.role,
+            content: typeof m.content === 'string'
+                ? m.content
+                : Array.isArray(m.content)
+                    ? m.content.map(c => c.text || '').join('')
+                    : ''
+        })).filter(m => m.content);
     }
     
-    throw lastError || new Error('همه کلیدها با خطا مواجه شدند');
+    const hasSystem = msgs.some(m => m.role === 'system');
+    if (!hasSystem) {
+        msgs.unshift({
+            role: 'system',
+            content: 'شما یک دستیار هوشمند به نام "الیاس" هستید. فقط به زبان فارسی پاسخ دهید.'
+        });
+    }
+    
+    try {
+        const response = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'mixtral-8x7b-32768',
+                messages: msgs,
+                max_tokens: 1000,
+                temperature: 0.7
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'خطا در ارتباط با سرور');
+        }
+        
+        const data = await response.json();
+        const text = data.choices?.[0]?.message?.content || '';
+        
+        return { message: { content: [{ text }] } };
+        
+    } catch (error) {
+        console.error('خطا:', error);
+        throw error;
+    }
 }
 // ================================================
 // مدیریت API Key (ذخیره در localStorage با رمزگذاری ساده)
@@ -9519,37 +9477,10 @@ setGroqApiKey(key) {
 }
 
 getGroqApiKey() {
-    // لیست کلیدهای ثابت - اگر یکی تموم شد خودکار به بعدی می‌ره
-    const API_KEYS = [
-        { key: "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", name: "کلید اصلی", isActive: true },
-        { key: "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", name: "کلید پشتیبان 1", isActive: true },
-        { key: "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", name: "کلید پشتیبان 2", isActive: true }
-    ];
-    
-    // اگر apiKeyManager وجود نداره، بسازش
-    if (!this.apiKeyManager) {
-        this.apiKeyManager = new APIKeyManager();
-    }
-    
-    // اگر کلیدها توی apiKeyManager نیست، اضافه کن
-    if (this.apiKeyManager.keys.length === 0) {
-        for (const k of API_KEYS) {
-            this.apiKeyManager.addKey(k.key, k.name);
-        }
-    }
-    
-    // گرفتن کلید فعال بعدی
-    const key = this.apiKeyManager.getKeyForRequest();
-    if (key) return key;
-    
-    // fallback - اولین کلید معتبر رو برگردون
-    for (const k of API_KEYS) {
-        if (k.isActive) return k.key;
-    }
-    
-    return null;
+    // دیگه نیازی به کلید نیست! Worker خودش کلیدها رو مدیریت میکنه
+    // فقط یه مقدار ساختگی برمیگردونیم (Worker بهش نیاز نداره)
+    return "worker-handles-keys";
 }
-
 clearGroqApiKey() {
     localStorage.removeItem('groq_api_key_encrypted');
 }
