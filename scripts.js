@@ -15408,7 +15408,7 @@ _formatAIMessage(text) {
     
     // بولد و ایتالیک
     t = t.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em style="color: #ec4899;">$1</em></strong>');
-    t = t.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #4361ee; font-weight: 700;">$1</strong>');
+    t = t.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff; font-weight: 700;">$1</strong>');
     t = t.replace(/\*(.*?)\*/g, '<em style="font-style: italic; color: #64748b;">$1</em>');
     
     // نقل قول
@@ -15423,27 +15423,46 @@ _formatAIMessage(text) {
         return `<li style="margin: 8px 0; display: flex; align-items: flex-start; gap: 10px;"><span style="background: linear-gradient(135deg, #4361ee, #8b5cf6); color: white; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; font-weight: 700; flex-shrink: 0;">${num}</span><span style="flex: 1;">${content}</span></li>`;
     });
     
-    // جدول
-    t = t.replace(/\|(.+)\|/g, (match) => {
-        const rows = match.split('\n');
-        let tableHtml = '<div style="overflow-x: auto; margin: 20px 0; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden;">';
-        let isHeader = true;
+// ========== قسمت جدول - همه متن‌ها سفید ==========
+t = t.replace(/\|(.+)\|/g, (match) => {
+    const rows = match.split('\n');
+    let tableHtml = '<div style="overflow-x: auto; margin: 20px 0; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);"><table style="width: 100%; border-collapse: collapse; border-radius: 16px; overflow: hidden; font-family: \'Vazirmatn\', sans-serif;">';
+    let isHeader = true;
+    
+    for (const row of rows) {
+        if (row.includes('---')) continue;
+        const cells = row.split('|').filter(c => c.trim());
         
-        for (const row of rows) {
-            if (row.includes('---')) continue;
-            const cells = row.split('|').filter(c => c.trim());
-            const tag = isHeader ? 'th' : 'td';
-            tableHtml += '<tr>';
-            cells.forEach((cell, idx) => {
-                const isFirst = idx === 0;
-                tableHtml += `<${tag} style="border: 1px solid #e2e8f0; padding: 12px 15px; ${isHeader ? 'background: linear-gradient(135deg, #4361ee, #8b5cf6); color: white; font-weight: 600;' : ''} ${isFirst && !isHeader ? 'font-weight: 600; color: #4361ee;' : ''}">${cell.trim()}</${tag}>`;
-            });
-            tableHtml += '</tr>';
-            isHeader = false;
-        }
-        tableHtml += '</table></div>';
-        return tableHtml;
-    });
+        tableHtml += '<tr>';
+        cells.forEach((cell, idx) => {
+            const cellText = cell.trim();
+            
+            if (isHeader) {
+                // هدر جدول - آبی با متن سفید
+                tableHtml += `<th style="border: 1px solid #334155; padding: 12px 15px; background: linear-gradient(135deg, #1e40af, #3b82f6); color: #ffffff; font-weight: 700; text-align: center;">${cellText}</th>`;
+            } else {
+                // همه سلول‌های داده - متن سفید
+                let cellStyle = 'border: 1px solid #334155; padding: 12px 15px; color: #ffffff; background: #1e293b; text-align: right;';
+                
+                // ستون اول (معمولاً شماره یا عنوان) - مرکز چین
+                if (idx === 0) {
+                    cellStyle += ' font-weight: 700; text-align: center;';
+                }
+                
+                // تشخیص ستون آلمانی برای چپ‌چین کردن (اختیاری)
+                if (cellText.match(/^[a-zA-ZÄäÖöÜüß]/) && !isHeader) {
+                    cellStyle += ' direction: ltr; text-align: left;';
+                }
+                
+                tableHtml += `<td style="${cellStyle}">${cellText}</td>`;
+            }
+        });
+        tableHtml += '</tr>';
+        isHeader = false;
+    }
+    tableHtml += '</table></div>';
+    return tableHtml;
+});
     
     // کد اینلاین
     t = t.replace(/`(.*?)`/g, '<code style="background: #1e293b; color: #e2e8f0; padding: 3px 10px; border-radius: 8px; font-family: monospace; font-size: 13px;">$1</code>');
