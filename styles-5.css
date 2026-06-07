@@ -5874,3 +5874,75 @@ button:disabled {
     border-radius: 50%;
     display: inline-block;
 }
+/* دارک مود - فقط اصلاحات لازم */
+
+/* 1. حذف نوار آبی دور کارت فعال */
+.dark-mode .content-section.active .word-card {
+    border: 1px solid var(--border-primary) !important;
+    box-shadow: none !important;
+}
+
+/* 2. دکمه تگ (کنار مشاهده و تمرین) - لایت و دارک یکسان */
+.tag-word-btn {
+    background: #e5e7eb !important;
+    border: 1px solid #d1d5db !important;
+    color: #6b7280 !important;
+    transition: all 0.2s ease !important;
+}
+
+.tag-word-btn.has-tag {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: white !important;
+}
+
+.tag-word-btn:hover {
+    transform: scale(1.05) !important;
+}
+
+.tag-word-btn.has-tag:hover {
+    background: #059669 !important;
+}
+
+/* 3. دارک مود برای پوشه‌ها */
+.dark-mode .tag-name,
+.dark-mode .bulk-page-btn,
+.dark-mode .tag-filter-option,
+.dark-mode .practice-tag-option,
+.dark-mode .bulk-word-number,
+.dark-mode .bulk-word-german,
+.dark-mode .bulk-word-persian,
+.dark-mode .tag-select-name,
+.dark-mode .tag-word-count {
+    color: #ffffff !important;
+}
+
+.dark-mode .bulk-page-btn {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+.dark-mode .bulk-page-btn.active {
+    background: #3b82f6 !important;
+}
+
+.dark-mode .tag-action-btn {
+    background: #334155 !important;
+}
+
+.dark-mode .tag-action-btn i {
+    color: #ffffff !important;
+}
+
+.dark-mode .tag-action-btn.edit-tag:hover {
+    background: #8b5cf6 !important;
+}
+
+.dark-mode .tag-action-btn.delete-tag:hover {
+    background: #ef4444 !important;
+}
+
+.dark-mode .bulk-word-item {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+}
