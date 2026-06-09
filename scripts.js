@@ -268,24 +268,19 @@ async init() {
         await this.initDB();
         await this.loadFavorites();
         await this.initSRS();
-        // داخل تابع init، بعد از this.initSRS(); اضافه کن:
-
-// راه‌اندازی سیستم تگ
-this.loadTags();
-this.addTagButtonToWordList();
-this.renderTagFilterBar();
-this.updatePracticeTagFilter();
-this.addTagFilterToExportModal();
+        
+        // ========== راه‌اندازی سیستم تگ ==========
+        this.loadTags();
+        this.addTagButtonToWordList();
+        this.renderTagFilterBar();
+        this.updatePracticeTagFilter();
+        this.addTagFilterToExportModal();
+        
         this.setupEventListeners();
         this.loadCustomization();
         this.updateOnlineStatus();
-        this.setupLibrary();
         this.setupOnlineStatusListener();
         this.setupFloatingMenuQuickSearch();
-        this.setupLexiCard();
-        this.setupFloatingSortButton();
-        this.setupSortButtonScroll();
-        this.initVerbConjugationTool();  
         this.setupPasswordLock();
         this.checkAndLock();
         this.loadChatMemory();
@@ -293,23 +288,52 @@ this.addTagFilterToExportModal();
         
         // ========== مقداردهی اولیه حافظه چت ==========
         this.currentChatId = localStorage.getItem('current_chat_id') || 'chat_' + Date.now();
-        this.currentChatHistory = [];  // فقط برای چت فعلی
-        this.permanentMemory = {};      // اطلاعات دائمی (اسم و...)
+        this.currentChatHistory = [];
+        this.permanentMemory = {};
         this.loadPermanentMemory();
         this.loadCurrentChatMemory();
         
+        // ========== رندر اولیه بخش‌ها ==========
+        this.renderSearchSection();
+        this.renderAddWordSection();
+        this.renderTranslate();
+        this.renderPracticeOptions();
+        this.renderSettings();
+        this.renderFavorites();
+        this.updateStats();
+        
+        // ========== ✅ راه‌اندازی مجدد با تاخیر ==========
+        // این مهم‌ترین بخشه - اطمینان از اینکه همه چیز بعد از رندر کامل دوباره راه‌اندازی بشه
+        
         setTimeout(() => {
+            console.log('🔄 مرحله 1: راه‌اندازی اولیه...');
+            this.setupLexiCard();
+            this.setupFloatingSortButton();
+            this.setupSortButtonScroll();
+            this.initVerbConjugationTool();
+            this.setupLibrary();
+        }, 300);
+        
+        setTimeout(() => {
+            console.log('🔄 مرحله 2: رندر لیست لغات و آمار...');
             this.renderWordList('all');
             this.setupWordListEventListeners();
-        }, 500);
+            this.updateStats();
+            this.setupFilterButtons();
+        }, 600);
         
         setTimeout(() => {
-            if (this.db) {
-                this.updateStats();
-            }
+            console.log('🔄 مرحله 3: راه‌اندازی مجدد بخش‌های وابسته...');
+            // راه‌اندازی مجدد برای اطمینان
+            if (this.setupLexiCard) this.setupLexiCard();
+            if (this.setupFloatingSortButton) this.setupFloatingSortButton();
+            if (this.initVerbConjugationTool) this.initVerbConjugationTool();
+            if (this.setupLibrary) this.setupLibrary();
+            if (this.renderTagFilterBar) this.renderTagFilterBar();
+            if (this.updatePracticeTagFilter) this.updatePracticeTagFilter();
+            if (this.addTagFilterToExportModal) this.addTagFilterToExportModal();
+            console.log('✅ همه بخش‌ها راه‌اندازی شدند');
         }, 1000);
-        
-       
         
         console.log('✅ راه‌اندازی کامل شد');
         
@@ -611,14 +635,22 @@ renderAddWordSection() {
 }
 
 renderTranslate() {
+    console.log('🎨 رندر بخش مترجم...');
+    
     const container = document.getElementById('translate-section');
-    if (!container) return;
+    if (!container) {
+        console.error('❌ translate-section پیدا نشد');
+        return;
+    }
     
     const isGerman = LanguageSystem.isGerman();
     
     // مقدار پیش‌فرض برای direction
-    const defaultDirection = isGerman ? 'de-fa' : 'en-fa';
-    const secondDirection = isGerman ? 'fa-de' : 'fa-en';
+    const defaultDirection = 'de-fa';
+    const secondDirection = 'fa-de';
+    
+    // ریست کردن فلگ اتصال رویدادها
+    this._translateEventsSetup = false;
     
     container.innerHTML = `
         <div class="word-card">
@@ -637,7 +669,7 @@ renderTranslate() {
                     </div>
                     <div class="direction-text">
                         <span class="direction-title">${LanguageSystem.t('translate.deToFa')}</span>
-                        <span class="direction-subtitle">${isGerman ? 'Deutsch → فارسی' : 'English → Persian'}</span>
+                        <span class="direction-subtitle">Deutsch → فارسی</span>
                     </div>
                     <div class="direction-check">
                         <i class="fas fa-check-circle"></i>
@@ -649,7 +681,7 @@ renderTranslate() {
                     </div>
                     <div class="direction-text">
                         <span class="direction-title">${LanguageSystem.t('translate.faToDe')}</span>
-                        <span class="direction-subtitle">${isGerman ? 'فارسی → Deutsch' : 'Persian → English'}</span>
+                        <span class="direction-subtitle">فارسی → Deutsch</span>
                     </div>
                     <div class="direction-check">
                         <i class="fas fa-check-circle"></i>
@@ -664,7 +696,7 @@ renderTranslate() {
                 </label>
                 <div class="input-with-clear">
                     <textarea id="translate-input" class="form-control" rows="3" 
-                              placeholder="${isGerman ? 'متن آلمانی خود را وارد کنید...' : 'Enter English text...'}" 
+                              placeholder="${isGerman ? 'متن آلمانی خود را وارد کنید...' : 'Enter German text...'}" 
                               dir="ltr"></textarea>
                     <button class="clear-input" id="clear-input-btn" title="پاک کردن متن">
                         <i class="fas fa-times"></i>
@@ -717,8 +749,170 @@ renderTranslate() {
         </div>
     `;
     
-    this.setupTranslateEventListeners();
+    // به‌روزرسانی UI
     this.updateTranslateUI();
+    
+    // ========== راه‌اندازی رویدادها با تاخیر مناسب ==========
+    setTimeout(() => {
+        this.setupTranslateEventListeners();
+    }, 200);
+    
+    console.log('✅ رندر مترجم کامل شد');
+}
+setupTranslateEventListeners(retryCount = 0) {
+    const MAX_RETRIES = 5; // کاهش به 5 بار
+    
+    // چک کن ببینیم اصلاً المنت translate-section وجود داره یا نه
+    const translateSection = document.getElementById('translate-section');
+    if (!translateSection) {
+        if (retryCount < MAX_RETRIES) {
+            setTimeout(() => this.setupTranslateEventListeners(retryCount + 1), 300);
+        }
+        return;
+    }
+    
+    // اگه المنت‌های مترجم داخل translate-section نیست، صبر کن
+    const directionOptions = translateSection.querySelectorAll('.direction-option');
+    const translateInput = translateSection.querySelector('#translate-input');
+    
+    if ((!translateInput || directionOptions.length === 0) && retryCount < MAX_RETRIES) {
+        setTimeout(() => this.setupTranslateEventListeners(retryCount + 1), 300);
+        return;
+    }
+    
+    // جلوگیری از اتصال مجدد
+    if (this._translateEventsSetup) return;
+    this._translateEventsSetup = true;
+    
+    console.log('✅ اتصال رویدادهای مترجم...');
+    
+    // ========== 1. انتخاب جهت ترجمه ==========
+    directionOptions.forEach(option => {
+        const newOption = option.cloneNode(true);
+        option.parentNode.replaceChild(newOption, option);
+        
+        newOption.onclick = (e) => {
+            e.preventDefault();
+            const newDirection = newOption.dataset.direction;
+            if (this.translateDirection === newDirection) return;
+            
+            this.translateDirection = newDirection;
+            document.querySelectorAll('.direction-option').forEach(opt => opt.classList.remove('active'));
+            newOption.classList.add('active');
+            this.updateTranslateUI();
+            
+            const inputField = document.getElementById('translate-input');
+            const resultDiv = document.getElementById('translate-result');
+            if (inputField) inputField.value = '';
+            if (resultDiv) {
+                resultDiv.innerHTML = `<div class="empty-result"><div class="empty-icon"><i class="fas fa-exchange-alt"></i></div><p>نتیجه ترجمه اینجا نمایش داده می‌شود</p><small>متن را وارد کنید</small></div>`;
+            }
+        };
+    });
+    
+    // ========== 2. ترجمه خودکار ==========
+    const currentTranslateInput = document.getElementById('translate-input');
+    let debounceTimer;
+    
+    if (currentTranslateInput) {
+        const newInput = currentTranslateInput.cloneNode(true);
+        currentTranslateInput.parentNode.replaceChild(newInput, currentTranslateInput);
+        
+        newInput.oninput = (e) => {
+            const text = e.target.value.trim();
+            clearTimeout(debounceTimer);
+            if (text.length > 2) {
+                debounceTimer = setTimeout(() => this.performAutoTranslation(text), 800);
+            } else if (text.length === 0) {
+                const resultDiv = document.getElementById('translate-result');
+                if (resultDiv) {
+                    resultDiv.innerHTML = `<div class="empty-result"><div class="empty-icon"><i class="fas fa-exchange-alt"></i></div><p>نتیجه ترجمه اینجا نمایش داده می‌شود</p><small>متن را وارد کنید</small></div>`;
+                }
+            }
+        };
+        
+        newInput.onkeypress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = e.target.value.trim();
+                if (text) this.performAutoTranslation(text);
+            }
+        };
+    }
+    
+    // ========== 3. دکمه پاک کردن ==========
+    const clearBtn = document.getElementById('clear-input-btn');
+    if (clearBtn) {
+        const newBtn = clearBtn.cloneNode(true);
+        clearBtn.parentNode.replaceChild(newBtn, clearBtn);
+        newBtn.onclick = () => {
+            const inputField = document.getElementById('translate-input');
+            if (inputField) {
+                inputField.value = '';
+                inputField.focus();
+            }
+            const resultDiv = document.getElementById('translate-result');
+            if (resultDiv) {
+                resultDiv.innerHTML = `<div class="empty-result"><div class="empty-icon"><i class="fas fa-exchange-alt"></i></div><p>نتیجه ترجمه اینجا نمایش داده می‌شود</p><small>متن را وارد کنید</small></div>`;
+            }
+        };
+    }
+    
+    // ========== 4. دکمه تلفظ ==========
+    const speakInput = document.getElementById('speak-input');
+    if (speakInput) {
+        const newBtn = speakInput.cloneNode(true);
+        speakInput.parentNode.replaceChild(newBtn, speakInput);
+        newBtn.onclick = () => {
+            const inputField = document.getElementById('translate-input');
+            const text = inputField?.value.trim();
+            if (text) {
+                const lang = this.translateDirection === 'de-fa' ? 'de-DE' : 'fa-IR';
+                this.speakText(text, lang);
+            }
+        };
+    }
+    
+    const speakOutput = document.getElementById('speak-output');
+    if (speakOutput) {
+        const newBtn = speakOutput.cloneNode(true);
+        speakOutput.parentNode.replaceChild(newBtn, speakOutput);
+        newBtn.onclick = () => {
+            const resultDiv = document.getElementById('translate-result');
+            const text = resultDiv?.querySelector('.result-text p')?.textContent || '';
+            if (text) {
+                const lang = this.translateDirection === 'de-fa' ? 'fa-IR' : 'de-DE';
+                this.speakText(text, lang);
+            }
+        };
+    }
+    
+    // ========== 5. دکمه کپی ==========
+    const copyBtn = document.getElementById('copy-result');
+    if (copyBtn) {
+        const newBtn = copyBtn.cloneNode(true);
+        copyBtn.parentNode.replaceChild(newBtn, copyBtn);
+        newBtn.onclick = async () => {
+            const resultDiv = document.getElementById('translate-result');
+            const text = resultDiv?.querySelector('.result-text p')?.textContent || '';
+            if (text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    this.showToast('✅ ترجمه کپی شد', 'success');
+                } catch (error) {
+                    this.showToast('❌ خطا در کپی', 'error');
+                }
+            }
+        };
+    }
+    
+    // ========== 6. دکمه ذخیره ==========
+    const saveBtn = document.getElementById('save-translation');
+    if (saveBtn) {
+        const newBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+        newBtn.onclick = () => this.saveTranslationWithAutoAnalysis();
+    }
 }
 showNextFlashcard() {
     if (this.practiceSession.currentIndex >= this.practiceSession.words.length) {
@@ -9096,9 +9290,9 @@ renderTranslate() {
                     
                     <div class="translate-direction-buttons">
                         <button class="translate-dir-btn ${this.translateDirection === 'de-fa' ? 'active' : ''}" data-dir="de-fa">
-                            <span class="dir-lang">DE</span>
-                            <i class="fas fa-arrow-right"></i>
                             <span class="dir-lang">FA</span>
+                            <i class="fas fa-arrow-right"></i>
+                            <span class="dir-lang">DE</span>
                         </button>
                         <button class="translate-dir-btn ${this.translateDirection === 'fa-de' ? 'active' : ''}" data-dir="fa-de">
                             <span class="dir-lang">FA</span>
@@ -10041,122 +10235,6 @@ showSaveWordDialog(german, persian) {
             this.showToast('❌ خطا در ذخیره سازی', 'error');
         }
     });
-}
-
-  setupTranslateEventListeners() {
-    // انتخاب جهت ترجمه
-    document.querySelectorAll('.direction-option').forEach(option => {
-        option.onclick = (e) => {
-            const newDirection = e.currentTarget.dataset.direction;
-            
-            if (this.translateDirection === newDirection) return;
-            
-            this.translateDirection = newDirection;
-            
-            document.querySelectorAll('.direction-option').forEach(opt => {
-                opt.classList.remove('active');
-            });
-            e.currentTarget.classList.add('active');
-            
-            this.updateTranslateUI();
-            
-            // پاک کردن نتیجه قبلی
-            document.getElementById('translate-input').value = '';
-            document.getElementById('translate-result').innerHTML = `
-                <div class="empty-result">
-                    <div class="empty-icon"><i class="fas fa-exchange-alt"></i></div>
-                    <p>نتیجه ترجمه اینجا نمایش داده می‌شود</p>
-                    <small>متن را وارد کنید</small>
-                </div>
-            `;
-        };
-    });
-    
-    // ترجمه خودکار با دبونس
-    const translateInput = document.getElementById('translate-input');
-    let debounceTimer;
-    
-    translateInput.oninput = (e) => {
-        const text = e.target.value.trim();
-        
-        clearTimeout(debounceTimer);
-        
-        if (text.length > 2) {
-            debounceTimer = setTimeout(() => {
-                this.performAutoTranslation(text);
-            }, 800);
-        } else if (text.length === 0) {
-            document.getElementById('translate-result').innerHTML = `
-                <div class="empty-result">
-                    <div class="empty-icon"><i class="fas fa-exchange-alt"></i></div>
-                    <p>نتیجه ترجمه اینجا نمایش داده می‌شود</p>
-                    <small>متن را وارد کنید</small>
-                </div>
-            `;
-        }
-    };
-    
-    // اینتر
-    translateInput.onkeypress = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            const text = e.target.value.trim();
-            if (text) {
-                this.performAutoTranslation(text);
-            }
-        }
-    };
-    
-    // دکمه پاک کردن
-    document.getElementById('clear-input-btn').onclick = () => {
-        translateInput.value = '';
-        translateInput.focus();
-        document.getElementById('translate-result').innerHTML = `
-            <div class="empty-result">
-                <div class="empty-icon"><i class="fas fa-exchange-alt"></i></div>
-                <p>نتیجه ترجمه اینجا نمایش داده می‌شود</p>
-                <small>متن را وارد کنید</small>
-            </div>
-        `;
-        document.getElementById('suggestions-list').innerHTML = '';
-    };
-    
-    // تلفظ
-    document.getElementById('speak-input').onclick = () => {
-        const text = translateInput.value.trim();
-        if (text) {
-            const lang = this.translateDirection === 'de-fa' ? 'de-DE' : 'fa-IR';
-            this.speakText(text, lang);
-        }
-    };
-    
-    document.getElementById('speak-output').onclick = () => {
-        const resultDiv = document.getElementById('translate-result');
-        const text = resultDiv.querySelector('.result-text p')?.textContent || '';
-        if (text) {
-            const lang = this.translateDirection === 'de-fa' ? 'fa-IR' : 'de-DE';
-            this.speakText(text, lang);
-        }
-    };
-    
-    // کپی
-    document.getElementById('copy-result').onclick = async () => {
-        const resultDiv = document.getElementById('translate-result');
-        const text = resultDiv.querySelector('.result-text p')?.textContent || '';
-        if (text) {
-            try {
-                await navigator.clipboard.writeText(text);
-                this.showToast('✅ ترجمه کپی شد', 'success');
-            } catch (error) {
-                this.showToast('❌ خطا در کپی', 'error');
-            }
-        }
-    };
-    
-    // ذخیره هوشمند
-    document.getElementById('save-translation').onclick = () => {
-        this.saveTranslationWithAutoAnalysis();
-    };
 }
 
    updateTranslateUI() {
@@ -17494,8 +17572,7 @@ if (germanInput) {
         };
     }
     
-    // ========== رویدادهای مترجم ==========
-    this.setupTranslateEventListeners();
+
     
     // ========== رویدادهای AI چت ==========
     this.setupAIChatEventListeners();

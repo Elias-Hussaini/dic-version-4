@@ -7550,3 +7550,249 @@ button,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ================================================
+   FLOATING MENU - بدون بدنه
+   ================================================ */
+
+.floating-menu-btn {
+    position: fixed !important;
+    bottom: 28px !important;
+    left: 28px !important;
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(145deg, #4361ee, #3a0ca3) !important;
+    border: none !important;
+    box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4) !important;
+    cursor: pointer !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.floating-menu-btn i {
+    font-size: 26px !important;
+    color: white !important;
+}
+
+.floating-menu-btn:hover {
+    transform: scale(1.1) rotate(90deg) !important;
+}
+
+.floating-menu-btn.open {
+    transform: rotate(180deg) !important;
+}
+
+.floating-menu-container {
+    position: fixed !important;
+    bottom: 100px !important;
+    left: 28px !important;
+    width: 60px !important;
+    background: transparent !important;
+    z-index: 99998 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateY(20px) scale(0.9) !important;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    pointer-events: none !important;
+}
+
+.floating-menu-container.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) scale(1) !important;
+    pointer-events: all !important;
+}
+
+.floating-menu-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+.floating-menu-item {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(145deg, #ffffff, #f0f0f0) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    position: relative !important;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    opacity: 0 !important;
+    transform: translateX(-30px) scale(0.8) !important;
+}
+
+.floating-menu-item.show {
+    opacity: 1 !important;
+    transform: translateX(0) scale(1) !important;
+}
+
+.floating-menu-item:nth-child(1) { transition-delay: 0.02s; }
+.floating-menu-item:nth-child(2) { transition-delay: 0.04s; }
+.floating-menu-item:nth-child(3) { transition-delay: 0.06s; }
+.floating-menu-item:nth-child(4) { transition-delay: 0.08s; }
+.floating-menu-item:nth-child(5) { transition-delay: 0.10s; }
+.floating-menu-item:nth-child(6) { transition-delay: 0.12s; }
+.floating-menu-item:nth-child(7) { transition-delay: 0.14s; }
+.floating-menu-item:nth-child(8) { transition-delay: 0.16s; }
+.floating-menu-item:nth-child(9) { transition-delay: 0.18s; }
+.floating-menu-item:nth-child(10) { transition-delay: 0.20s; }
+.floating-menu-item:nth-child(11) { transition-delay: 0.22s; }
+.floating-menu-item:nth-child(12) { transition-delay: 0.24s; }
+
+.floating-menu-item i {
+    font-size: 22px !important;
+    color: #4361ee !important;
+}
+
+.floating-menu-item.active {
+    background: linear-gradient(145deg, #4361ee, #3a0ca3) !important;
+    box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4) !important;
+    transform: scale(1.1) !important;
+}
+
+.floating-menu-item.active i {
+    color: white !important;
+}
+
+.floating-menu-item:hover {
+    transform: scale(1.15) !important;
+    background: linear-gradient(145deg, #5a67d8, #4c51bf) !important;
+}
+
+.floating-menu-item:hover i {
+    color: white !important;
+}
+
+/* تولتیپ سمت راست */
+.floating-menu-item .menu-item-tooltip {
+    position: absolute !important;
+    left: 65px !important;
+    right: auto !important;
+    background: #1e293b !important;
+    color: white !important;
+    padding: 6px 16px !important;
+    border-radius: 30px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transform: translateX(10px) !important;
+    transition: all 0.25s ease !important;
+    pointer-events: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    z-index: 100 !important;
+}
+
+.floating-menu-item .menu-item-tooltip::before {
+    content: '' !important;
+    position: absolute !important;
+    left: -6px !important;
+    right: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    border: 6px solid transparent !important;
+    border-left-color: #1e293b !important;
+}
+
+.floating-menu-item:hover .menu-item-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateX(0) !important;
+}
+
+/* ========== دارک مود - حذف بکگراند floating-menu-list ========== */
+.dark-mode .floating-menu-container {
+    background: transparent !important;
+}
+
+.dark-mode .floating-menu-list {
+    background: transparent !important;
+}
+
+.dark-mode .floating-menu-item {
+    background: linear-gradient(145deg, #1e293b, #0f172a) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .floating-menu-item i {
+    color: #60a5fa !important;
+}
+
+.dark-mode .floating-menu-item.active {
+    background: linear-gradient(145deg, #3b82f6, #1e40af) !important;
+}
+
+.dark-mode .floating-menu-item.active i {
+    color: white !important;
+}
+
+.dark-mode .floating-menu-item .menu-item-tooltip {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+}
+
+.dark-mode .floating-menu-item .menu-item-tooltip::before {
+    border-left-color: #f1f5f9 !important;
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .floating-menu-btn {
+        bottom: 20px !important;
+        left: 20px !important;
+        width: 50px !important;
+        height: 50px !important;
+    }
+    
+    .floating-menu-btn i {
+        font-size: 22px !important;
+    }
+    
+    .floating-menu-container {
+        left: 16px !important;
+        bottom: 85px !important;
+    }
+    
+    .floating-menu-item {
+        width: 46px !important;
+        height: 46px !important;
+    }
+    
+    .floating-menu-item i {
+        font-size: 18px !important;
+    }
+    
+    .floating-menu-item .menu-item-tooltip {
+        left: 55px !important;
+        font-size: 11px !important;
+        padding: 4px 12px !important;
+    }
+}

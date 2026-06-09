@@ -516,15 +516,15 @@ const VerbsDatabase = (function() {
 "anwerben", "anwidern", "anwiegen", "anwohnen", "anzahlen", "anzapfen", "anzäunen",
 "anzechen", "anzetteln", "anzeigen", "anzielen", "anzocken", "anzünden", "anzweifeln"
 ];
-    // ================================================
-// حذف خودکار افعال تکراری و شبیه به هم
+// ================================================
+// تعریف تابع cleanDuplicateVerbs قبل از استفاده
 // ================================================
 
 function cleanDuplicateVerbs() {
     let removedCount = 0;
     const seenVerbs = new Set();
     
-    // ========== 1. حذف بی‌قاعده‌های تکراری ==========
+    // حذف بی‌قاعده‌های تکراری
     const cleanIrregular = {};
     for (const [verb, data] of Object.entries(irregularVerbs)) {
         const key = verb.toLowerCase().trim();
@@ -536,11 +536,10 @@ function cleanDuplicateVerbs() {
         }
     }
     
-    // جایگزینی
     Object.keys(irregularVerbs).length = 0;
     Object.assign(irregularVerbs, cleanIrregular);
     
-    // ========== 2. حذف با قاعده‌های تکراری ==========
+    // حذف با قاعده‌های تکراری
     seenVerbs.clear();
     const cleanRegular = [];
     for (const verb of regularVerbsList) {
@@ -562,6 +561,17 @@ function cleanDuplicateVerbs() {
     
     return { removedCount, totalCount: Object.keys(irregularVerbs).length + regularVerbsList.length };
 }
+
+// حالا تابع rebuildDatabase رو تعریف کن
+function rebuildDatabase() {
+    // ... کد rebuildDatabase
+}
+
+// حالا صدا بزن
+(function autoClean() {
+    const result = cleanDuplicateVerbs();
+    console.log(`✅ دیتابیس افعال: ${result.totalCount} فعل (${Object.keys(irregularVerbs).length} بی‌قاعده + ${regularVerbsList.length} با قاعده)`);
+})();
 
 // اجرای خودکار هنگام لود
 (function autoClean() {
