@@ -124,7 +124,7 @@ this.bulkCurrentPage = 1;
 this.bulkWordsPerPage = 20;      
 this.bulkAllWords = [];          
 this.bulkFilteredWords = [];     
-
+this.currentWordList = [];
 // بارگذاری تگ‌ها
 this.loadTags();
         this.reviewWords = []; 
@@ -2144,7 +2144,6 @@ async QuickSearch(query) {
     // ========== فقط اولین نتیجه رو نشون بده ==========
     this.renderWordDetails(results[0]);
 }
-
 async renderWordDetails(word) {
     if (!word) return;
     
@@ -2154,167 +2153,181 @@ async renderWordDetails(word) {
     const successRate = practiceHistory.length > 0 
         ? Math.round((practiceHistory.filter(h => h.correct).length / practiceHistory.length) * 100) : 0;
     
+    // ========== به‌روزرسانی لیست فعلی برای ناوبری ==========
+    await this.getCurrentWordList();
+    const currentIndex = this.currentWordList.findIndex(w => w.id === word.id);
+    const totalInList = this.currentWordList.length;
+    const positionText = (currentIndex !== -1 && totalInList > 0) ? `${currentIndex + 1}/${totalInList}` : '';
+    
     const container = document.getElementById('search-results-container');
     if (!container) return;
     
-    // ساخت HTML با استایل حرفه‌ای
-    container.innerHTML = `
-        <div class="detail-word-card">
-            <!-- دکمه بازگشت -->
-            <button id="backFromDetailBtn" class="back-btn-modern">
-                <i class="fas fa-arrow-right"></i> بازگشت به لیست
+container.innerHTML = `
+    <div class="detail-word-card">
+        <!-- نوار بالایی - دکمه برگشت و شماره کاملاً کنار هم -->
+        <div class="detail-top-bar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="backFromDetailBtn" class="back-btn-modern" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; margin: 0;">
+                    <i class="fas fa-arrow-right"></i> بازگشت به لیست
+                </button>
+                ${positionText ? `
+                <span class="detail-position-badge" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 6px 14px; border-radius: 30px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-list"></i> ${positionText}
+                </span>
+                ` : ''}
+            </div>
+            <div></div>
+        </div>
+
+        <!-- دکمه‌های ناوبری - قبلی < سمت چپ، بعدی > سمت راست -->
+        <div class="detail-navigation-buttons" style="display: flex; justify-content: flex-start; gap: 12px; margin-bottom: 20px;">
+            <button id="prevWordBtn" class="nav-arrow-btn" title="قبلی" style="width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                <i class="fas fa-chevron-right"></i>
             </button>
-
-
-<div class="detail-navigation-buttons">
-    <button id="prevWordBtn" class="nav-arrow-btn" title="قبلی (→)">
-        <i class="fas fa-chevron-right"></i>
-    </button>
-    <button id="nextWordBtn" class="nav-arrow-btn" title="بعدی (←)">
-        <i class="fas fa-chevron-left"></i>
-    </button>
-</div>
-            <!-- هدر اصلی -->
-            <div class="detail-header-modern">
-                <div class="word-info-modern">
-                    <h1 class="word-title-modern">${this.escapeHtml(word.german)}</h1>
-                    <div class="word-badges-modern">
-                        ${word.gender ? `<span class="badge-gender ${word.gender}">${this.getGenderLabel(word.gender)}</span>` : ''}
-                        ${word.type ? `<span class="badge-type ${word.type}">${this.getTypeLabel(word.type)}</span>` : ''}
-                        ${word.plural ? `<span class="badge-plural"><i class="fas fa-copy"></i> ${this.escapeHtml(word.plural)}</span>` : ''}
-                    </div>
-                </div>
-                <div class="word-actions-modern">
-                    <button class="action-icon favorite ${this.favorites.has(word.id) ? 'active' : ''}" data-id="${word.id}" title="علاقه‌مندی">
-                        <i class="fas fa-star"></i>
-                    </button>
-                    <button class="action-icon speak" data-word="${word.german}" title="تلفظ">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                    <button class="action-icon edit" data-id="${word.id}" title="ویرایش">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="action-icon delete" data-id="${word.id}" title="حذف">
-                        <i class="fas fa-trash"></i>
-                    </button>
+            <button id="nextWordBtn" class="nav-arrow-btn" title="بعدی" style="width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+        
+        <!-- هدر اصلی -->
+        <div class="detail-header-modern">
+            <div class="word-info-modern">
+                <h1 class="word-title-modern">${this.escapeHtml(word.german)}</h1>
+                <div class="word-badges-modern">
+                    ${word.gender ? `<span class="badge-gender ${word.gender}">${this.getGenderLabel(word.gender)}</span>` : ''}
+                    ${word.type ? `<span class="badge-type ${word.type}">${this.getTypeLabel(word.type)}</span>` : ''}
+                    ${word.plural ? `<span class="badge-plural"><i class="fas fa-copy"></i> ${this.escapeHtml(word.plural)}</span>` : ''}
                 </div>
             </div>
-            
-            <!-- معنی -->
-            <div class="meaning-card-modern">
-                <i class="fas fa-language"></i>
-                <p>${this.escapeHtml(word.persian)}</p>
-            </div>
-            
-            <!-- تلفظ و برچسب‌ها -->
-            ${word.pronunciation ? `
-            <div class="pronunciation-modern">
-                <i class="fas fa-microphone-alt"></i>
-                <span>تلفظ: ${this.escapeHtml(word.pronunciation)}</span>
-                <button class="listen-btn" onclick="dictionaryApp.speakText('${this.escapeHtml(word.german)}', 'de-DE')">
-                    <i class="fas fa-play"></i> گوش کن
+            <div class="word-actions-modern">
+                <button class="action-icon favorite ${this.favorites.has(word.id) ? 'active' : ''}" data-id="${word.id}" title="علاقه‌مندی">
+                    <i class="fas fa-star"></i>
+                </button>
+                <button class="action-icon speak" data-word="${word.german}" title="تلفظ">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button class="action-icon edit" data-id="${word.id}" title="ویرایش">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button class="action-icon delete" data-id="${word.id}" title="حذف">
+                    <i class="fas fa-trash"></i>
                 </button>
             </div>
-            ` : ''}
-            
-            ${word.tags && word.tags.length > 0 ? `
-            <div class="tags-modern">
-                ${word.tags.map(tag => `<span class="tag-modern">#${this.escapeHtml(tag)}</span>`).join('')}
-            </div>
-            ` : ''}
-            
-            <!-- جزئیات تخصصی -->
-            <div class="details-grid-modern">
-                ${this.renderNounDetails(word)}
-                ${this.renderVerbDetails(word)}
-                ${this.renderAdjectiveDetails(word)}
-                ${this.renderPrepositionDetails(word)}
-            </div>
-            
-            <!-- تب‌ها -->
-            <div class="tabs-modern">
-                <button class="tab-btn active" data-tab="examples">📚 مثال‌ها (${examples.length})</button>
-                <button class="tab-btn" data-tab="practice">🎯 تمرین (${practiceHistory.length})</button>
-                <button class="tab-btn" data-tab="stats">📊 آمار (${successRate}%)</button>
-            </div>
-            
-            <!-- محتوای تب‌ها -->
-            <div class="tab-content-modern active" id="tab-examples">
-                <div class="examples-list-modern">
-                    ${examples.length > 0 ? examples.map(ex => `
-    <div class="example-card-modern" data-example-id="${ex.id}">
-        <div class="example-text-modern">${this.escapeHtml(ex.german)}</div>
-        <div class="example-trans-modern">${this.escapeHtml(ex.persian)}</div>
-        <div class="example-actions">
-            <button class="example-speak" onclick="dictionaryApp.speakText('${this.escapeHtml(ex.german)}', 'de-DE')">
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="example-delete" data-id="${ex.id}" title="حذف مثال">
-                <i class="fas fa-trash-alt"></i>
+        </div>
+        
+        <!-- معنی -->
+        <div class="meaning-card-modern">
+            <i class="fas fa-language"></i>
+            <p>${this.escapeHtml(word.persian)}</p>
+        </div>
+        
+        ${word.pronunciation ? `
+        <div class="pronunciation-modern">
+            <i class="fas fa-microphone-alt"></i>
+            <span>تلفظ: ${this.escapeHtml(word.pronunciation)}</span>
+            <button class="listen-btn" onclick="dictionaryApp.speakText('${this.escapeHtml(word.german)}', 'de-DE')">
+                <i class="fas fa-play"></i> گوش کن
             </button>
         </div>
-    </div>
-`).join('') : '<div class="empty-state-modern">📝 هنوز مثالی ثبت نشده است</div>'}
-                </div>
-                <div class="add-example-modern">
-                    <h4><i class="fas fa-plus-circle"></i> افزودن مثال جدید</h4>
-                    <div class="example-input-group">
-                        <textarea id="new-example-german" placeholder="مثال آلمانی..."></textarea>
-                        <textarea id="new-example-persian" placeholder="ترجمه فارسی..."></textarea>
-                        <button id="add-example-btn" class="btn-add-example">➕ افزودن</button>
+        ` : ''}
+        
+        ${word.tags && word.tags.length > 0 ? `
+        <div class="tags-modern">
+            ${word.tags.map(tag => `<span class="tag-modern">#${this.escapeHtml(tag)}</span>`).join('')}
+        </div>
+        ` : ''}
+        
+        <div class="details-grid-modern">
+            ${this.renderNounDetails(word)}
+            ${this.renderVerbDetails(word)}
+            ${this.renderAdjectiveDetails(word)}
+            ${this.renderPrepositionDetails(word)}
+        </div>
+        
+        <div class="tabs-modern">
+            <button class="tab-btn active" data-tab="examples">📚 مثال‌ها (${examples.length})</button>
+            <button class="tab-btn" data-tab="practice">🎯 تمرین (${practiceHistory.length})</button>
+            <button class="tab-btn" data-tab="stats">📊 آمار (${successRate}%)</button>
+        </div>
+        
+        <div class="tab-content-modern active" id="tab-examples">
+            <div class="examples-list-modern">
+                ${examples.length > 0 ? examples.map(ex => `
+                    <div class="example-card-modern" data-example-id="${ex.id}">
+                        <div class="example-text-modern">${this.escapeHtml(ex.german)}</div>
+                        <div class="example-trans-modern">${this.escapeHtml(ex.persian)}</div>
+                        <div class="example-actions">
+                            <button class="example-speak" onclick="dictionaryApp.speakText('${this.escapeHtml(ex.german)}', 'de-DE')">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                            <button class="example-delete" data-id="${ex.id}" title="حذف مثال">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
+                `).join('') : '<div class="empty-state-modern">📝 هنوز مثالی ثبت نشده است</div>'}
             </div>
-            <div class="notes-section-modern">
-    <div class="notes-header">
-        <i class="fas fa-sticky-note"></i>
-        <span>توضیحات</span>
-    </div>
-    <div class="notes-content">${this.escapeHtml(word.notes)}</div>
-</div>
-            <div class="tab-content-modern" id="tab-practice">
-                <div class="practice-stats-modern">
-                    <div class="practice-circle-modern">
-                        <svg viewBox="0 0 36 36">
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"/>
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="${successRate}, 100"/>
-                        </svg>
-                        <div class="practice-percent-modern">${successRate}%</div>
-                    </div>
-                    <div class="practice-info-modern">
-                        <div class="practice-stat"><i class="fas fa-brain"></i> تعداد تمرین: ${practiceHistory.length}</div>
-                        <div class="practice-stat"><i class="fas fa-check-circle"></i> پاسخ صحیح: ${practiceHistory.filter(h => h.correct).length}</div>
-                        <div class="practice-stat"><i class="fas fa-times-circle"></i> پاسخ نادرست: ${practiceHistory.filter(h => !h.correct).length}</div>
-                    </div>
-                </div>
-                <button id="practice-now-btn" class="practice-now-btn"><i class="fas fa-play"></i> شروع تمرین این لغت</button>
-            </div>
-            
-            <div class="tab-content-modern" id="tab-stats">
-                <div class="stats-grid-modern">
-                    <div class="stat-card-modern">
-                        <i class="fas fa-calendar-alt"></i>
-                        <div class="stat-label">تاریخ ثبت</div>
-                        <div class="stat-value">${new Date(word.createdAt).toLocaleDateString('fa-IR')}</div>
-                    </div>
-                    <div class="stat-card-modern">
-                        <i class="fas fa-star"></i>
-                        <div class="stat-label">امتیاز SRS</div>
-                        <div class="stat-value">${this.srsData[word.id]?.level || 0}/5</div>
-                    </div>
-                    <div class="stat-card-modern">
-                        <i class="fas fa-chart-line"></i>
-                        <div class="stat-label">موفقیت کلی</div>
-                        <div class="stat-value">${successRate}%</div>
-                    </div>
+            <div class="add-example-modern">
+                <h4><i class="fas fa-plus-circle"></i> افزودن مثال جدید</h4>
+                <div class="example-input-group">
+                    <textarea id="new-example-german" placeholder="مثال آلمانی..."></textarea>
+                    <textarea id="new-example-persian" placeholder="ترجمه فارسی..."></textarea>
+                    <button id="add-example-btn" class="btn-add-example">➕ افزودن</button>
                 </div>
             </div>
         </div>
-    `;
+        
+        <div class="notes-section-modern">
+            <div class="notes-header">
+                <i class="fas fa-sticky-note"></i>
+                <span>توضیحات</span>
+            </div>
+            <div class="notes-content">${word.notes ? this.escapeHtml(word.notes).replace(/\n/g, '<br>') : '<span style="color: var(--gray-400);">📝 توضیحی ثبت نشده است</span>'}</div>
+        </div>
+        
+        <div class="tab-content-modern" id="tab-practice">
+            <div class="practice-stats-modern">
+                <div class="practice-circle-modern">
+                    <svg viewBox="0 0 36 36">
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="${successRate}, 100"/>
+                    </svg>
+                    <div class="practice-percent-modern">${successRate}%</div>
+                </div>
+                <div class="practice-info-modern">
+                    <div class="practice-stat"><i class="fas fa-brain"></i> تعداد تمرین: ${practiceHistory.length}</div>
+                    <div class="practice-stat"><i class="fas fa-check-circle"></i> پاسخ صحیح: ${practiceHistory.filter(h => h.correct).length}</div>
+                    <div class="practice-stat"><i class="fas fa-times-circle"></i> پاسخ نادرست: ${practiceHistory.filter(h => !h.correct).length}</div>
+                </div>
+            </div>
+            <button id="practice-now-btn" class="practice-now-btn"><i class="fas fa-play"></i> شروع تمرین این لغت</button>
+        </div>
+        
+        <div class="tab-content-modern" id="tab-stats">
+            <div class="stats-grid-modern">
+                <div class="stat-card-modern">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div class="stat-label">تاریخ ثبت</div>
+                    <div class="stat-value">${new Date(word.createdAt).toLocaleDateString('fa-IR')}</div>
+                </div>
+                <div class="stat-card-modern">
+                    <i class="fas fa-star"></i>
+                    <div class="stat-label">امتیاز SRS</div>
+                    <div class="stat-value">${this.srsData[word.id]?.level || 0}/5</div>
+                </div>
+                <div class="stat-card-modern">
+                    <i class="fas fa-chart-line"></i>
+                    <div class="stat-label">موفقیت کلی</div>
+                    <div class="stat-value">${successRate}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+`;
     
     this.setupDetailEventListeners(word);
+    this.setupDetailNavigation();
 }
-
 // توابع کمکی برای رندر جزئیات
 renderNounDetails(word) {
     if (word.type !== 'noun') return '';
@@ -2401,7 +2414,6 @@ renderPrepositionDetails(word) {
         </div>
     `;
 }
-// گرفتن لیست فعلی لغات (بر اساس فیلتر و سورت جاری در word-list-section)
 async getCurrentWordList() {
     const allWords = await this.getAllWords();
     
@@ -2410,77 +2422,123 @@ async getCurrentWordList() {
     const filter = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
     
     let filtered = [...allWords];
-    switch (filter) {
-        case 'favorites':
-            filtered = filtered.filter(w => this.favorites.has(w.id));
-            break;
-        case 'nouns':
-            filtered = filtered.filter(w => w.type === 'noun');
-            break;
-        case 'verbs':
-            filtered = filtered.filter(w => w.type === 'verb');
-            break;
-        case 'adjectives':
-            filtered = filtered.filter(w => w.type === 'adjective');
-            break;
-        case 'adverbs':
-            filtered = filtered.filter(w => w.type === 'adverb');
-            break;
+    
+    // ========== اولویت با فیلتر پوشه (Tag) ==========
+    if (this.currentTagFilter && this.currentTagFilter !== 'all') {
+        const tagWords = await this.getWordsByTag(this.currentTagFilter);
+        const tagWordIds = new Set(tagWords.map(w => w.id));
+        filtered = filtered.filter(w => tagWordIds.has(w.id));
+    } else {
+        // اگر فیلتر پوشه فعال نیست، از فیلترهای معمولی استفاده کن
+        switch(filter) {
+            case 'favorites':
+                filtered = filtered.filter(w => this.favorites.has(w.id));
+                break;
+            case 'nouns':
+                filtered = filtered.filter(w => w.type === 'noun');
+                break;
+            case 'verbs':
+                filtered = filtered.filter(w => w.type === 'verb');
+                break;
+            case 'adjectives':
+                filtered = filtered.filter(w => w.type === 'adjective');
+                break;
+            case 'adverbs':
+                filtered = filtered.filter(w => w.type === 'adverb');
+                break;
+            default:
+                // بدون فیلتر اضافه
+                break;
+        }
     }
     
-    // 2. مرتب‌سازی ذخیره شده
+    // ========== مهم: دریافت sortType از localStorage و اعمال ==========
     const sortType = localStorage.getItem('wordListSort') || 'alphabetical';
     this.applySortToFilteredWords(filtered, sortType);
     
+    // ذخیره لیست فعلی برای ناوبری
+    this.currentWordList = [...filtered];
+    
     return filtered;
 }
-
 async goToPrevWord() {
-    const wordList = await this.getCurrentWordList();
-    const currentIndex = wordList.findIndex(w => w.id === this.currentWord.id);
+    if (!this.currentWordList || this.currentWordList.length === 0) {
+        await this.getCurrentWordList();
+    }
+    
+    if (!this.currentWordList || this.currentWordList.length === 0) return;
+    
+    const currentIndex = this.currentWordList.findIndex(w => w.id === this.currentWord.id);
+    
     if (currentIndex > 0) {
-        const prevWord = wordList[currentIndex - 1];
+        const prevWord = this.currentWordList[currentIndex - 1];
         await this.renderWordDetails(prevWord);
         this.lastWordId = prevWord.id;
     } else {
-        this.showToast('اولین لغت هستید', 'info');
+        // نمایش پیام در اولین لغت
+        const isGerman = LanguageSystem.isGerman();
+        this.showToast(isGerman ? '📖 اولین لغت در این لیست هستید' : '📖 You are at the first word in this list', 'info');
+        if (navigator.vibrate) navigator.vibrate(50);
     }
 }
 
 async goToNextWord() {
-    const wordList = await this.getCurrentWordList();
-    const currentIndex = wordList.findIndex(w => w.id === this.currentWord.id);
-    if (currentIndex < wordList.length - 1) {
-        const nextWord = wordList[currentIndex + 1];
+    if (!this.currentWordList || this.currentWordList.length === 0) {
+        await this.getCurrentWordList();
+    }
+    
+    if (!this.currentWordList || this.currentWordList.length === 0) return;
+    
+    const currentIndex = this.currentWordList.findIndex(w => w.id === this.currentWord.id);
+    
+    if (currentIndex < this.currentWordList.length - 1) {
+        const nextWord = this.currentWordList[currentIndex + 1];
         await this.renderWordDetails(nextWord);
         this.lastWordId = nextWord.id;
     } else {
-        this.showToast('آخرین لغت هستید', 'info');
+        // نمایش پیام در آخرین لغت
+        const isGerman = LanguageSystem.isGerman();
+        this.showToast(isGerman ? '🏁 آخرین لغت در این لیست هستید' : '🏁 You are at the last word in this list', 'info');
+        if (navigator.vibrate) navigator.vibrate(50);
     }
 }
-// بعد از اتمام رندر جزئیات، این رو صدا بزن:
-
 setupDetailNavigation() {
-    const prevBtn = document.getElementById('prevWordBtn');   // دکمه چپ (chevron-left)
-    const nextBtn = document.getElementById('nextWordBtn');   // دکمه راست (chevron-right)
+    const prevBtn = document.getElementById('prevWordBtn');
+    const nextBtn = document.getElementById('nextWordBtn');
     
     if (prevBtn) {
-        prevBtn.onclick = () => this.goToNextWord();   // چپ ← لغت قبل
-    }
-    if (nextBtn) {
-        nextBtn.onclick = () => this.goToPrevWord();   // راست ← لغت بعد
+        const newPrevBtn = prevBtn.cloneNode(true);
+        prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+        
+        newPrevBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.goToPrevWord();
+        };
     }
     
+    if (nextBtn) {
+        const newNextBtn = nextBtn.cloneNode(true);
+        nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+        
+        newNextBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.goToNextWord();
+        };
+    }
+    
+    // ========== اصلاح arrow key: چپ ← قبلی، راست ← بعدی ==========
     const keyHandler = (e) => {
         const detailCard = document.querySelector('.detail-word-card');
         if (!detailCard) return;
         
-        if (e.key === 'ArrowRight') {
+        if (e.key === 'ArrowLeft') {
             e.preventDefault();
-            this.goToNextWord();   // راست ← لغت بعد
-        } else if (e.key === 'ArrowLeft') {
+            this.goToPrevWord();  // چپ ← قبلی
+        } else if (e.key === 'ArrowRight') {
             e.preventDefault();
-            this.goToPrevWord();   // چپ ← لغت قبل
+            this.goToNextWord();  // راست ← بعدی
         }
     };
     
@@ -3391,6 +3449,10 @@ clearAddWordForm() {
     if (germanWord) germanWord.value = '';
     if (persianMeaning) persianMeaning.value = '';
     
+    // ========== پاک کردن فیلد توضیحات (Notes) ==========
+    const wordNotes = document.getElementById('word-notes');
+    if (wordNotes) wordNotes.value = '';
+    
     // پاک کردن فیلدهای اسم
     const nounPlural = document.getElementById('noun-plural');
     if (nounPlural) nounPlural.value = '';
@@ -3446,8 +3508,20 @@ clearAddWordForm() {
     // نمایش فیلدهای اسم، مخفی کردن بقیه
     this.toggleTypeFields('noun');
     
+    // ========== حذف پیشنهادات AI ==========
+    const aiSuggestion = document.getElementById('ai-example-suggestion');
+    if (aiSuggestion) aiSuggestion.remove();
+    const aiVerbSuggestion = document.getElementById('ai-verb-suggestion');
+    if (aiVerbSuggestion) aiVerbSuggestion.remove();
+    
+    // ========== حذف دکمه هوش مصنوعی ==========
+    const aiFillBtn = document.getElementById('ai-fill-all-btn');
+    if (aiFillBtn) aiFillBtn.style.display = 'none';
+    
     // به‌روزرسانی شمارنده فیلدها
     this.updateFieldCount();
+    
+    console.log('🧹 فرم با موفقیت پاک شد (شامل توضیحات)');
 }
 toggleTypeFields(type) {
     const nounFields = document.getElementById('noun-fields');
@@ -3499,10 +3573,6 @@ updateFieldCount() {
         countBadge.innerHTML = `${count} فیلد تکمیل شده`;
     }
 }
-// ================================================
-// تابع sortWordListAdvanced - با سورت درست
-// ================================================
-
 async sortWordListAdvanced(filter, sortType) {
     const words = await this.getAllWords();
     const container = document.getElementById('word-list-container');
@@ -3514,6 +3584,7 @@ async sortWordListAdvanced(filter, sortType) {
     
     let filteredWords = [];
     
+    // فیلتر بر اساس تگ (اگر تگ خاصی انتخاب شده)
     if (this.currentTagFilter && this.currentTagFilter !== 'all') {
         const tagWords = await this.getWordsByTag(this.currentTagFilter);
         const tagWordIds = new Set(tagWords.map(w => w.id));
@@ -3540,7 +3611,7 @@ async sortWordListAdvanced(filter, sortType) {
         }
     }
     
-    // مرتب‌سازی با روش درست (بر اساس id برای جدیدترین)
+    // ========== اعمال سورت ==========
     if (sortType === 'date-desc') {
         filteredWords.sort((a, b) => b.id - a.id);
     } 
@@ -3574,6 +3645,9 @@ async sortWordListAdvanced(filter, sortType) {
         }
     }
     
+    // ========== مهم: به‌روزرسانی currentWordList برای ناوبری ==========
+    this.currentWordList = [...filteredWords];
+    
     document.getElementById('total-words-count').textContent = filteredWords.length;
     
     if (filteredWords.length === 0) {
@@ -3581,6 +3655,7 @@ async sortWordListAdvanced(filter, sortType) {
         return;
     }
     
+    // رندر لیست
     container.innerHTML = '';
     const fragment = document.createDocumentFragment();
     
@@ -3629,6 +3704,8 @@ async sortWordListAdvanced(filter, sortType) {
     }
     
     container.appendChild(fragment);
+    
+    // راه‌اندازی مجدد event listenerها
     this.setupWordListEventListeners();
     this.setupTagWordButtons();
     
@@ -3646,12 +3723,6 @@ async sortWordListAdvanced(filter, sortType) {
     };
     this.showToast(`مرتب‌سازی بر اساس ${sortNames[sortType] || sortType}`, 'success');
 }
-// ================================================
-// تابع renderWordList - نمایش لیست لغات با تگ‌ها
-// ================================================
-// ================================================
-// نوار فیلتر تگ کشویی - با اعمال فیلتر مستقیم
-// ================================================
 
 renderTagFilterBar() {
     const wordListSection = document.getElementById('word-list-section');
@@ -4622,7 +4693,6 @@ updatePracticeTagFilter() {
 }
 
 
-
 async renderWordList(filter = 'all') {
     const words = await this.getAllWords();
     const container = document.getElementById('word-list-container');
@@ -4662,6 +4732,9 @@ async renderWordList(filter = 'all') {
     // مرتب‌سازی
     const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
     this.applySortToFilteredWords(filteredWords, savedSort);
+    
+    // ========== مهم: ذخیره لیست فعلی برای ناوبری ==========
+    this.currentWordList = [...filteredWords];
     
     document.getElementById('total-words-count').textContent = filteredWords.length;
     
@@ -5459,28 +5532,43 @@ document.querySelectorAll('.order-option').forEach(btn => {
 this.updatePracticeTagFilter();
 }
 async startConjugationPractice() {
-    const words = await this.getAllWords();
+    const wordsToPractice = await this.getFilteredWordsForPractice();
     
     // فقط فعل‌هایی که صرف دارن
-    let verbWords = words.filter(word => word.type === 'verb' && word.verbForms);
+    let verbWords = wordsToPractice.filter(word => word.type === 'verb' && word.verbForms);
     
     if (verbWords.length === 0) {
-        this.showToast('❌ هیچ فعلی با اطلاعات صرف در دیکشنری ندارید', 'error');
+        this.showToast('❌ هیچ فعلی با اطلاعات صرف در این بازه وجود ندارد', 'error');
         return;
     }
     
-    // تعداد سوالات
-    let questionCount = 10;
     const activeCount = document.querySelector('.count-option.active');
-    if (activeCount && activeCount.dataset.count !== 'all') {
-        questionCount = parseInt(activeCount.dataset.count);
-    }
+    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? verbWords.length : parseInt(activeCount.dataset.count)) : 10;
     
     if (verbWords.length < questionCount) {
         questionCount = verbWords.length;
     }
     
-    let selectedWords = this.shuffleArray([...verbWords]).slice(0, questionCount);
+    const activeOrder = document.querySelector('.order-option.active');
+    const order = activeOrder ? activeOrder.dataset.order : 'random';
+    
+    let selectedWords = [];
+    if (order === 'sequential') {
+        selectedWords = [...verbWords].sort((a, b) => a.german.localeCompare(b.german, 'de')).slice(0, questionCount);
+    } else if (order === 'hardest') {
+        const history = await this.getAllPracticeHistory();
+        const errorCounts = {};
+        history.forEach(record => {
+            if (!record.correct) {
+                errorCounts[record.wordId] = (errorCounts[record.wordId] || 0) + 1;
+            }
+        });
+        selectedWords = [...verbWords].sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0)).slice(0, questionCount);
+    } else {
+        selectedWords = this.shuffleArray([...verbWords]).slice(0, questionCount);
+    }
+    
+    this.showToast(`📊 تعداد افعال در این بازه: ${verbWords.length} فعل`, 'info');
     
     this.conjugationSession = {
         words: selectedWords,
@@ -5492,7 +5580,6 @@ async startConjugationPractice() {
     this.showConjugationQuestion();
     this.showSection('practice-section');
 }
-
 showConjugationQuestion() {
     if (this.conjugationSession.currentIndex >= this.conjugationSession.words.length) {
         this.showConjugationResults();
@@ -5695,7 +5782,7 @@ showConjugationResults() {
     };
 }
 async startFillBlanksPractice() {
-    const wordsToPractice = await this.getWordsForPractice();
+    const wordsToPractice = await this.getFilteredWordsForPractice();
     const isGerman = LanguageSystem.isGerman();
     
     if (wordsToPractice.length < 4) {
@@ -5703,8 +5790,8 @@ async startFillBlanksPractice() {
         return;
     }
     
-    let questionCount = Math.min(10, wordsToPractice.length);
-    let selectedWords = this.shuffleArray([...wordsToPractice]).slice(0, questionCount);
+    // ========== از کل لغات فیلتر شده استفاده کن ==========
+    let selectedWords = [...wordsToPractice];
     
     const questionTypes = [
         { type: 'meaning_to_german', name: isGerman ? 'معنی به آلمانی' : 'Meaning to German' },
@@ -5763,6 +5850,8 @@ async startFillBlanksPractice() {
         this.showToast('❌ خطا در ساخت سوالات', 'error');
         return;
     }
+    
+    this.showToast(`📊 تعداد سوالات در این بازه: ${this.fillBlanksSession.questions.length} سوال`, 'info');
     
     this.showFillBlanksQuestion();
     this.showSection('practice-section');
@@ -6570,8 +6659,7 @@ showFillBlanksResults() {
     };
 }
 async startSentenceCompletionPractice() {
-    const wordsToPractice = await this.getWordsForPractice();
-    const isGerman = LanguageSystem.isGerman();
+    const wordsToPractice = await this.getFilteredWordsForPractice();
     
     let wordsWithExamples = [];
     
@@ -6590,7 +6678,13 @@ async startSentenceCompletionPractice() {
         return;
     }
     
-    let questionCount = Math.min(10, wordsWithExamples.length);
+    const activeCount = document.querySelector('.count-option.active');
+    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? wordsWithExamples.length : parseInt(activeCount.dataset.count)) : 10;
+    
+    if (wordsWithExamples.length < questionCount) {
+        questionCount = wordsWithExamples.length;
+    }
+    
     let selectedWords = this.shuffleArray([...wordsWithExamples]).slice(0, questionCount);
     
     this.sentenceSession = {
@@ -6636,10 +6730,7 @@ async startSentenceCompletionPractice() {
         });
     }
     
-    if (this.sentenceSession.questions.length === 0) {
-        this.showToast('❌ خطا در ساخت سوالات', 'error');
-        return;
-    }
+    this.showToast(`📊 تعداد جملات در این بازه: ${this.sentenceSession.questions.length} جمله`, 'info');
     
     this.showSentenceCompletionQuestion();
     this.showSection('practice-section');
@@ -6920,6 +7011,194 @@ async applySortToFilteredWordsAsync(words, sortType) {
     }
     return words;
 }
+async getFilteredWordsForPractice() {
+    const activeRange = document.querySelector('.range-option.active');
+    let rangeType = activeRange ? activeRange.dataset.range : 'all';
+    
+    const activeCount = document.querySelector('.count-option.active');
+    let count = activeCount ? (activeCount.dataset.count === 'all' ? 9999 : parseInt(activeCount.dataset.count)) : 20;
+    
+    let allWords = await this.getAllWords();
+    
+    if (allWords.length === 0) {
+        this.showToast('❌ هیچ لغتی برای تمرین وجود ندارد', 'error');
+        return [];
+    }
+    
+    // ========== مرحله 1: فیلتر بر اساس پوشه (اگر انتخاب شده) ==========
+    let filteredWords = [...allWords];
+    let tagName = '';
+    
+    if (this.selectedPracticeTag && this.selectedPracticeTag !== 'all') {
+        const tagWords = await this.getWordsByTag(this.selectedPracticeTag);
+        const tagWordIds = new Set(tagWords.map(w => w.id));
+        filteredWords = filteredWords.filter(w => tagWordIds.has(w.id));
+        
+        const tag = this.getAllTags().find(t => t.id === this.selectedPracticeTag);
+        tagName = tag ? tag.name : '';
+        
+        if (filteredWords.length === 0) {
+            this.showToast(`📁 هیچ لغتی در پوشه "${tagName}" وجود ندارد`, 'warning');
+            return [];
+        }
+    }
+    
+    // ========== مرحله 2: فیلتر بر اساس نوع کلمه (از دکمه‌های filter-btn) ==========
+    const activeFilter = document.querySelector('.filter-btn.active');
+    let filterType = activeFilter ? activeFilter.dataset.filter : 'all';
+    
+    switch(filterType) {
+        case 'favorites':
+            filteredWords = filteredWords.filter(word => this.favorites.has(word.id));
+            break;
+        case 'nouns':
+            filteredWords = filteredWords.filter(word => word.type === 'noun');
+            break;
+        case 'verbs':
+            filteredWords = filteredWords.filter(word => word.type === 'verb');
+            break;
+        case 'adjectives':
+            filteredWords = filteredWords.filter(word => word.type === 'adjective');
+            break;
+        case 'adverbs':
+            filteredWords = filteredWords.filter(word => word.type === 'adverb');
+            break;
+        default:
+            break;
+    }
+    
+    if (filteredWords.length === 0) {
+        let msg = this.selectedPracticeTag ? `در پوشه "${tagName}"` : '';
+        this.showToast(`❌ هیچ لغتی ${msg} با این فیلتر وجود ندارد`, 'error');
+        return [];
+    }
+    
+    // ========== مرحله 3: مرتب‌سازی بر اساس sortType ذخیره شده (همون سورت لیست لغات) ==========
+    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
+    this.applySortToFilteredWords(filteredWords, savedSort);
+    
+    // ========== مرحله 4: اعمال محدوده (Range) روی لیست مرتب شده ==========
+    let rangeFilteredWords = [];
+    
+    switch(rangeType) {
+        case 'favorites':
+            rangeFilteredWords = filteredWords.filter(word => this.favorites.has(word.id));
+            if (rangeFilteredWords.length === 0) {
+                this.showToast('⭐ هیچ لغت مورد علاقه‌ای در این لیست وجود ندارد', 'warning');
+                return [];
+            }
+            break;
+        case 'recent':
+            // جدیدترین: 50 لغت اول لیست مرتب شده (که بر اساس تاریخ سورت شده)
+            rangeFilteredWords = filteredWords.slice(0, Math.min(50, filteredWords.length));
+            break;
+        case 'custom':
+            const startInput = document.getElementById('range-start');
+            const endInput = document.getElementById('range-end');
+            let start = parseInt(startInput?.value) || 1;
+            let end = parseInt(endInput?.value) || filteredWords.length;
+            
+            // اعتبارسنجی محدوده
+            if (start < 1) start = 1;
+            if (end > filteredWords.length) end = filteredWords.length;
+            if (start > end) {
+                this.showToast(`❌ محدوده نامعتبر (از ${start} تا ${end})`, 'error');
+                return [];
+            }
+            
+            // ========== مهم: برش از لیست مرتب شده ==========
+            rangeFilteredWords = filteredWords.slice(start - 1, end);
+            
+            this.showToast(`📏 محدوده ${start} تا ${end} از ${filteredWords.length} لغت`, 'info');
+            break;
+        default: // 'all'
+            rangeFilteredWords = [...filteredWords];
+            break;
+    }
+    
+    if (rangeFilteredWords.length === 0) {
+        this.showToast('❌ هیچ لغتی در این محدوده وجود ندارد', 'error');
+        return [];
+    }
+    
+    // محدود کردن تعداد بر اساس تنظیمات Count
+    let finalCount = count;
+    if (finalCount === 9999 || finalCount > rangeFilteredWords.length) {
+        finalCount = rangeFilteredWords.length;
+    }
+    
+    // ========== مرحله 5: اولویت با لغات نیاز به مرور (SRS) ==========
+    this.updateReviewWords();
+    const validWordIds = new Set(allWords.map(w => w.id));
+    this.reviewWords = this.reviewWords.filter(id => validWordIds.has(id));
+    
+    const needReview = rangeFilteredWords.filter(word => this.reviewWords.includes(word.id));
+    const otherWords = rangeFilteredWords.filter(word => !this.reviewWords.includes(word.id));
+    
+    let result = [];
+    const usedIds = new Set();
+    
+    // اول اضافه کردن لغات نیاز به مرور
+    for (const word of needReview) {
+        if (result.length >= finalCount) break;
+        if (!usedIds.has(word.id)) {
+            usedIds.add(word.id);
+            result.push(word);
+        }
+    }
+    
+    // سپس بقیه لغات
+    if (result.length < finalCount) {
+        const shuffledOther = this.shuffleArray([...otherWords]);
+        for (const word of shuffledOther) {
+            if (result.length >= finalCount) break;
+            if (!usedIds.has(word.id)) {
+                usedIds.add(word.id);
+                result.push(word);
+            }
+        }
+    }
+    
+    // ========== مرحله 6: ترتیب نهایی سوالات (Order) ==========
+    const activeOrder = document.querySelector('.order-option.active');
+    const order = activeOrder ? activeOrder.dataset.order : 'random';
+    
+    if (order === 'sequential') {
+        result.sort((a, b) => a.german.localeCompare(b.german, 'de'));
+    } else if (order === 'hardest') {
+        const history = await this.getAllPracticeHistory();
+        const errorCounts = {};
+        history.forEach(record => {
+            if (!record.correct) {
+                errorCounts[record.wordId] = (errorCounts[record.wordId] || 0) + 1;
+            }
+        });
+        result.sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0));
+    }
+    // else random: قبلاً تصادفی شده
+    
+    // ========== نمایش پیام خلاصه ==========
+    let summaryMsg = '';
+    if (this.selectedPracticeTag && this.selectedPracticeTag !== 'all') {
+        summaryMsg += `📁 پوشه "${tagName}" | `;
+    }
+    if (rangeType === 'custom') {
+        summaryMsg += `📏 محدوده دلخواه | `;
+    } else if (rangeType === 'favorites') {
+        summaryMsg += `⭐ علاقه‌مندی‌ها | `;
+    } else if (rangeType === 'recent') {
+        summaryMsg += `🆕 جدیدترین | `;
+    }
+    summaryMsg += `📊 ${result.length} لغت`;
+    
+    const reviewCount = result.filter(w => this.reviewWords.includes(w.id)).length;
+    if (reviewCount > 0) {
+        summaryMsg += ` (${reviewCount} لغت نیاز به مرور)`;
+    }
+    this.showToast(summaryMsg, 'info');
+    
+    return result;
+}
 async getWordsForPractice() {
     const activeRange = document.querySelector('.range-option.active');
     const rangeType = activeRange ? activeRange.dataset.range : 'all';
@@ -7165,15 +7444,16 @@ async rebuildSRSFromHistory() {
     console.log('✅ SRS از تاریخچه تمرین بازسازی شد، تعداد لغات:', Object.keys(this.srsData).length);
 }
 async startPracticeSession(wordIds = null) {
-    let wordsToPractice = [];
+    let wordsToPractice;
     
     if (wordIds && wordIds.length > 0) {
+        wordsToPractice = [];
         for (const id of wordIds) {
             const word = await this.getWord(id);
             if (word) wordsToPractice.push(word);
         }
     } else {
-        wordsToPractice = await this.getWordsForPractice();
+        wordsToPractice = await this.getFilteredWordsForPractice();
     }
     
     if (wordsToPractice.length === 0) {
@@ -7181,14 +7461,36 @@ async startPracticeSession(wordIds = null) {
         return;
     }
     
-    // ریست کردن جلسه قبلی
+    const activeOrder = document.querySelector('.order-option.active');
+    const order = activeOrder ? activeOrder.dataset.order : 'random';
+    
+    let wordOrder;
+    if (order === 'sequential') {
+        wordOrder = [...Array(wordsToPractice.length).keys()];
+    } else if (order === 'hardest') {
+        const history = await this.getAllPracticeHistory();
+        const errorCounts = {};
+        history.forEach(record => {
+            if (!record.correct) {
+                errorCounts[record.wordId] = (errorCounts[record.wordId] || 0) + 1;
+            }
+        });
+        const sortedIndices = [...Array(wordsToPractice.length).keys()];
+        sortedIndices.sort((a, b) => (errorCounts[wordsToPractice[b]?.id] || 0) - (errorCounts[wordsToPractice[a]?.id] || 0));
+        wordOrder = sortedIndices;
+    } else {
+        wordOrder = this.shuffleArray([...Array(wordsToPractice.length).keys()]);
+    }
+    
     this.practiceSession = {
         words: wordsToPractice,
         currentIndex: 0,
         correct: 0,
         incorrect: 0,
-        wordOrder: this.shuffleArray([...Array(wordsToPractice.length).keys()])
+        wordOrder: wordOrder
     };
+    
+    this.showToast(`📊 تعداد لغات در این بازه: ${wordsToPractice.length} لغت`, 'info');
     
     this.showNextFlashcard();
     this.showSection('flashcards-section');
@@ -7356,7 +7658,7 @@ async startPracticeSession(wordIds = null) {
     }
     
 async startMatchingPractice() {
-    const wordsToPractice = await this.getWordsForPractice();
+    const wordsToPractice = await this.getFilteredWordsForPractice();
     
     let validWords = wordsToPractice.filter(w => w.german && w.persian);
     
@@ -7369,6 +7671,8 @@ async startMatchingPractice() {
     if (pairCount < 2) pairCount = 2;
     
     let selectedWords = this.shuffleArray([...validWords]).slice(0, pairCount);
+    
+    this.showToast(`📊 تعداد لغات در این بازه: ${validWords.length} لغت`, 'info');
     
     this.matchingSession = {
         words: selectedWords,
@@ -7384,7 +7688,6 @@ async startMatchingPractice() {
     
     this.renderMatchingGame();
 }
-
 renderMatchingGame() {
     const session = this.matchingSession;
     const isGerman = LanguageSystem.isGerman();
@@ -7642,116 +7945,29 @@ showMatchingFinalResult() {
     };
 }
 async startGenderPractice() {
-    // دریافت تنظیمات از بخش تمرین
-    const activeRange = document.querySelector('.range-option.active');
-    const rangeType = activeRange ? activeRange.dataset.range : 'all';
+    const allWords = await this.getFilteredWordsForPractice();
+    
+    // فقط اسم‌هایی که جنسیت دارند
+    let nounWords = allWords.filter(word => word.type === 'noun' && word.gender);
+    
+    if (nounWords.length === 0) {
+        this.showToast('❌ هیچ اسمی با جنسیت در این بازه وجود ندارد', 'error');
+        return;
+    }
     
     const activeCount = document.querySelector('.count-option.active');
-    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? 20 : parseInt(activeCount.dataset.count)) : 10;
+    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? nounWords.length : parseInt(activeCount.dataset.count)) : 10;
+    
+    if (nounWords.length < questionCount) {
+        questionCount = nounWords.length;
+    }
     
     const activeOrder = document.querySelector('.order-option.active');
     const order = activeOrder ? activeOrder.dataset.order : 'random';
     
-    // دریافت همه لغات
-    let allWords = await this.getAllWords();
-    
-    if (allWords.length === 0) {
-        this.showToast('❌ هیچ لغتی در دیکشنری وجود ندارد', 'error');
-        return;
-    }
-    
-    // مرتب‌سازی بر اساس تاریخ اضافه شدن (برای محدوده دلخواه)
-    const sortedByDate = [...allWords].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    
-    // ========== فیلتر بر اساس محدوده ==========
-    let rangeFilteredWords = [];
-    
-    switch(rangeType) {
-        case 'favorites':
-            rangeFilteredWords = allWords.filter(word => this.favorites.has(word.id));
-            if (rangeFilteredWords.length === 0) {
-                this.showToast('⭐ ابتدا لغاتی را به علاقه‌مندی‌ها اضافه کنید', 'warning');
-                return;
-            }
-            break;
-            
-        case 'recent':
-            rangeFilteredWords = [...allWords].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 50);
-            break;
-            
-        case 'custom':
-            const startInput = document.getElementById('range-start');
-            const endInput = document.getElementById('range-end');
-            let start = parseInt(startInput?.value) || 1;
-            let end = parseInt(endInput?.value) || allWords.length;
-            
-            if (start < 1) start = 1;
-            if (end > allWords.length) end = allWords.length;
-            if (start > end) {
-                this.showToast(`❌ محدوده نامعتبر`, 'error');
-                return;
-            }
-            rangeFilteredWords = sortedByDate.slice(start - 1, end);
-            break;
-            
-        default: // 'all'
-            rangeFilteredWords = [...allWords];
-            break;
-    }
-    
-    // ========== فقط اسم‌هایی که جنسیت دارند ==========
-    let nounWords = rangeFilteredWords.filter(word => word.type === 'noun' && word.gender);
-    
-    if (nounWords.length === 0) {
-        this.showToast('❌ هیچ اسمی با جنسیت در این محدوده وجود ندارد', 'error');
-        return;
-    }
-    
-    // ========== اعمال سیستم SRS ==========
-    this.updateReviewWords();
-    
-    // اولویت با لغاتی که نیاز به مرور دارند
-    const needReview = nounWords.filter(word => this.reviewWords.includes(word.id));
-    const otherWords = nounWords.filter(word => !this.reviewWords.includes(word.id));
-    
-    // ساخت لیست نهایی با اولویت SRS
     let selectedWords = [];
-    const usedIds = new Set();
-    
-    // اول اضافه کردن لغات نیاز به مرور
-    for (const word of needReview) {
-        if (selectedWords.length >= questionCount) break;
-        if (!usedIds.has(word.id)) {
-            usedIds.add(word.id);
-            selectedWords.push(word);
-        }
-    }
-    
-    // اضافه کردن بقیه لغات
-    const shuffledOther = this.shuffleArray([...otherWords]);
-    for (const word of shuffledOther) {
-        if (selectedWords.length >= questionCount) break;
-        if (!usedIds.has(word.id)) {
-            usedIds.add(word.id);
-            selectedWords.push(word);
-        }
-    }
-    
-    // اگه بازم کم بود، از کل nounWords اضافه کن
-    if (selectedWords.length < questionCount) {
-        const shuffledAll = this.shuffleArray([...nounWords]);
-        for (const word of shuffledAll) {
-            if (selectedWords.length >= questionCount) break;
-            if (!usedIds.has(word.id)) {
-                usedIds.add(word.id);
-                selectedWords.push(word);
-            }
-        }
-    }
-    
-    // ========== مرتب‌سازی نهایی بر اساس ترتیب انتخابی ==========
     if (order === 'sequential') {
-        selectedWords.sort((a, b) => a.german.localeCompare(b.german, 'de'));
+        selectedWords = [...nounWords].sort((a, b) => a.german.localeCompare(b.german, 'de')).slice(0, questionCount);
     } else if (order === 'hardest') {
         const history = await this.getAllPracticeHistory();
         const errorCounts = {};
@@ -7760,15 +7976,12 @@ async startGenderPractice() {
                 errorCounts[record.wordId] = (errorCounts[record.wordId] || 0) + 1;
             }
         });
-        selectedWords.sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0));
+        selectedWords = [...nounWords].sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0)).slice(0, questionCount);
+    } else {
+        selectedWords = this.shuffleArray([...nounWords]).slice(0, questionCount);
     }
-    // else random: قبلاً تصادفی شده
     
-    // نمایش پیام به کاربر
-    const reviewCount = selectedWords.filter(w => this.reviewWords.includes(w.id)).length;
-    if (reviewCount > 0) {
-        this.showToast(`📚 ${reviewCount} لغت برای مرور امروز دارید!`, 'info');
-    }
+    this.showToast(`📊 تعداد اسم در این بازه: ${nounWords.length} لغت`, 'info');
     
     this.genderSession = {
         words: selectedWords,
@@ -8543,17 +8756,18 @@ showListeningResults() {
     // تمرین نوشتاری
     // ================================================
 
-   async startWritingPractice() {
+// ================================================
+// تمرین جمله‌سازی هوشمند با AI - نسخه نهایی پیشرفته
+// ================================================
+
+async startWritingPractice() {
     const wordsToPractice = await this.getWordsForPractice();
-    
     if (wordsToPractice.length === 0) return;
-    
     this.writingSession = {
         words: wordsToPractice,
         currentIndex: 0,
         score: 0
     };
-    
     this.showWritingExercise();
 }
 
@@ -8562,29 +8776,24 @@ showWritingExercise() {
         this.showWritingResults();
         return;
     }
-
     const word = this.writingSession.words[this.writingSession.currentIndex];
     const isGerman = LanguageSystem.isGerman();
-    
     document.getElementById('practice-section').innerHTML = `
         <div class="word-card">
             <div class="section-header">
                 <h2><i class="fas fa-keyboard"></i> ${LanguageSystem.t('practice.writing')}</h2>
                 <span class="badge">${this.writingSession.currentIndex + 1}/${this.writingSession.words.length}</span>
             </div>
-            
             <div class="writing-exercise">
                 <div class="word-to-translate">
                     <h3>${word.persian}</h3>
                     ${word.gender ? `<span class="word-gender ${word.gender}">${this.getGenderSymbol(word.gender)}</span>` : ''}
                 </div>
-                
-                <input type="text" 
-                       class="answer-input" 
-                       id="writing-answer" 
+                <input type="text"
+                       class="answer-input"
+                       id="writing-answer"
                        placeholder="${isGerman ? 'ترجمه آلمانی را تایپ کنید...' : 'Type English translation...'}"
                        autocomplete="off">
-                
                 <div class="action-buttons">
                     <button class="btn btn-success" id="check-writing-answer-btn">
                         <i class="fas fa-check"></i> ${LanguageSystem.t('practice.check')}
@@ -8593,132 +8802,87 @@ showWritingExercise() {
                         <i class="fas fa-lightbulb"></i> ${LanguageSystem.t('practice.hint')}
                     </button>
                 </div>
-                
-                <!-- نقطه‌های پیشرفت -->
                 <div class="progress-dots">
                     ${this.writingSession.words.map((_, index) => {
                         let dotClass = '';
-                        if (index === this.writingSession.currentIndex) {
-                            dotClass = 'active';
-                        } else if (index < this.writingSession.currentIndex) {
+                        if (index === this.writingSession.currentIndex) dotClass = 'active';
+                        else if (index < this.writingSession.currentIndex) {
                             dotClass = this.writingSession.words[index].userCorrect ? 'completed correct' : 'completed incorrect';
                         }
-                        
                         return `<div class="progress-dot ${dotClass}"></div>`;
                     }).join('')}
                 </div>
             </div>
         </div>
     `;
-    
     this.setupWritingExerciseEventListeners(word);
 }
 
-    setupWritingExerciseEventListeners(word) {
+setupWritingExerciseEventListeners(word) {
     const checkBtn = document.getElementById('check-writing-answer-btn');
     const hintBtn = document.getElementById('show-hint-btn');
     const answerInput = document.getElementById('writing-answer');
-    
-    if (checkBtn) {
-        checkBtn.addEventListener('click', () => {
-            this.checkWritingAnswer();
-        });
-    }
-    
-    if (hintBtn) {
-        hintBtn.addEventListener('click', () => {
-            this.showToast(`💡 راهنما: ${word.german.substring(0, 2)}...`, 'info');
-        });
-    }
-    
+    if (checkBtn) checkBtn.addEventListener('click', () => this.checkWritingAnswer());
+    if (hintBtn) hintBtn.addEventListener('click', () => this.showToast(`💡 راهنما: ${word.german.substring(0, 2)}...`, 'info'));
     if (answerInput) {
         answerInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.checkWritingAnswer();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); this.checkWritingAnswer(); }
         });
-        
-        setTimeout(() => {
-            answerInput.focus();
-        }, 300);
+        setTimeout(() => answerInput.focus(), 300);
     }
 }
+
 async checkWritingAnswer() {
     const userAnswer = document.getElementById('writing-answer').value.trim();
     const currentWord = this.writingSession.words[this.writingSession.currentIndex];
-    
-    if (!userAnswer) {
-        this.showToast('✏️ لطفاً پاسخ را وارد کنید', 'warning');
-        return;
-    }
-    
+    if (!userAnswer) { this.showToast('✏️ لطفاً پاسخ را وارد کنید', 'warning'); return; }
     const normalizedUser = this.normalizeAnswer(userAnswer);
     const normalizedCorrect = this.normalizeAnswer(currentWord.german);
-    
     const isCorrect = normalizedUser === normalizedCorrect;
-    
     await this.recordPractice(currentWord.id, isCorrect);
-    
-    // ذخیره وضعیت پاسخ
     this.writingSession.words[this.writingSession.currentIndex].userCorrect = isCorrect;
-    
     const answerInput = document.getElementById('writing-answer');
     const feedbackDiv = document.createElement('div');
     feedbackDiv.className = 'feedback-message';
-    
     if (isCorrect) {
         this.writingSession.score++;
         this.showToast('✅ آفرین! ترجمه صحیح است', 'success');
-        
         answerInput.style.borderColor = 'var(--success)';
         answerInput.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
-        
         feedbackDiv.className = 'feedback-message feedback-correct';
         feedbackDiv.innerHTML = `<i class="fas fa-check-circle"></i> پاسخ صحیح! آفرین!`;
-        
         answerInput.disabled = true;
         document.getElementById('check-writing-answer-btn').disabled = true;
-        
     } else {
         this.showToast(`❌ پاسخ صحیح: ${currentWord.german}`, 'error');
-        
         answerInput.style.borderColor = 'var(--danger)';
         answerInput.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-        
         feedbackDiv.className = 'feedback-message feedback-incorrect';
         feedbackDiv.innerHTML = `<i class="fas fa-times-circle"></i> پاسخ صحیح: <strong>${currentWord.german}</strong>`;
-        
         answerInput.disabled = true;
         document.getElementById('check-writing-answer-btn').disabled = true;
     }
-    
     const oldFeedback = document.querySelector('.feedback-message');
     if (oldFeedback) oldFeedback.remove();
     answerInput.parentNode.appendChild(feedbackDiv);
-    
     setTimeout(() => {
         this.writingSession.currentIndex++;
         this.showWritingExercise();
     }, 2000);
 }
+
 showWritingResults() {
     const accuracy = Math.round((this.writingSession.score / this.writingSession.words.length) * 100);
     const isGerman = LanguageSystem.isGerman();
-    
     document.getElementById('practice-section').innerHTML = `
         <div class="word-card">
             <div class="section-header">
                 <h2><i class="fas fa-chart-line"></i> ${isGerman ? 'نتایج تمرین نوشتاری' : 'Writing Practice Results'}</h2>
             </div>
-            
             <div class="results-summary">
                 <div class="result-circle" style="background: conic-gradient(var(--success) 0% ${accuracy}%, var(--gray-200) ${accuracy}% 100%);">
-                    <div class="result-circle-inner">
-                        <span>${accuracy}%</span>
-                    </div>
+                    <div class="result-circle-inner"><span>${accuracy}%</span></div>
                 </div>
-                
                 <div class="results-stats">
                     <div class="result-stat">
                         <span>${isGerman ? 'تعداد لغات:' : 'Total Words:'}</span>
@@ -8730,7 +8894,6 @@ showWritingResults() {
                     </div>
                 </div>
             </div>
-            
             <div class="action-buttons">
                 <button class="btn btn-primary" id="restart-writing-btn">
                     <i class="fas fa-redo-alt"></i> ${isGerman ? 'تمرین مجدد' : 'Practice Again'}
@@ -8741,283 +8904,1586 @@ showWritingResults() {
             </div>
         </div>
     `;
-    
-    document.getElementById('restart-writing-btn').addEventListener('click', () => {
-        this.startWritingPractice();
-    });
-    
+    document.getElementById('restart-writing-btn').addEventListener('click', () => this.startWritingPractice());
     document.getElementById('back-to-practice-menu-btn').addEventListener('click', () => {
         this.renderPracticeOptions();
         this.showSection('practice-section');
     });
 }
 
-    // ================================================
-    // تمرین جمله‌سازی
-    // ================================================
+// ═══════════════════════════════════════════════════════════════
+// SPEAKING PRACTICE — نسخه پیشرفته کامل
+// شامل: SRS، تحلیل گرامری، امتیازدهی هوشمند، Levenshtein،
+//        XP/Level/Streak، Achievement، Adaptive Difficulty،
+//        آمار پیشرفته، نمودار Chart.js
+// ═══════════════════════════════════════════════════════════════
 
-   async startSpeakingPractice() {
-    const wordsToPractice = await this.getWordsForPractice();
+// ───────────────────────────────────────────────
+// ابزارهای کمکی
+// ───────────────────────────────────────────────
+
+/** فاصله Levenshtein برای تشخیص غلط‌های تایپی */
+_levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, (_, i) =>
+        Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+    );
+    for (let i = 1; i <= m; i++)
+        for (let j = 1; j <= n; j++)
+            dp[i][j] = a[i-1] === b[j-1]
+                ? dp[i-1][j-1]
+                : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    return dp[m][n];
+}
+
+/** امتیاز شباهت ۰–۱۰۰ بین دو رشته */
+_similarityScore(user, correct) {
+    const u = user.toLowerCase().trim();
+    const c = correct.toLowerCase().trim();
+    if (u === c) return 100;
+    const dist = this._levenshtein(u, c);
+    const maxLen = Math.max(u.length, c.length);
+    return Math.max(0, Math.round((1 - dist / maxLen) * 100));
+}
+
+/** SRS: محاسبه بازه بعدی مرور با SM-2 ساده‌شده */
+_srsNextReview(word, score) {
+    const easeFactor   = word.easeFactor   || 2.5;
+    const reviewInterval = word.reviewInterval || 1;
+    const boxLevel     = word.boxLevel     || 0;
+
+    let newEase = easeFactor, newInterval, newBox;
+
+    if (score >= 90) {
+        newEase     = Math.min(easeFactor + 0.15, 3.0);
+        newInterval = Math.round(reviewInterval * newEase);
+        newBox      = Math.min(boxLevel + 1, 5);
+    } else if (score >= 70) {
+        newEase     = easeFactor;
+        newInterval = Math.max(reviewInterval, 1);
+        newBox      = boxLevel;
+    } else {
+        newEase     = Math.max(easeFactor - 0.2, 1.3);
+        newInterval = 1;
+        newBox      = Math.max(boxLevel - 1, 0);
+    }
+
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + newInterval);
+
+    return {
+        easeFactor:     newEase,
+        reviewInterval: newInterval,
+        boxLevel:       newBox,
+        nextReviewDate: nextDate.toISOString().split('T')[0]
+    };
+}
+
+// ───────────────────────────────────────────────
+// سیستم XP / Level / Streak / Coins
+// ───────────────────────────────────────────────
+
+_getXPData() {
+    return JSON.parse(localStorage.getItem('xpData') || JSON.stringify({
+        xp: 0, level: 1, streak: 0, coins: 0,
+        lastPracticeDate: null, totalCorrect: 0, totalAnswered: 0
+    }));
+}
+
+_saveXPData(data) {
+    localStorage.setItem('xpData', JSON.stringify(data));
+}
+
+_addXP(score, isCorrect) {
+    const data = this._getXPData();
+    const today = new Date().toISOString().split('T')[0];
+
+    // Streak
+    if (data.lastPracticeDate === today) {
+        // همان روز
+    } else if (data.lastPracticeDate === new Date(Date.now() - 86400000).toISOString().split('T')[0]) {
+        data.streak++;
+    } else {
+        data.streak = 1;
+    }
+    data.lastPracticeDate = today;
+
+    // XP بر اساس امتیاز
+    let earned = 0;
+    if (score >= 90)      earned = 10;
+    else if (score >= 70) earned = 6;
+    else if (score >= 50) earned = 3;
+    else                  earned = 1;
+
+    // streak bonus
+    if (data.streak >= 7)  earned = Math.round(earned * 1.5);
+    if (data.streak >= 30) earned = Math.round(earned * 2.0);
+
+    data.xp += earned;
+    data.coins += isCorrect ? 2 : 0;
+    data.totalAnswered++;
+    if (isCorrect) data.totalCorrect++;
+
+    // Level up (هر ۱۰۰ XP)
+    const newLevel = Math.floor(data.xp / 100) + 1;
+    const leveledUp = newLevel > data.level;
+    data.level = newLevel;
+
+    this._saveXPData(data);
+    this._checkAchievements(data);
+    return { earned, leveledUp, data };
+}
+
+// ───────────────────────────────────────────────
+// سیستم Achievement
+// ───────────────────────────────────────────────
+
+_getAchievements() {
+    return JSON.parse(localStorage.getItem('achievements') || '[]');
+}
+
+_checkAchievements(xpData) {
+    const done = new Set(this._getAchievements());
+    const newOnes = [];
+
+    const checks = [
+        { id: 'first_correct',     label: '🎯 اولین پاسخ صحیح!',   cond: xpData.totalCorrect >= 1    },
+        { id: '10_correct',        label: '⭐ ۱۰ پاسخ صحیح',       cond: xpData.totalCorrect >= 10   },
+        { id: '100_correct',       label: '🏅 ۱۰۰ پاسخ صحیح',      cond: xpData.totalCorrect >= 100  },
+        { id: '3_day_streak',      label: '🔥 ۳ روز متوالی',        cond: xpData.streak >= 3          },
+        { id: '7_day_streak',      label: '🔥 ۷ روز متوالی',        cond: xpData.streak >= 7          },
+        { id: '30_day_streak',     label: '🔥 ۳۰ روز متوالی',       cond: xpData.streak >= 30         },
+        { id: 'level_5',           label: '🚀 رسیدن به سطح ۵',      cond: xpData.level >= 5           },
+        { id: 'level_10',          label: '💎 رسیدن به سطح ۱۰',     cond: xpData.level >= 10          },
+        { id: '100_words_mastered',label: '📚 ۱۰۰ لغت تمرین‌شده',   cond: xpData.totalAnswered >= 100 },
+    ];
+
+    checks.forEach(c => {
+        if (c.cond && !done.has(c.id)) {
+            done.add(c.id);
+            newOnes.push(c);
+        }
+    });
+
+    if (newOnes.length > 0) {
+        localStorage.setItem('achievements', JSON.stringify([...done]));
+        newOnes.forEach(a => this._showAchievementToast(a.label));
+    }
+}
+
+_showAchievementToast(label) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+        background:linear-gradient(135deg,#f59e0b,#d97706);
+        color:white;padding:12px 24px;border-radius:40px;
+        font-weight:700;font-size:15px;z-index:99999;
+        box-shadow:0 8px 24px rgba(0,0,0,0.3);
+        animation:slideUp 0.4s ease;
+    `;
+    toast.textContent = `🏆 دستاورد جدید: ${label}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+
+// ───────────────────────────────────────────────
+// Adaptive Difficulty
+// ───────────────────────────────────────────────
+
+_adaptiveDifficulty() {
+    const xpData = this._getXPData();
+    if (xpData.totalAnswered < 5) return;
+    const accuracy = xpData.totalAnswered > 0
+        ? (xpData.totalCorrect / xpData.totalAnswered) * 100 : 50;
+
+    const cur = this.speakingSession.difficulty;
+    if (accuracy > 90 && cur !== 'hard') {
+        this.speakingSession.difficulty = cur === 'easy' ? 'medium' : 'hard';
+        localStorage.setItem('speakingDifficulty', this.speakingSession.difficulty);
+        this.showToast(`📈 سختی افزایش یافت: ${this.speakingSession.difficulty === 'medium' ? 'متوسط' : 'سخت'}`, 'info');
+    } else if (accuracy < 40 && cur !== 'easy') {
+        this.speakingSession.difficulty = cur === 'hard' ? 'medium' : 'easy';
+        localStorage.setItem('speakingDifficulty', this.speakingSession.difficulty);
+        this.showToast(`📉 سختی کاهش یافت: ${this.speakingSession.difficulty === 'medium' ? 'متوسط' : 'آسان'}`, 'info');
+    }
+}
+
+// ───────────────────────────────────────────────
+// آمار پیشرفته
+// ───────────────────────────────────────────────
+
+_recordStats(wordId, score, isCorrect) {
+    const stats = JSON.parse(localStorage.getItem('practiceStats') || '{}');
+    const today = new Date().toISOString().split('T')[0];
+
+    if (!stats.daily)   stats.daily   = {};
+    if (!stats.monthly) stats.monthly = {};
+    if (!stats.words)   stats.words   = {};
+
+    if (!stats.daily[today]) stats.daily[today] = { correct: 0, total: 0, xp: 0 };
+    stats.daily[today].total++;
+    if (isCorrect) stats.daily[today].correct++;
+
+    const month = today.slice(0, 7);
+    if (!stats.monthly[month]) stats.monthly[month] = { correct: 0, total: 0 };
+    stats.monthly[month].total++;
+    if (isCorrect) stats.monthly[month].correct++;
+
+    if (!stats.words[wordId]) stats.words[wordId] = { correct: 0, total: 0, avgScore: 0 };
+    stats.words[wordId].total++;
+    if (isCorrect) stats.words[wordId].correct++;
+    stats.words[wordId].avgScore = Math.round(
+        (stats.words[wordId].avgScore * (stats.words[wordId].total - 1) + score)
+        / stats.words[wordId].total
+    );
+
+    localStorage.setItem('practiceStats', JSON.stringify(stats));
+}
+
+_getWeakAndStrongWords(allWords) {
+    const stats = JSON.parse(localStorage.getItem('practiceStats') || '{}');
+    const wordStats = stats.words || {};
+
+    const scored = allWords
+        .filter(w => wordStats[w.id] && wordStats[w.id].total >= 2)
+        .map(w => ({
+            ...w,
+            accuracy: Math.round((wordStats[w.id].correct / wordStats[w.id].total) * 100)
+        }));
+
+    return {
+        weak:   scored.filter(w => w.accuracy < 60).sort((a, b) => a.accuracy - b.accuracy).slice(0, 10),
+        strong: scored.filter(w => w.accuracy >= 80).sort((a, b) => b.accuracy - a.accuracy).slice(0, 10)
+    };
+}
+
+// ───────────────────────────────────────────────
+// نمودارها با Chart.js
+// ───────────────────────────────────────────────
+
+async _showStatsModal() {
+    if (!window.Chart) {
+        await new Promise(resolve => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            s.onload = resolve;
+            document.head.appendChild(s);
+        });
+    }
+
+    const stats   = JSON.parse(localStorage.getItem('practiceStats') || '{}');
+    const xpData  = this._getXPData();
+    const daily   = stats.daily   || {};
+    const monthly = stats.monthly || {};
+
+    const last7 = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (6 - i));
+        return d.toISOString().split('T')[0];
+    });
+    const labels7   = last7.map(d => d.slice(5));
+    const accuracy7 = last7.map(d => {
+        const day = daily[d];
+        return day && day.total > 0 ? Math.round((day.correct / day.total) * 100) : 0;
+    });
+    const xp7 = last7.map(d => daily[d]?.xp || 0);
+
+    const last6m = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(); d.setMonth(d.getMonth() - (5 - i));
+        return d.toISOString().slice(0, 7);
+    });
+    const labels6m   = last6m;
+    const accuracy6m = last6m.map(m => {
+        const mon = monthly[m];
+        return mon && mon.total > 0 ? Math.round((mon.correct / mon.total) * 100) : 0;
+    });
+
+    const achievements = this._getAchievements();
+
+    let modalEl = document.getElementById('stats-modal');
+    if (modalEl) modalEl.remove();
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="stats-modal" style="
+            position:fixed;inset:0;background:rgba(0,0,0,0.6);
+            z-index:100010;display:flex;align-items:center;justify-content:center;
+        ">
+            <div style="
+                background:var(--bg-card,#fff);border-radius:24px;
+                width:min(720px,95vw);max-height:90vh;overflow-y:auto;
+                box-shadow:0 20px 60px rgba(0,0,0,0.4);
+            ">
+                <div style="
+                    background:linear-gradient(135deg,#8b5cf6,#6d28d9);
+                    padding:18px 22px;border-radius:24px 24px 0 0;
+                    display:flex;justify-content:space-between;align-items:center;
+                ">
+                    <h3 style="margin:0;color:white;font-size:18px;">
+                        <i class="fas fa-chart-line"></i> آمار پیشرفته
+                    </h3>
+                    <button id="close-stats-modal" style="
+                        background:rgba(255,255,255,0.2);border:none;
+                        width:32px;height:32px;border-radius:50%;
+                        color:white;font-size:20px;cursor:pointer;
+                    ">&times;</button>
+                </div>
+
+                <div style="padding:20px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;">
+                        ${[
+                            { icon:'⭐', label:'XP کل',     val: xpData.xp    },
+                            { icon:'🎯', label:'سطح',       val: xpData.level },
+                            { icon:'🔥', label:'Streak',    val: xpData.streak + ' روز' },
+                            { icon:'🪙', label:'Coins',     val: xpData.coins },
+                            { icon:'✅', label:'صحیح کل',  val: xpData.totalCorrect },
+                            { icon:'📊', label:'دقت کل',   val: xpData.totalAnswered > 0 ? Math.round(xpData.totalCorrect/xpData.totalAnswered*100)+'%' : '—' }
+                        ].map(c => `
+                            <div style="
+                                background:linear-gradient(135deg,#f3e8ff,#e9d5ff);
+                                border-radius:16px;padding:14px;text-align:center;
+                            ">
+                                <div style="font-size:22px;margin-bottom:4px;">${c.icon}</div>
+                                <div style="font-size:11px;color:#6b21a5;margin-bottom:2px;">${c.label}</div>
+                                <div style="font-size:20px;font-weight:800;color:#4c1d95;">${c.val}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="background:var(--bg-secondary,#f8fafc);border-radius:16px;padding:16px;margin-bottom:16px;">
+                        <div style="font-size:13px;font-weight:700;color:var(--text-primary,#1f2937);margin-bottom:12px;">
+                            📈 دقت ۷ روز اخیر
+                        </div>
+                        <canvas id="chart-accuracy-7" height="140"></canvas>
+                    </div>
+
+                    <div style="background:var(--bg-secondary,#f8fafc);border-radius:16px;padding:16px;margin-bottom:16px;">
+                        <div style="font-size:13px;font-weight:700;color:var(--text-primary,#1f2937);margin-bottom:12px;">
+                            📅 دقت ۶ ماه اخیر
+                        </div>
+                        <canvas id="chart-accuracy-6m" height="140"></canvas>
+                    </div>
+
+                    <div style="background:var(--bg-secondary,#f8fafc);border-radius:16px;padding:16px;">
+                        <div style="font-size:13px;font-weight:700;color:var(--text-primary,#1f2937);margin-bottom:10px;">
+                            🏆 دستاوردها (${achievements.length})
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            ${[
+                                { id:'first_correct',      label:'🎯 اولین پاسخ'     },
+                                { id:'10_correct',         label:'⭐ ۱۰ پاسخ'        },
+                                { id:'100_correct',        label:'🏅 ۱۰۰ پاسخ'       },
+                                { id:'3_day_streak',       label:'🔥 ۳ روز'          },
+                                { id:'7_day_streak',       label:'🔥 ۷ روز'          },
+                                { id:'30_day_streak',      label:'🔥 ۳۰ روز'         },
+                                { id:'level_5',            label:'🚀 سطح ۵'          },
+                                { id:'level_10',           label:'💎 سطح ۱۰'         },
+                                { id:'100_words_mastered', label:'📚 ۱۰۰ لغت'        },
+                            ].map(a => {
+                                const earned = achievements.includes(a.id);
+                                return `
+                                    <div style="
+                                        padding:6px 12px;border-radius:30px;font-size:12px;
+                                        background:${earned ? 'linear-gradient(135deg,#f59e0b,#d97706)' : 'var(--gray-200,#e5e7eb)'};
+                                        color:${earned ? 'white' : 'var(--gray-400,#9ca3af)'};
+                                        font-weight:${earned ? '700' : '400'};
+                                        opacity:${earned ? '1' : '0.5'};
+                                    ">${a.label}</div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+
+    document.getElementById('close-stats-modal').onclick = () =>
+        document.getElementById('stats-modal')?.remove();
+
+    new window.Chart(document.getElementById('chart-accuracy-7'), {
+        type: 'bar',
+        data: {
+            labels: labels7,
+            datasets: [{
+                label: 'دقت %',
+                data: accuracy7,
+                backgroundColor: accuracy7.map(v => v >= 70 ? '#8b5cf6' : '#f59e0b'),
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true, plugins: { legend: { display: false } },
+            scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+        }
+    });
+
+    new window.Chart(document.getElementById('chart-accuracy-6m'), {
+        type: 'line',
+        data: {
+            labels: labels6m,
+            datasets: [{
+                label: 'دقت ماهانه %',
+                data: accuracy6m,
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139,92,246,0.15)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#6d28d9',
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true, plugins: { legend: { display: false } },
+            scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+        }
+    });
+}
+
+// ═══════════════════════════════════════════════
+// تابع اصلی: generateAIQuestion
+// ═══════════════════════════════════════════════
+async generateAIQuestion(word) {
+    const loadingDiv = document.getElementById('question-loading');
+    const displayDiv = document.getElementById('question-display');
+    const checkBtn = document.getElementById('check-speaking-answer');
+    const answerInput = document.getElementById('speaking-answer-input');
+
+    if (loadingDiv) {
+        loadingDiv.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; padding: 15px;">
+                <div style="width: 22px; height: 22px; border: 2px solid #cbd5e1; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.6s linear infinite;"></div>
+                <span style="color: #64748b; font-size: 13px;">در حال ساخت سوال...</span>
+            </div>
+            <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+        `;
+        loadingDiv.style.display = 'flex';
+    }
+    if (displayDiv) displayDiv.style.display = 'none';
+    if (checkBtn) checkBtn.disabled = true;
+    if (answerInput) answerInput.disabled = true;
+
+    this._adaptiveDifficulty();
+
+    const { mode, level, difficulty } = this.speakingSession;
+    const wordText = word.german;
+    const wordMeaning = word.persian;
+    const wordType = word.type || 'unknown';
+
+    const levelDesc = {
+        A1: `سطح A1 مبتدی مطلق:
+- جملات خیلی کوتاه (حداکثر ۵ کلمه)
+- فقط زمان حال ساده (Präsens)
+- ضمایر: ich, du, er/sie
+- کلمات کاملاً رایج روزمره`,
+        A2: `سطح A2 مبتدی:
+- جملات ساده تا متوسط (۵-۸ کلمه)
+- زمان حال و گذشته نقلی (Perfekt)
+- حروف ربط ساده: und, aber, oder, weil
+- صفات ساده`,
+        B1: `سطح B1 متوسط:
+- جملات مرکب (۸-۱۲ کلمه)
+- زمان‌های Präteritum, Perfekt, Futur I
+- جملات شرطی با wenn/falls
+- حروف ربط: weil, obwohl, damit, bevor, nachdem`,
+        B2: `سطح B2 فوق‌متوسط:
+- جملات پیچیده و بلند (۱۲+ کلمه)
+- Konjunktiv II (würde, hätte, wäre)
+- جملات پیرو پیچیده با dass/ob/weil/obwohl/sodass
+- حالت معلوم (Passiv)`
+    };
+
+    const diffDesc = {
+        easy: `سختی آسان:
+- جای خالی برای اسم رایج یا صفت ساده
+- پاسخ از نظر دستوری ساده`,
+        medium: `سختی متوسط:
+- جای خالی برای فعل کمکی، قید، یا حرف اضافه
+- ممکن است نیاز به تغییر فرم کلمه باشد`,
+        hard: `سختی سخت:
+- جای خالی برای فرم صرف‌شده پیچیده (Konjunktiv, Passiv, Partizip)
+- یا برای کلمه ربطی که ترتیب جمله را تغییر می‌دهد`
+    };
+
+    let systemPrompt, userPrompt;
+
+    if (mode === 'fill_blank') {
+        systemPrompt = `تو معلم متخصص زبان آلمانی هستی که برای زبان‌آموزان ایرانی تمرین می‌سازی.
+
+قوانین بسیار مهم:
+1. جمله‌ای بساز که حتماً کلمه هدف "${wordText}" در آن وجود داشته باشد (نه در جای خالی)
+2. جای خالی (______) برای یک کلمه کاملاً متفاوت از جمله باشد
+3. کلمه جای خالی نباید کلمه هدف یا مشتقاتش باشد
+4. جمله باید صد درصد صحیح دستوری باشد
+5. سختی جای خالی باید مطابق دستورالعمل باشد
+6. لغات جدید را (جز کلمه هدف) با معنی فارسی لیست کن
+7. ONLY return valid JSON, no extra text`;
+
+        userPrompt = `کلمه هدف: "${wordText}" (${wordMeaning}) — نوع: ${wordType}
+
+${levelDesc[level]}
+
+${diffDesc[difficulty]}
+
+حالا یک تمرین جای خالی بساز. فقط JSON:
+{
+  "sentence": "جمله آلمانی با ${wordText} در آن و ______ برای کلمه دیگر",
+  "correctAnswer": "کلمه‌ای که باید در جای خالی برود",
+  "translation": "ترجمه فارسی کامل جمله",
+  "newWords": [
+    {"word": "کلمه آلمانی", "meaning": "معنی فارسی"}
+  ],
+  "hint": {
+    "grammar_note": "توضیح دستوری درباره جای خالی",
+    "key_point": "چطور پاسخ را پیدا کنیم",
+    "pattern": "الگوی ساختاری جمله"
+  }
+}`;
+
+    } else {
+        systemPrompt = `تو معلم متخصص زبان آلمانی هستی که برای زبان‌آموزان ایرانی تمرین ترجمه می‌سازی.
+قوانین:
+1. جمله فارسی طبیعی و روان بساز
+2. ترجمه آلمانی حتماً شامل "${wordText}" باشد
+3. سطح و سختی را رعایت کن
+4. ONLY return valid JSON`;
+
+        userPrompt = `کلمه هدف: "${wordText}" (${wordMeaning}) — نوع: ${wordType}
+
+${levelDesc[level]}
+${diffDesc[difficulty]}
+
+فقط JSON:
+{
+  "persianSentence": "جمله فارسی برای ترجمه",
+  "correctAnswer": "ترجمه آلمانی صحیح (شامل ${wordText})",
+  "newWords": [
+    {"word": "کلمه آلمانی", "meaning": "معنی فارسی"}
+  ],
+  "hint": {
+    "grammar_note": "توضیح دستوری کلیدی",
+    "key_point": "نکته مهم برای ترجمه صحیح",
+    "pattern": "الگوی ساختاری جمله آلمانی"
+  }
+}`;
+    }
+
+    try {
+        const response = await this._puterChat(userPrompt, { systemPrompt });
+        let rawText = '';
+        if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+        else if (typeof response === 'string') rawText = response;
+
+        let parsed;
+        try {
+            const clean = rawText.replace(/```json|```/g, '').trim();
+            const m = clean.match(/\{[\s\S]*\}/);
+            parsed = JSON.parse(m ? m[0] : clean);
+        } catch {
+            parsed = this._fallbackQuestion(mode, wordText, wordMeaning);
+        }
+
+        this.speakingSession.currentQuestion = parsed;
+        
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        if (displayDiv) {
+            displayDiv.style.display = 'block';
+            if (mode === 'fill_blank') {
+                // هایلایت کلمه هدف به بنفش
+                let sentenceText = parsed.sentence || '';
+                const regex = new RegExp(`(?<![\\w])(${wordText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})(?![\\w])`, 'gi');
+                const highlightedSentence = sentenceText.replace(regex, '<span style="background:#e9d5ff;padding:2px 8px;border-radius:8px;font-weight:700;color:#6d28d9;">$1</span>');
+                const finalHtml = highlightedSentence.replace(/______/g, '<span style="background:#fef3c7;padding:4px 16px;border-radius:30px;font-weight:800;color:#d97706;display:inline-block;">______</span>');
+                
+                displayDiv.innerHTML = `
+                    <div style="font-size:18px;font-weight:600;direction:ltr;text-align:center;line-height:1.8;margin-bottom:12px;color:#1f2937;">${finalHtml}</div>
+                    <div style="font-size:13px;color:#047857;background:rgba(16,185,129,0.1);padding:8px;border-radius:12px;">
+                        <i class="fas fa-language"></i> ${parsed.translation || ''}
+                    </div>
+                `;
+            } else {
+                displayDiv.innerHTML = `
+                    <div style="font-size:20px;font-weight:700;color:#1f2937;text-align:center;margin-bottom:12px;">📖 ${parsed.persianSentence || ''}</div>
+                    <div style="font-size:12px;color:#8b5cf6;background:rgba(139,92,246,0.1);padding:6px 14px;border-radius:30px;display:inline-block;">
+                        <i class="fas fa-arrow-left"></i> ترجمه به آلمانی
+                    </div>
+                `;
+            }
+        }
+        if (checkBtn) checkBtn.disabled = false;
+        if (answerInput) {
+            answerInput.disabled = false;
+            answerInput.value = '';
+            answerInput.focus();
+        }
+
+    } catch (err) {
+        console.error('generateAIQuestion:', err);
+        const fb = this._fallbackQuestion(mode, wordText, wordMeaning);
+        this.speakingSession.currentQuestion = fb;
+        
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        if (displayDiv) {
+            displayDiv.style.display = 'block';
+            if (mode === 'fill_blank') {
+                // هایلایت کلمه هدف در fallback هم بنفش
+                let sentenceText = fb.sentence || '';
+                const regex = new RegExp(`(?<![\\w])(${wordText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})(?![\\w])`, 'gi');
+                const highlightedSentence = sentenceText.replace(regex, '<span style="background:#e9d5ff;padding:2px 8px;border-radius:8px;font-weight:700;color:#6d28d9;">$1</span>');
+                const finalHtml = highlightedSentence.replace(/______/g, '<span style="background:#fef3c7;padding:4px 16px;border-radius:30px;font-weight:800;color:#d97706;display:inline-block;">______</span>');
+                
+                displayDiv.innerHTML = `
+                    <div style="font-size:18px;font-weight:600;direction:ltr;text-align:center;margin-bottom:12px;color:#1f2937;">${finalHtml}</div>
+                    <div style="font-size:13px;color:#047857;background:rgba(16,185,129,0.1);padding:8px;border-radius:12px;">
+                        <i class="fas fa-language"></i> ${fb.translation}
+                    </div>
+                `;
+            } else {
+                displayDiv.innerHTML = `
+                    <div style="font-size:20px;font-weight:700;color:#1f2937;text-align:center;margin-bottom:12px;">📖 ${fb.persianSentence}</div>
+                    <div style="font-size:12px;color:#8b5cf6;background:rgba(139,92,246,0.1);padding:6px 14px;border-radius:30px;display:inline-block;">
+                        <i class="fas fa-arrow-left"></i> ترجمه به آلمانی
+                    </div>
+                `;
+            }
+        }
+        if (checkBtn) checkBtn.disabled = false;
+        if (answerInput) {
+            answerInput.disabled = false;
+            answerInput.value = '';
+            answerInput.focus();
+        }
+    }
+}
+_fallbackQuestion(mode, wordText, wordMeaning) {
+    return mode === 'fill_blank'
+        ? {
+            sentence: `Ich mag ${wordText} und ______ sehr.`,
+            correctAnswer: 'Musik',
+            translation: `من ${wordMeaning} و موزیک را خیلی دوست دارم.`,
+            newWords: [{ word: 'mögen', meaning: 'دوست داشتن' }],
+            hint: {
+                grammar_note: 'فعل mögen با Akkusativ می‌آید',
+                key_point: 'یک اسم در اینجا می‌آید',
+                pattern: 'Ich mag + Akkusativ + und + Akkusativ'
+            }
+        }
+        : {
+            persianSentence: `من ${wordMeaning}.`,
+            correctAnswer: `Ich ${wordText}.`,
+            newWords: [],
+            hint: {
+                grammar_note: 'فعل در جایگاه دوم جمله می‌آید',
+                key_point: `کلمه هدف: ${wordText}`,
+                pattern: 'Subjekt + Verb'
+            }
+        };
+}
+
+_renderQuestion(parsed, mode, wordText) {
+    const loadingDiv  = document.getElementById('question-loading');
+    const displayDiv  = document.getElementById('question-display');
+    const checkBtn    = document.getElementById('check-speaking-answer');
+    const answerInput = document.getElementById('speaking-answer-input');
+
+    if (loadingDiv) loadingDiv.style.display = 'none';
+    if (!displayDiv) return;
+    displayDiv.style.display = 'block';
+
+
+if (mode === 'fill_blank') {
+    const highlighted = (parsed.sentence || '')
+        .replace(
+            new RegExp(`(?<![\\w])(${wordText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})(?![\\w])`, 'gi'),
+            `<span style="background:#e9d5ff;padding:2px 8px;border-radius:8px;font-weight:700;color:#6d28d9;">${wordText}</span>`
+        )
+        .replace(
+            /______/g,
+            `<span style="background:#fef3c7;padding:4px 16px;border-radius:30px;font-weight:800;color:#d97706;display:inline-block;">______</span>`
+        );
+
+    displayDiv.innerHTML = `
+        <div style="font-size:18px;font-weight:600;direction:ltr;text-align:center;line-height:2;margin-bottom:12px;color:#1f2937;background:transparent;">
+            ${highlighted}
+        </div>
+        <div style="font-size:13px;color:#047857;background:rgba(16,185,129,0.12);padding:10px;border-radius:12px;">
+            <i class="fas fa-language"></i>
+            <span style="color:#374151;">${this.escapeHtml(parsed.translation || '')}</span>
+        </div>
+    `;
+}
+
+    if (checkBtn)    { checkBtn.disabled    = false; }
+    if (answerInput) { answerInput.disabled = false; answerInput.value = ''; answerInput.focus(); }
+}
+
+// ═══════════════════════════════════════════════
+// checkSpeakingAnswer — امتیازدهی هوشمند + تحلیل گرامری
+// ═══════════════════════════════════════════════
+
+async checkSpeakingAnswer() {
+    if (this.speakingSession.isChecking) return;
+
+    const userAnswer  = document.getElementById('speaking-answer-input')?.value.trim();
+    const question    = this.speakingSession.currentQuestion;
+    const currentWord = this.speakingSession.currentWord;
+    const feedbackDiv = document.getElementById('speaking-feedback');
+    const checkBtn    = document.getElementById('check-speaking-answer');
+    const answerInput = document.getElementById('speaking-answer-input');
+    const mode        = this.speakingSession.mode;
+
+    if (!userAnswer) { this.showToast('✏️ لطفاً پاسخ را وارد کنید', 'warning'); return; }
+
+    this.speakingSession.isChecking = true;
+    if (checkBtn)    checkBtn.disabled    = true;
+    if (answerInput) answerInput.disabled = true;
+
+    document.getElementById('floating-hint-panel')?.remove();
+
+    if (feedbackDiv) {
+        feedbackDiv.innerHTML = `
+            <div style="background:rgba(139,92,246,0.1);border-radius:16px;padding:15px;text-align:center;">
+                <div style="width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#8b5cf6;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+                <div style="margin-top:8px;color:#6b7280;">🤖 در حال بررسی پاسخ...</div>
+            </div>
+        `;
+    }
+
+    const correctAnswer = question.correctAnswer || '';
+    const simScore = this._similarityScore(userAnswer, correctAnswer);
+    const isTypo   = simScore >= 85 && simScore < 100;
+    const isExact  = simScore === 100;
+
+    const checkPrompt = `بررسی پاسخ زبان‌آموز در تمرین آلمانی.
+
+${mode === 'fill_blank'
+    ? `جمله: ${question.sentence}\nپاسخ مرجع: ${correctAnswer}`
+    : `جمله فارسی: ${question.persianSentence}\nترجمه مرجع: ${correctAnswer}`
+}
+
+پاسخ کاربر: "${userAnswer}"
+شباهت محاسبه‌شده: ${simScore}%
+
+معیارهای امتیازدهی:
+- ۱۰۰: کاملاً صحیح
+- ۸۵-۹۹: صحیح با غلط تایپی جزئی (قبول با تذکر)
+- ۷۰-۸۴: تقریباً صحیح (غلط دستوری جزئی)
+- ۵۰-۶۹: نیمه صحیح
+- زیر ۵۰: نادرست
+
+اگر خطای دستوری وجود دارد، آن را مشخص کن.
+
+فقط JSON برگردان:
+{
+  "score": عدد_۰_تا_۱۰۰,
+  "isCorrect": true_یا_false,
+  "feedback": "بازخورد فارسی کوتاه",
+  "grammarErrors": [
+    {"word": "کلمه اشتباه", "issue": "توضیح مشکل", "fix": "فرم صحیح"}
+  ]
+}`;
+
+    try {
+        const response = await this._puterChat(checkPrompt, {});
+        let rawText = '';
+        if (response?.message?.content?.[0]?.text) rawText = response.message.content[0].text;
+        else if (typeof response === 'string') rawText = response;
+
+        let parsed;
+        try {
+            const clean = rawText.replace(/```json|```/g, '').trim();
+            const m = clean.match(/\{[\s\S]*\}/);
+            parsed = JSON.parse(m ? m[0] : clean);
+        } catch {
+            parsed = {
+                score: isExact ? 100 : isTypo ? 88 : simScore,
+                isCorrect: simScore >= 85,
+                feedback: simScore >= 85 ? '✅ پاسخ صحیح!' : `❌ پاسخ صحیح: ${correctAnswer}`,
+                grammarErrors: []
+            };
+        }
+
+        if (isTypo && !parsed.isCorrect && simScore >= 90) {
+            parsed.isCorrect = true;
+            parsed.score     = Math.max(parsed.score, 88);
+            parsed.feedback  = `✅ قبول شد (غلط تایپی جزئی) — فرم صحیح: ${correctAnswer}`;
+        }
+
+        const score = parsed.score ?? (parsed.isCorrect ? 100 : 0);
+
+        const srsData = this._srsNextReview(currentWord, score);
+        Object.assign(currentWord, srsData);
+
+        const xpResult = this._addXP(score, parsed.isCorrect);
+        this._recordStats(currentWord.id, score, parsed.isCorrect);
+        await this.recordPractice(currentWord.id, parsed.isCorrect);
+
+        await this._handleSpeakingResult(parsed, correctAnswer, currentWord, score, xpResult);
+
+    } catch (err) {
+        console.error('checkSpeakingAnswer:', err);
+        const fallbackCorrect = simScore >= 85;
+        const fallbackScore   = simScore;
+        const xpResult = this._addXP(fallbackScore, fallbackCorrect);
+        this._recordStats(currentWord.id, fallbackScore, fallbackCorrect);
+        await this.recordPractice(currentWord.id, fallbackCorrect);
+        await this._handleSpeakingResult(
+            { score: fallbackScore, isCorrect: fallbackCorrect,
+              feedback: fallbackCorrect ? '✅ پاسخ صحیح!' : `❌ پاسخ صحیح: ${correctAnswer}`,
+              grammarErrors: [] },
+            correctAnswer, currentWord, fallbackScore, xpResult
+        );
+        this.speakingSession.isChecking = false;
+    }
+}
+async _handleSpeakingResult(parsed, correctAnswer, currentWord, score, xpResult) {
+    const feedbackDiv = document.getElementById('speaking-feedback');
+    const answerInput = document.getElementById('speaking-answer-input');
+
+    // اضافه کردن استایل دارک مود برای بخش feedback (فقط یکبار)
+    if (!document.getElementById('speaking-feedback-dark-styles')) {
+        const style = document.createElement('style');
+        style.id = 'speaking-feedback-dark-styles';
+        style.textContent = `
+            /* دارک مود برای بخش بررسی پاسخ تمرین جمله‌سازی */
+            .dark-mode #speaking-feedback > div {
+                background: linear-gradient(135deg, #450a0a, #7f1d1d) !important;
+                border-color: #ef4444 !important;
+            }
+            .dark-mode #speaking-feedback span[style*="color:#991b1b"],
+            .dark-mode #speaking-feedback span[style*="color: #991b1b"] {
+                color: #fca5a5 !important;
+            }
+            .dark-mode #speaking-feedback div[style*="color:#991b1b"] {
+                color: #fecaca !important;
+            }
+            .dark-mode #speaking-feedback div[style*="background:rgba(239,68,68,0.08)"] {
+                background: rgba(239, 68, 68, 0.2) !important;
+            }
+            .dark-mode #speaking-feedback div[style*="color:#ef4444"] {
+                color: #f87171 !important;
+            }
+            .dark-mode #speaking-feedback span[style*="color:#ef4444"] {
+                color: #fca5a5 !important;
+            }
+            .dark-mode #speaking-feedback span[style*="color:#10b981"] {
+                color: #86efac !important;
+            }
+            .dark-mode #speaking-feedback div[style*="color:#9ca3af"] {
+                color: #9ca3af !important;
+            }
+            .dark-mode #speaking-feedback div[style*="background:#fef3c7"] {
+                background: #451a03 !important;
+                border-color: #d97706 !important;
+            }
+            .dark-mode #speaking-feedback div[style*="color:#92400e"] {
+                color: #fcd34d !important;
+            }
+            .dark-mode #speaking-feedback div[style*="color:#b45309"] {
+                color: #fbbf24 !important;
+            }
+            .dark-mode #speaking-feedback div[style*="background:#e5e7eb"] {
+                background: #374151 !important;
+            }
+            .dark-mode #speaking-feedback i.fa-times-circle {
+                color: #f87171 !important;
+            }
+            .dark-mode #speaking-feedback i.fa-check-circle {
+                color: #4ade80 !important;
+            }
+            .dark-mode #speaking-feedback i.fa-exclamation-triangle {
+                color: #fbbf24 !important;
+            }
+            .dark-mode #speaking-feedback span[style*="background:linear-gradient(135deg,#f59e0b,#d97706)"] {
+                background: linear-gradient(135deg, #d97706, #b45309) !important;
+            }
+            .dark-mode #speaking-feedback span[style*="background:#8b5cf6"] {
+                background: #6d28d9 !important;
+            }
+            .dark-mode #speaking-feedback button[style*="background:#8b5cf6"] {
+                background: #6d28d9 !important;
+            }
+            .dark-mode #speaking-feedback button[style*="background:#8b5cf6"]:hover {
+                background: #5b21b6 !important;
+            }
+            .dark-mode #speaking-feedback div[style*="background:rgba(255,255,255,0.5)"] {
+                background: rgba(0, 0, 0, 0.4) !important;
+            }
+            .dark-mode #speaking-feedback div[style*="background:rgba(255,255,255,0.5)"] span {
+                color: #f1f5f9 !important;
+            }
+            .dark-mode #speaking-feedback span[style*="color:#6b7280"] {
+                color: #94a3b8 !important;
+            }
+            /* حالت صحیح در دارک مود */
+            .dark-mode #speaking-feedback div[style*="background:rgba(16,185,129,0.12)"] {
+                background: rgba(16, 185, 129, 0.2) !important;
+                border-color: #10b981 !important;
+            }
+            .dark-mode #speaking-feedback span[style*="color:#065f46"] {
+                color: #86efac !important;
+            }
+            .dark-mode #speaking-feedback div[style*="color:#065f46"] {
+                color: #bbf7d0 !important;
+            }
+            .dark-mode #speaking-feedback div[style*="background:rgba(5,150,105,0.08)"] {
+                background: rgba(16, 185, 129, 0.15) !important;
+            }
+            .dark-mode #speaking-feedback button[style*="background:#10b981"] {
+                background: #059669 !important;
+            }
+            .dark-mode #speaking-feedback button[style*="background:#10b981"]:hover {
+                background: #047857 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const goToNext = () => {
+        if (this.speakingSession.timeoutId) clearTimeout(this.speakingSession.timeoutId);
+        if (this._nextKeyHandler) document.removeEventListener('keydown', this._nextKeyHandler);
+        this.speakingSession.currentIndex++;
+        this.showSpeakingQuestion();
+    };
+
+    this._nextKeyHandler = (e) => {
+        if (e.key === 'Enter') { 
+            e.preventDefault(); 
+            goToNext(); 
+        }
+    };
+
+    const scoreColor = score >= 90 ? '#10b981' : score >= 70 ? '#f59e0b' : '#ef4444';
+    const scoreBar = `
+        <div style="margin:10px 0 4px;display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
+                <div style="width:${score}%;height:100%;background:${scoreColor};transition:width 0.6s ease;border-radius:4px;"></div>
+            </div>
+            <span style="font-weight:800;color:${scoreColor};font-size:14px;min-width:40px;">${score}%</span>
+        </div>
+    `;
+
+    const xpBadge = xpResult ? `
+        <span style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-right:8px;">+${xpResult.earned} XP</span>
+        ${xpResult.leveledUp ? `<span style="background:#8b5cf6;color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">Level Up! 🚀</span>` : ''}
+    ` : '';
+
+    let grammarHtml = '';
+    if (parsed.grammarErrors && parsed.grammarErrors.length > 0) {
+        grammarHtml = `
+            <div style="margin-top:10px;background:rgba(239,68,68,0.08);border-radius:12px;padding:10px;">
+                <div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:6px;">
+                    <i class="fas fa-exclamation-triangle"></i> خطاهای دستوری:
+                </div>
+                ${parsed.grammarErrors.map(e => `
+                    <div style="font-size:12px;margin-bottom:5px;padding:6px 10px;background:rgba(255,255,255,0.5);border-radius:8px;">
+                        <span style="color:#ef4444;font-weight:600;direction:ltr;">${this.escapeHtml(e.word)}</span>
+                        <span style="color:#6b7280;"> → </span>
+                        <span style="color:#10b981;font-weight:600;direction:ltr;">${this.escapeHtml(e.fix)}</span>
+                        <div style="color:#9ca3af;font-size:11px;margin-top:2px;">${this.escapeHtml(e.issue)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    if (parsed.isCorrect) {
+        this.speakingSession.score++;
+        if (feedbackDiv) {
+            feedbackDiv.innerHTML = `
+                <div style="background:rgba(16,185,129,0.12);border-radius:16px;padding:16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                        <i class="fas fa-check-circle" style="color:#10b981;font-size:22px;"></i>
+                        <span style="color:#065f46;font-weight:700;font-size:16px;">✅ پاسخ صحیح!</span>
+                        ${xpBadge}
+                    </div>
+                    ${scoreBar}
+                    <div style="color:#065f46;font-size:13px;line-height:1.6;margin-top:8px;text-align:right;">
+                        ${this.escapeHtml(parsed.feedback || 'آفرین!')}
+                    </div>
+                    ${grammarHtml}
+                    <div style="margin-top:15px;text-align:center;">
+                        <button id="continue-to-next" class="btn btn-sm" style="padding:8px 22px;background:#10b981;color:white;border:none;border-radius:30px;cursor:pointer;font-size:13px;">
+                            سوال بعدی (Enter) →
+                        </button>
+                    </div>
+                </div>
+            `;
+            const continueBtn = document.getElementById('continue-to-next');
+            if (continueBtn) continueBtn.onclick = goToNext;
+        }
+        document.addEventListener('keydown', this._nextKeyHandler);
+
+    } else {
+        if (answerInput) answerInput.style.borderColor = '#ef4444';
+        if (feedbackDiv) {
+            feedbackDiv.innerHTML = `
+                <div style="background:rgba(239,68,68,0.12);border-radius:16px;padding:16px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                        <i class="fas fa-times-circle" style="color:#ef4444;font-size:22px;"></i>
+                        <span style="color:#991b1b;font-weight:700;font-size:16px;">❌ پاسخ نادرست</span>
+                        ${xpBadge}
+                    </div>
+                    ${scoreBar}
+                    <div style="color:#991b1b;font-size:13px;line-height:1.6;margin-top:8px;text-align:right;">
+                        ${this.escapeHtml(parsed.feedback || '')}
+                    </div>
+                    ${grammarHtml}
+                    <div style="background:#fef3c7;border-radius:12px;padding:10px;margin-top:10px;">
+                        <div style="font-weight:700;color:#92400e;font-size:12px;margin-bottom:4px;">✅ پاسخ صحیح:</div>
+                        <div style="font-size:15px;font-weight:600;color:#b45309;direction:ltr;text-align:left;">
+                            ${this.escapeHtml(correctAnswer)}
+                        </div>
+                    </div>
+                    <div style="margin-top:15px;text-align:center;">
+                        <button id="continue-to-next" class="btn btn-sm" style="padding:8px 22px;background:#8b5cf6;color:white;border:none;border-radius:30px;cursor:pointer;font-size:13px;">
+                            سوال بعدی (Enter) →
+                        </button>
+                    </div>
+                </div>
+            `;
+            const continueBtn = document.getElementById('continue-to-next');
+            if (continueBtn) continueBtn.onclick = goToNext;
+        }
+        document.addEventListener('keydown', this._nextKeyHandler);
+    }
+}
+// ═══════════════════════════════════════════════
+// showSpeakingHint — راهنمایی با لغات جدید
+// ═══════════════════════════════════════════════
+
+showSpeakingHint() {
+    const question    = this.speakingSession.currentQuestion;
+    const currentWord = this.speakingSession.currentWord;
+
+    const existing = document.getElementById('floating-hint-panel');
+    if (existing) { existing.remove(); return; }
+
+    const hint     = question?.hint;
+    const newWords = question?.newWords || [];
+
+    let hintRows = [];
+    if (hint && typeof hint === 'object') {
+        if (hint.grammar_note) hintRows.push({ icon: '📚', label: 'نکته دستوری',   value: hint.grammar_note });
+        if (hint.key_point)    hintRows.push({ icon: '🔑', label: 'نکته کلیدی',    value: hint.key_point    });
+        if (hint.pattern)      hintRows.push({ icon: '🧩', label: 'الگوی ساختاری', value: hint.pattern      });
+    } else if (typeof hint === 'string') {
+        hint.split('\n').filter(l => l.trim()).forEach(line =>
+            hintRows.push({ icon: '💡', label: '', value: line.replace(/^[•\-\d.]+\s*/, '') })
+        );
+    }
+    if (hintRows.length === 0)
+        hintRows.push({ icon: '💡', label: 'راهنمایی', value: `کلمه "${currentWord.german}" را در جمله پیدا کن` });
+
+    const hintRowsHtml = hintRows.map(row => `
+        <div style="background:rgba(255,255,255,0.07);border-radius:12px;padding:10px 12px;margin-bottom:8px;border-right:3px solid #f59e0b;">
+            <div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:4px;">
+                ${row.icon}${row.label ? ' ' + row.label + ':' : ''}
+            </div>
+            <div style="font-size:13px;color:#e2e8f0;line-height:1.6;direction:auto;">
+                ${this.escapeHtml(row.value)}
+            </div>
+        </div>
+    `).join('');
+
+    let newWordsSectionHtml = '';
+    if (newWords.length > 0) {
+        newWordsSectionHtml = `
+            <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:4px;padding-top:12px;margin-bottom:4px;">
+                <div style="font-size:11px;color:#34d399;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-book-open" style="font-size:11px;"></i> لغات جدید جمله:
+                </div>
+                ${newWords.map(w => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:5px;background:rgba(255,255,255,0.05);border-radius:10px;border-right:3px solid #34d399;">
+                        <span style="font-size:13px;font-weight:700;color:#6ee7b7;direction:ltr;">${this.escapeHtml(w.word)}</span>
+                        <span style="font-size:12px;color:#a7f3d0;">${this.escapeHtml(w.meaning)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    const hintPanel = document.createElement('div');
+    hintPanel.id = 'floating-hint-panel';
+    hintPanel.style.cssText = `
+        position:fixed;top:80px;right:20px;
+        max-width:340px;min-width:270px;
+        background:linear-gradient(160deg,#1e293b,#0f172a);
+        border-radius:20px;
+        box-shadow:0 12px 32px rgba(0,0,0,0.4);
+        z-index:10000;border-right:4px solid #f59e0b;
+        direction:rtl;animation:slideInRight 0.25s ease;
+    `;
+
+    hintPanel.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 9px;border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:center;gap:7px;">
+                <i class="fas fa-lightbulb" style="color:#f59e0b;font-size:14px;"></i>
+                <span style="font-weight:700;color:#fbbf24;font-size:13px;">راهنمایی</span>
+            </div>
+            <button id="close-hint-panel" style="background:rgba(255,255,255,0.1);border:none;width:25px;height:25px;border-radius:50%;color:#9ca3af;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+        </div>
+
+        <div style="padding:11px 13px 4px;">
+            ${hintRowsHtml}
+            ${newWordsSectionHtml}
+        </div>
+
+        <div style="padding:8px 14px 12px;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-keyboard" style="color:#475569;"></i>
+            <span>پاسخ را تایپ کن و Enter بزن</span>
+        </div>
+    `;
+
+    document.body.appendChild(hintPanel);
+    document.getElementById('close-hint-panel').onclick = () => hintPanel.remove();
+
+    setTimeout(() => {
+        document.addEventListener('click', function closeHint(e) {
+            if (!hintPanel.contains(e.target) && !e.target.closest('#hint-speaking-question')) {
+                hintPanel.remove();
+                document.removeEventListener('click', closeHint);
+            }
+        });
+    }, 150);
+}
+
+// ═══════════════════════════════════════════════
+// نتایج پایانی — با دکمه آمار
+// ═══════════════════════════════════════════════
+
+showSpeakingResults() {
+    const total    = this.speakingSession.words.length;
+    const score    = this.speakingSession.score;
+    const accuracy = total > 0 ? Math.round((score / total) * 100) : 0;
+    const modeName = this.speakingSession.mode === 'fill_blank' ? 'تکمیل جای خالی' : 'ترجمه جمله';
+    const xpData   = this._getXPData();
+    const isGood   = accuracy >= 70;
+
+    const container = document.getElementById('practice-section');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="word-card" style="max-width:550px;margin:40px auto;padding:30px;">
+            <div class="section-header" style="margin-bottom:22px;">
+                <h2 style="font-size:21px;"><i class="fas fa-chart-line"></i> نتایج ${this.escapeHtml(modeName)}</h2>
+            </div>
+
+            <div style="text-align:center;">
+                <div style="font-size:56px;margin-bottom:12px;">${isGood ? '🏆' : '📚'}</div>
+                <div style="font-size:46px;font-weight:800;color:${isGood ? '#10b981' : '#8b5cf6'};margin-bottom:18px;">${accuracy}%</div>
+
+                <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:20px;">
+                    ${[
+                        { label:'کل',    val: total,         color:'var(--primary)' },
+                        { label:'صحیح ✅', val: score,        color:'#10b981'        },
+                        { label:'غلط ❌',  val: total - score, color:'#ef4444'        }
+                    ].map(s => `
+                        <div style="text-align:center;">
+                            <div style="font-size:11px;color:var(--gray-500);margin-bottom:3px;">${s.label}</div>
+                            <div style="font-size:30px;font-weight:800;color:${s.color};">${s.val}</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div style="background:linear-gradient(135deg,#f3e8ff,#e9d5ff);border-radius:16px;padding:14px;margin-bottom:20px;">
+                    <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;">
+                        <div style="text-align:center;">
+                            <div style="font-size:11px;color:#6b21a5;">⭐ XP کل</div>
+                            <div style="font-size:22px;font-weight:800;color:#4c1d95;">${xpData.xp}</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:11px;color:#6b21a5;">🎯 سطح</div>
+                            <div style="font-size:22px;font-weight:800;color:#4c1d95;">${xpData.level}</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:11px;color:#6b21a5;">🔥 Streak</div>
+                            <div style="font-size:22px;font-weight:800;color:#4c1d95;">${xpData.streak} روز</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:11px;color:#6b21a5;">🪙 Coins</div>
+                            <div style="font-size:22px;font-weight:800;color:#4c1d95;">${xpData.coins}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                    <button id="restart-speaking-session" class="btn btn-primary" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);padding:10px 20px;font-size:13px;">
+                        <i class="fas fa-redo-alt"></i> تمرین مجدد
+                    </button>
+                    <button id="show-stats-btn" class="btn btn-outline" style="padding:10px 20px;font-size:13px;border-color:#8b5cf6;color:#8b5cf6;">
+                        <i class="fas fa-chart-bar"></i> آمار کامل
+                    </button>
+                    <button id="back-speaking-menu" class="btn btn-outline" style="padding:10px 20px;font-size:13px;">
+                        <i class="fas fa-arrow-right"></i> بازگشت
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('restart-speaking-session').onclick = () => this.startSpeakingPractice();
+    document.getElementById('show-stats-btn').onclick           = () => this._showStatsModal();
+    document.getElementById('back-speaking-menu').onclick       = () => {
+        this.renderPracticeOptions();
+        this.showSection('practice-section');
+    };
+}
+// ================================================
+// شروع تمرین جمله‌سازی هوشمند
+// ================================================
+
+async startSpeakingPractice() {
+    console.log('🎤 شروع تمرین جمله‌سازی هوشمند...');
     
-    if (wordsToPractice.length === 0) return;
+    const wordsToPractice = await this.getFilteredWordsForPractice();
+    
+    if (wordsToPractice.length === 0) {
+        this.showToast('❌ هیچ لغتی برای تمرین وجود ندارد', 'error');
+        return;
+    }
+    
+    // دریافت تنظیمات ذخیره شده
+    const savedLevel = localStorage.getItem('speakingLevel') || 'A2';
+    const savedDifficulty = localStorage.getItem('speakingDifficulty') || 'medium';
+    const savedShowMeaning = localStorage.getItem('speakingShowMeaning') !== 'false';
+    const savedMode = localStorage.getItem('speakingMode') || 'fill_blank';
     
     this.speakingSession = {
         words: wordsToPractice,
         currentIndex: 0,
-        score: 0
+        score: 0,
+        answers: [],
+        level: savedLevel,
+        difficulty: savedDifficulty,
+        showMeaning: savedShowMeaning,
+        mode: savedMode,
+        currentWord: null,
+        currentQuestion: null,
+        isChecking: false,
+        timeoutId: null
     };
     
-    this.showSpeakingExercise();
+    this.showSpeakingSettingsModal();
 }
 
-  showSpeakingExercise() {
+// ================================================
+// نمایش مودال تنظیمات
+// ================================================
+
+showSpeakingSettingsModal() {
+    let modal = document.getElementById('speaking-settings-modal');
+    if (!modal) {
+        const modalHTML = `
+            <div id="speaking-settings-modal" class="modal-overlay" style="display: none; z-index: 100001;">
+                <div class="modal-content" style="max-width: 600px; width: 90%; border-radius: 28px; overflow: hidden;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 20px 25px;">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 20px;">
+                            <i class="fas fa-comments"></i> تمرین جمله‌سازی هوشمند
+                        </h3>
+                        <button class="close-modal" id="close-speaking-settings" style="background: rgba(255,255,255,0.2); border: none; width: 36px; height: 36px; border-radius: 50%; color: white; font-size: 22px; cursor: pointer;">&times;</button>
+                    </div>
+                    <div class="modal-body" style="padding: 25px; max-height: 60vh; overflow-y: auto;">
+                        <!-- نوع تمرین -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 700; font-size: 15px;">
+                                <i class="fas fa-cog"></i> نوع تمرین:
+                            </label>
+                            <div id="speaking-mode-buttons" style="display: flex; gap: 12px;">
+                                <button id="mode-fill-blank" data-mode="fill_blank" style="flex: 1; padding: 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: white; cursor: pointer; text-align: center;">
+                                    <i class="fas fa-pen-fancy" style="font-size: 20px; display: block; margin-bottom: 6px;"></i>
+                                    <span style="font-weight: 600; font-size: 13px;">تکمیل جای خالی</span>
+                                </button>
+                                <button id="mode-translate" data-mode="translate" style="flex: 1; padding: 12px; border-radius: 16px; border: 2px solid #e2e8f0; background: white; cursor: pointer; text-align: center;">
+                                    <i class="fas fa-language" style="font-size: 20px; display: block; margin-bottom: 6px;"></i>
+                                    <span style="font-weight: 600; font-size: 13px;">ترجمه جمله</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- سطح تمرین -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 700; font-size: 15px;">
+                                <i class="fas fa-chart-line"></i> سطح تمرین:
+                            </label>
+                            <div id="speaking-level-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="level-option" data-level="A1" style="padding: 8px 20px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-weight: 600; font-size: 13px;">A1</button>
+                                <button class="level-option" data-level="A2" style="padding: 8px 20px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-weight: 600; font-size: 13px;">A2</button>
+                                <button class="level-option" data-level="B1" style="padding: 8px 20px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-weight: 600; font-size: 13px;">B1</button>
+                                <button class="level-option" data-level="B2" style="padding: 8px 20px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-weight: 600; font-size: 13px;">B2</button>
+                            </div>
+                        </div>
+                        
+                        <!-- میزان سختی -->
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 700; font-size: 15px;">
+                                <i class="fas fa-tachometer-alt"></i> میزان سختی:
+                            </label>
+                            <div id="speaking-difficulty-buttons" style="display: flex; gap: 8px;">
+                                <button class="difficulty-option" data-difficulty="easy" style="flex: 1; padding: 10px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-size: 13px;">🟢 آسان</button>
+                                <button class="difficulty-option" data-difficulty="medium" style="flex: 1; padding: 10px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-size: 13px;">🟡 متوسط</button>
+                                <button class="difficulty-option" data-difficulty="hard" style="flex: 1; padding: 10px; border-radius: 40px; border: 2px solid #e2e8f0; background: white; cursor: pointer; font-size: 13px;">🔴 سخت</button>
+                            </div>
+                        </div>
+                        
+                        <!-- نمایش معنی -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="speaking-show-meaning" ${this.speakingSession.showMeaning ? 'checked' : ''} style="width: 18px; height: 18px;">
+                                <span style="font-size: 14px;"><i class="fas fa-eye"></i> نمایش معنی فارسی لغت</span>
+                            </label>
+                        </div>
+                        
+                        <!-- توضیحات -->
+                        <div style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff); padding: 15px; border-radius: 20px; margin-top: 10px;">
+                            <div style="font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-robot" style="color: #8b5cf6;"></i>
+                                <span>🤖 چگونه کار می‌کند؟</span>
+                            </div>
+                            <p style="font-size: 12px; line-height: 1.6; margin: 0; color: #4c1d95;">
+                                هوش مصنوعی سوال را می‌سازد. شما پاسخ می‌دهید و AI به صورت لحظه‌ای پاسخ شما را بررسی می‌کند.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="padding: 20px 25px; border-top: 1px solid #e2e8f0; display: flex; gap: 12px;">
+                        <button id="cancel-speaking-settings" class="btn btn-outline" style="flex: 1; padding: 12px; font-size: 14px;">انصراف</button>
+                        <button id="start-speaking-session" class="btn btn-primary" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); font-size: 14px;">
+                            <i class="fas fa-play"></i> شروع تمرین
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        modal = document.getElementById('speaking-settings-modal');
+    }
+    
+    this.updateSpeakingModalStyle();
+    
+    document.getElementById('close-speaking-settings').onclick = () => modal.style.display = 'none';
+    document.getElementById('cancel-speaking-settings').onclick = () => modal.style.display = 'none';
+    
+    document.getElementById('mode-fill-blank').onclick = () => {
+        this.speakingSession.mode = 'fill_blank';
+        localStorage.setItem('speakingMode', 'fill_blank');
+        this.updateSpeakingModalStyle();
+    };
+    document.getElementById('mode-translate').onclick = () => {
+        this.speakingSession.mode = 'translate';
+        localStorage.setItem('speakingMode', 'translate');
+        this.updateSpeakingModalStyle();
+    };
+    
+    document.querySelectorAll('.level-option').forEach(btn => {
+        btn.onclick = () => {
+            this.speakingSession.level = btn.dataset.level;
+            localStorage.setItem('speakingLevel', this.speakingSession.level);
+            this.updateSpeakingModalStyle();
+        };
+    });
+    
+    document.querySelectorAll('.difficulty-option').forEach(btn => {
+        btn.onclick = () => {
+            this.speakingSession.difficulty = btn.dataset.difficulty;
+            localStorage.setItem('speakingDifficulty', this.speakingSession.difficulty);
+            this.updateSpeakingModalStyle();
+        };
+    });
+    
+    document.getElementById('speaking-show-meaning').onchange = (e) => {
+        this.speakingSession.showMeaning = e.target.checked;
+        localStorage.setItem('speakingShowMeaning', this.speakingSession.showMeaning);
+    };
+    
+    document.getElementById('start-speaking-session').onclick = () => {
+        modal.style.display = 'none';
+        this.showSpeakingQuestion();
+    };
+    
+    modal.style.display = 'flex';
+}
+
+// ================================================
+// به‌روزرسانی استایل مودال
+// ================================================
+
+updateSpeakingModalStyle() {
+    const modeFill = document.getElementById('mode-fill-blank');
+    const modeTrans = document.getElementById('mode-translate');
+    
+    if (this.speakingSession.mode === 'fill_blank' && modeFill) {
+        modeFill.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+        modeFill.style.borderColor = 'transparent';
+        modeFill.style.color = 'white';
+    } else if (modeFill) {
+        modeFill.style.background = 'white';
+        modeFill.style.borderColor = '#e2e8f0';
+        modeFill.style.color = '#1f2937';
+    }
+    
+    if (this.speakingSession.mode === 'translate' && modeTrans) {
+        modeTrans.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+        modeTrans.style.borderColor = 'transparent';
+        modeTrans.style.color = 'white';
+    } else if (modeTrans) {
+        modeTrans.style.background = 'white';
+        modeTrans.style.borderColor = '#e2e8f0';
+        modeTrans.style.color = '#1f2937';
+    }
+    
+    document.querySelectorAll('.level-option').forEach(btn => {
+        if (btn.dataset.level === this.speakingSession.level) {
+            btn.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+            btn.style.borderColor = 'transparent';
+            btn.style.color = 'white';
+        } else {
+            btn.style.background = 'white';
+            btn.style.borderColor = '#e2e8f0';
+            btn.style.color = '#4b5563';
+        }
+    });
+    
+    document.querySelectorAll('.difficulty-option').forEach(btn => {
+        if (btn.dataset.difficulty === this.speakingSession.difficulty) {
+            btn.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+            btn.style.borderColor = 'transparent';
+            btn.style.color = 'white';
+        } else {
+            btn.style.background = 'white';
+            btn.style.borderColor = '#e2e8f0';
+            btn.style.color = '#4b5563';
+        }
+    });
+}
+
+// ================================================
+// نمایش سوال
+// ================================================
+
+showSpeakingQuestion() {
     if (this.speakingSession.currentIndex >= this.speakingSession.words.length) {
         this.showSpeakingResults();
         return;
     }
-
-    const word = this.speakingSession.words[this.speakingSession.currentIndex];
-    const isGerman = LanguageSystem.isGerman();
     
-    document.getElementById('practice-section').innerHTML = `
-        <div class="word-card">
-            <div class="section-header">
-                <h2><i class="fas fa-comments"></i> ${LanguageSystem.t('practice.speaking')}</h2>
-                <span class="badge">${this.speakingSession.currentIndex + 1}/${this.speakingSession.words.length}</span>
+    const word = this.speakingSession.words[this.speakingSession.currentIndex];
+    const current = this.speakingSession.currentIndex + 1;
+    const total = this.speakingSession.words.length;
+    const progress = (current - 1) / total * 100;
+    
+    this.speakingSession.currentWord = word;
+    this.speakingSession.isChecking = false;
+    if (this.speakingSession.timeoutId) clearTimeout(this.speakingSession.timeoutId);
+    
+    const modeName = this.speakingSession.mode === 'fill_blank' ? 'تکمیل جای خالی' : 'ترجمه جمله';
+    const modeIcon = this.speakingSession.mode === 'fill_blank' ? 'fa-pen-fancy' : 'fa-language';
+    
+    const container = document.getElementById('practice-section');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="word-card" style="max-width: 750px; margin: 20px auto; padding: 25px;">
+            <div class="section-header" style="flex-wrap: wrap; gap: 12px; margin-bottom: 20px; padding-bottom: 15px;">
+                <h2 style="font-size: 20px;"><i class="fas ${modeIcon}" style="color: #8b5cf6;"></i> ${modeName}</h2>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 5px 12px; font-size: 12px;">${this.speakingSession.level}</span>
+                    <span class="badge" style="background: ${this.speakingSession.difficulty === 'easy' ? '#10b981' : this.speakingSession.difficulty === 'medium' ? '#f59e0b' : '#ef4444'}; padding: 5px 12px; font-size: 12px;">${this.speakingSession.difficulty === 'easy' ? 'آسان' : this.speakingSession.difficulty === 'medium' ? 'متوسط' : 'سخت'}</span>
+                    <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 5px 12px; font-size: 12px;">${current}/${total}</span>
+                </div>
             </div>
             
-            <div class="speaking-exercise">
-                <div class="word-to-use">
-                    <h3>${isGerman ? 'لغت:' : 'Word:'} <span class="highlight-word">${word.german}</span></h3>
-                    <p>${isGerman ? 'معنی:' : 'Meaning:'} ${word.persian}</p>
+            <div style="text-align: center;">
+                <div style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 20px; padding: 20px; margin-bottom: 20px;">
+                    <div style="font-size: 13px; color: #6b21a5; margin-bottom: 8px;">
+                        <i class="fas fa-lightbulb"></i> لغت مورد نظر:
+                    </div>
+                    <div style="font-size: 32px; font-weight: 800; color: #581c87;">
+                        ${this.escapeHtml(word.german)}
+                    </div>
+                    ${this.speakingSession.showMeaning ? `
+                        <div style="background: rgba(255,255,255,0.6); border-radius: 12px; padding: 8px; margin-top: 10px;">
+                            <span style="font-size: 14px; color: #6b21a5;">📖 ${this.escapeHtml(word.persian)}</span>
+                        </div>
+                    ` : ''}
                 </div>
                 
-                <textarea class="answer-input" 
-                          id="sentence-answer" 
-                          rows="3"
-                          placeholder="${isGerman ? 'جمله خود را به آلمانی بنویسید...' : 'Write your sentence in English...'}"></textarea>
+                <div id="question-container" style="background: #f0fdf4; border-radius: 20px; padding: 20px; margin-bottom: 20px; min-height: 150px;">
+                    <div id="question-loading" style="display: flex; justify-content: center; gap: 8px; padding: 20px;">
+                        <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 1s infinite;"></div>
+                        <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 1s infinite 0.2s;"></div>
+                        <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 1s infinite 0.4s;"></div>
+                        <span style="margin-right: 10px; font-size: 14px; color: #065f46;">ساخت سوال...</span>
+                    </div>
+                    <div id="question-display" style="display: none; font-size: 17px; font-weight: 500; line-height: 1.7;"></div>
+                </div>
                 
-                <div class="action-buttons">
-                    <button class="btn btn-success" id="check-sentence-btn">
-                        <i class="fas fa-check"></i> ${LanguageSystem.t('practice.check')}
+                <div style="margin-bottom: 20px;">
+                    <textarea id="speaking-answer-input" class="form-control" rows="2"
+                        placeholder="${this.speakingSession.mode === 'fill_blank' ? 'شکل صحیح را وارد کنید...' : 'جمله آلمانی را بنویسید...'}"
+                        style="text-align: center; font-size: 16px; padding: 12px; max-width: 100%; direction: ltr; resize: none;"
+                        autocomplete="off" disabled></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <button id="check-speaking-answer" class="btn btn-primary" disabled style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 10px 24px; font-size: 14px;">
+                        <i class="fas fa-check"></i> بررسی (Enter)
                     </button>
-                    <button class="btn btn-outline" id="show-example-btn">
-                        <i class="fas fa-lightbulb"></i> ${LanguageSystem.t('practice.hint')}
+                    <button id="skip-speaking-question" class="btn btn-outline" style="padding: 10px 24px; font-size: 14px;">
+                        <i class="fas fa-forward"></i> رد کردن
+                    </button>
+                    <button id="hint-speaking-question" class="btn btn-outline" style="padding: 10px 24px; font-size: 14px;">
+                        <i class="fas fa-lightbulb"></i> راهنمایی
                     </button>
                 </div>
                 
-                <div class="progress-dots">
-                    ${this.speakingSession.words.map((_, index) => `
-                        <div class="progress-dot ${index === this.speakingSession.currentIndex ? 'active' : ''} 
-                             ${index < this.speakingSession.currentIndex ? 'completed' : ''}"></div>
-                    `).join('')}
+                <div id="speaking-feedback" style="margin-top: 20px; font-size: 14px; min-height: 80px;"></div>
+                
+                <div style="width: 100%; margin-top: 20px; height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${progress}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #6d28d9); transition: width 0.3s ease;"></div>
                 </div>
             </div>
         </div>
     `;
     
-    this.setupSpeakingExerciseEventListeners(word);
+    this.generateAIQuestion(word);
+    
+    document.getElementById('skip-speaking-question').onclick = () => this.skipSpeakingQuestion();
+    document.getElementById('hint-speaking-question').onclick = () => this.showSpeakingHint();
+    
+    const checkBtn = document.getElementById('check-speaking-answer');
+    if (checkBtn) {
+        checkBtn.onclick = () => this.checkSpeakingAnswer();
+    }
+    
+    const answerInput = document.getElementById('speaking-answer-input');
+    if (answerInput) {
+        answerInput.onkeypress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !this.speakingSession.isChecking) {
+                e.preventDefault();
+                this.checkSpeakingAnswer();
+            }
+        };
+    }
 }
-
-    setupSpeakingExerciseEventListeners(word) {
-        document.getElementById('check-sentence-btn').addEventListener('click', () => {
-            this.checkSentenceAnswer();
-        });
-        
-        document.getElementById('show-example-btn').addEventListener('click', () => {
-            this.showSentenceExample(word);
-        });
-        
-        setTimeout(() => {
-            document.getElementById('sentence-answer').focus();
-        }, 300);
-    }
-
-    async checkSentenceAnswer() {
-        const userSentence = document.getElementById('sentence-answer').value.trim();
-        const currentWord = this.speakingSession.words[this.speakingSession.currentIndex];
-        
-        if (!userSentence) {
-            this.showToast('✏️ لطفاً جمله را بنویسید', 'warning');
-            return;
-        }
-        
-        const containsWord = userSentence.toLowerCase().includes(currentWord.german.toLowerCase());
-        
-        await this.recordPractice(currentWord.id, containsWord);
-        
-        if (containsWord) {
-            this.speakingSession.score++;
-            this.showToast('✅ آفرین! جمله صحیح است', 'success');
-        } else {
-            this.showToast(`❌ باید از لغت "${currentWord.german}" استفاده کنید`, 'error');
-        }
-        
-        setTimeout(() => {
-            this.speakingSession.currentIndex++;
-            this.showSpeakingExercise();
-        }, 1500);
-    }
-
-    showSentenceExample(word) {
-        const examples = [
-            `Ich lerne das Wort "${word.german}".`,
-            `Kannst du mir "${word.german}" erklären?`,
-            `"${word.german}" ist ein wichtiges Wort.`,
-            `Ich benutze "${word.german}" in einem Satz.`
-        ];
-        
-        const randomExample = examples[Math.floor(Math.random() * examples.length)];
-        this.showToast(`📝 مثال: ${randomExample}`, 'info');
-    }
-showSpeakingResults() {
-    const accuracy = Math.round((this.speakingSession.score / this.speakingSession.words.length) * 100);
-    const isGerman = LanguageSystem.isGerman();
+async startQuiz() {
+    const wordsToPractice = await this.getFilteredWordsForPractice();
     
-    document.getElementById('practice-section').innerHTML = `
-        <div class="word-card">
-            <div class="section-header">
-                <h2><i class="fas fa-chart-line"></i> ${isGerman ? 'نتایج تمرین جمله‌سازی' : 'Speaking Practice Results'}</h2>
-            </div>
-            
-            <div class="results-summary">
-                <div class="result-circle" style="background: conic-gradient(var(--success) 0% ${accuracy}%, var(--gray-200) ${accuracy}% 100%);">
-                    <div class="result-circle-inner">
-                        <span>${accuracy}%</span>
-                    </div>
-                </div>
-                
-                <div class="results-stats">
-                    <div class="result-stat">
-                        <span>${isGerman ? 'تعداد لغات:' : 'Total Words:'}</span>
-                        <strong>${this.speakingSession.words.length}</strong>
-                    </div>
-                    <div class="result-stat">
-                        <span>${isGerman ? 'جملات صحیح:' : 'Correct Sentences:'}</span>
-                        <strong>${this.speakingSession.score}</strong>
-                    </div>
-                </div>
-            </div>
-            
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="restart-speaking-btn">
-                        <i class="fas fa-redo-alt"></i> ${isGerman ? 'تمرین مجدد' : 'Practice Again'}
-                    </button>
-                    <button class="btn btn-outline" id="back-to-practice-menu-btn">
-                        <i class="fas fa-arrow-right"></i> ${isGerman ? 'بازگشت' : 'Back'}
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('restart-speaking-btn').addEventListener('click', () => {
-            this.startSpeakingPractice();
-        });
-        
-        document.getElementById('back-to-practice-menu-btn').addEventListener('click', () => {
-            this.renderPracticeOptions();
-            this.showSection('practice-section');
-        });
-    }
-
-    // ================================================
-    // آزمون چندگزینه‌ای
-    // ================================================
-
-    async startQuiz() {
-    // دریافت تنظیمات از بخش تمرین
-    const activeRange = document.querySelector('.range-option.active');
-    const rangeType = activeRange ? activeRange.dataset.range : 'all';
-    
-    const activeCount = document.querySelector('.count-option.active');
-    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? 20 : parseInt(activeCount.dataset.count)) : 10;
-    
-    const activeOrder = document.querySelector('.order-option.active');
-    const order = activeOrder ? activeOrder.dataset.order : 'random';
-    
-    // دریافت لغات برای آزمون
-    let allWords = await this.getAllWords();
-    
-    if (allWords.length < 4) {
+    if (wordsToPractice.length < 4) {
         this.showToast('❌ حداقل به ۴ لغت برای شروع آزمون نیاز دارید', 'error');
         return;
     }
     
-    // فیلتر بر اساس محدوده (همونند لیست لغات)
-    const activeFilter = document.querySelector('.filter-btn.active');
-    const filterType = activeFilter ? activeFilter.dataset.filter : 'all';
+    const activeCount = document.querySelector('.count-option.active');
+    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? wordsToPractice.length : parseInt(activeCount.dataset.count)) : 10;
     
-    let filteredWords = [...allWords];
-    
-    switch(filterType) {
-        case 'favorites':
-            filteredWords = filteredWords.filter(word => this.favorites.has(word.id));
-            break;
-        case 'nouns':
-            filteredWords = filteredWords.filter(word => word.type === 'noun');
-            break;
-        case 'verbs':
-            filteredWords = filteredWords.filter(word => word.type === 'verb');
-            break;
-        case 'adjectives':
-            filteredWords = filteredWords.filter(word => word.type === 'adjective');
-            break;
-        case 'adverbs':
-            filteredWords = filteredWords.filter(word => word.type === 'adverb');
-            break;
-        default:
-            filteredWords = [...allWords];
-            break;
+    if (wordsToPractice.length < questionCount) {
+        questionCount = wordsToPractice.length;
     }
     
-    // اعمال مرتب‌سازی ذخیره شده
-    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
-    if (savedSort !== 'random') {
-        await this.applySortToFilteredWordsAsync(filteredWords, savedSort);
-    }
+    const activeOrder = document.querySelector('.order-option.active');
+    const order = activeOrder ? activeOrder.dataset.order : 'random';
     
-    // گرفتن محدوده بر اساس ترتیب فعلی
-    let rangeFilteredWords = [];
-    
-    switch(rangeType) {
-        case 'favorites':
-            rangeFilteredWords = filteredWords.filter(word => this.favorites.has(word.id));
-            break;
-        case 'recent':
-            rangeFilteredWords = filteredWords.slice(0, 50);
-            break;
-        case 'custom':
-            const startInput = document.getElementById('range-start');
-            const endInput = document.getElementById('range-end');
-            let start = parseInt(startInput?.value) || 1;
-            let end = parseInt(endInput?.value) || filteredWords.length;
-            if (start < 1) start = 1;
-            if (end > filteredWords.length) end = filteredWords.length;
-            if (start > end) {
-                this.showToast(`❌ محدوده نامعتبر`, 'error');
-                return;
-            }
-            rangeFilteredWords = filteredWords.slice(start - 1, end);
-            break;
-        default:
-            rangeFilteredWords = [...filteredWords];
-            break;
-    }
-    
-    if (rangeFilteredWords.length < 4) {
-        this.showToast('❌ لغات کافی در این محدوده وجود ندارد (حداقل ۴ لغت)', 'error');
-        return;
-    }
-    
-    // محدود کردن تعداد سوالات
-    if (rangeFilteredWords.length < questionCount) {
-        questionCount = rangeFilteredWords.length;
-    }
-    
-    // انتخاب سوالات بر اساس ترتیب
     let selectedWords = [];
     if (order === 'sequential') {
-        selectedWords = rangeFilteredWords.slice(0, questionCount);
+        selectedWords = [...wordsToPractice].sort((a, b) => a.german.localeCompare(b.german, 'de')).slice(0, questionCount);
     } else if (order === 'hardest') {
         const history = await this.getAllPracticeHistory();
         const errorCounts = {};
@@ -9026,9 +10492,9 @@ showSpeakingResults() {
                 errorCounts[record.wordId] = (errorCounts[record.wordId] || 0) + 1;
             }
         });
-        selectedWords = [...rangeFilteredWords].sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0)).slice(0, questionCount);
+        selectedWords = [...wordsToPractice].sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0)).slice(0, questionCount);
     } else {
-        selectedWords = this.shuffleArray([...rangeFilteredWords]).slice(0, questionCount);
+        selectedWords = this.shuffleArray([...wordsToPractice]).slice(0, questionCount);
     }
     
     this.quizSession = {
@@ -9038,6 +10504,8 @@ showSpeakingResults() {
         questions: [],
         userAnswers: []
     };
+    
+    this.showToast(`📊 تعداد سوالات در این بازه: ${selectedWords.length} سوال`, 'info');
     
     this.showQuizQuestion();
     this.showSection('quiz-section');
@@ -11357,41 +12825,13 @@ setupCustomStats() {
     console.log('✅ آمار سفارشی راه‌اندازی شد');
 }
 async startWordOrderPractice() {
-    const words = await this.getAllWords();
+    const wordsToPractice = await this.getFilteredWordsForPractice();
     const isGerman = LanguageSystem.isGerman();
-    
-    // دریافت تنظیمات
-    const activeRange = document.querySelector('.range-option.active');
-    const rangeType = activeRange ? activeRange.dataset.range : 'all';
-    
-    const activeCount = document.querySelector('.count-option.active');
-    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? 10 : parseInt(activeCount.dataset.count)) : 10;
-    
-    // فیلتر لغات بر اساس محدوده
-    let filteredWords = [...words];
-    
-    switch(rangeType) {
-        case 'favorites':
-            filteredWords = words.filter(word => this.favorites.has(word.id));
-            break;
-        case 'nouns':
-            filteredWords = words.filter(word => word.type === 'noun');
-            break;
-        case 'verbs':
-            filteredWords = words.filter(word => word.type === 'verb');
-            break;
-        case 'adjectives':
-            filteredWords = words.filter(word => word.type === 'adjective');
-            break;
-        default:
-            filteredWords = words;
-    }
     
     // ========== فقط از مثال‌های خود کاربر استفاده کن ==========
     let customSentences = [];
     
-    for (let word of filteredWords) {
-        // گرفتن مثال‌های هر لغت از دیتابیس examples
+    for (let word of wordsToPractice) {
         const examples = await this.getExamplesForWord(word.id);
         
         for (let ex of examples) {
@@ -11399,7 +12839,6 @@ async startWordOrderPractice() {
                 let sentence = ex.german;
                 let wordsArray = sentence.split(' ');
                 
-                // فقط جملات با 3 تا 8 کلمه
                 if (wordsArray.length >= 3 && wordsArray.length <= 8) {
                     customSentences.push({
                         correct: sentence,
@@ -11412,27 +12851,19 @@ async startWordOrderPractice() {
         }
     }
     
-    console.log('جملات ساخته شده از مثال‌ها:', customSentences.length);
-    
     if (customSentences.length === 0) {
         this.showToast('❌ برای این تمرین به جملات مثال نیاز دارید. لطفاً برای لغات مثال اضافه کنید.', 'error');
         return;
     }
     
-    // محدود کردن تعداد سوالات بر اساس تنظیمات
-    if (customSentences.length < questionCount) {
-        questionCount = customSentences.length;
-    }
-    
-    let selectedSentences = this.shuffleArray([...customSentences]).slice(0, questionCount);
-    
+    // ========== از کل جملات فیلتر شده استفاده کن ==========
     this.wordOrderSession = {
         questions: [],
         currentIndex: 0,
         score: 0
     };
     
-    for (let sent of selectedSentences) {
+    for (let sent of customSentences) {
         this.wordOrderSession.questions.push({
             correctOrder: sent.correct,
             shuffledWords: sent.words,
@@ -11445,6 +12876,8 @@ async startWordOrderPractice() {
         this.showToast('❌ خطا در ساخت سوالات', 'error');
         return;
     }
+    
+    this.showToast(`📊 تعداد جملات در این بازه: ${this.wordOrderSession.questions.length} جمله`, 'info');
     
     this.showWordOrderQuestion();
     this.showSection('practice-section');
