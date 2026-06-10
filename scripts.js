@@ -4526,6 +4526,10 @@ addTagButtonToWordList() {
         console.log('✅ دکمه تگ اضافه شد');
     }, 500);
 }
+// ================================================
+// اصلاح نهایی تابع updatePracticeTagFilter در scripts.js
+// ================================================
+
 updatePracticeTagFilter() {
     setTimeout(() => {
         const practiceSection = document.getElementById('practice-section');
@@ -4546,7 +4550,7 @@ updatePracticeTagFilter() {
         const existingWrapper = rangeButtons.querySelector('.practice-tag-dropdown-wrapper');
         if (existingWrapper) existingWrapper.remove();
         
-        // ایجاد دکمه جدید
+        // ایجاد دکمه پوشه
         const tagDropdownWrapper = document.createElement('div');
         tagDropdownWrapper.className = 'practice-tag-dropdown-wrapper';
         tagDropdownWrapper.style.display = 'inline-block';
@@ -4555,28 +4559,28 @@ updatePracticeTagFilter() {
         
         const currentTag = this.selectedPracticeTag ? tags.find(t => t.id === this.selectedPracticeTag) : null;
         
-     tagDropdownWrapper.innerHTML = `
-    <div class="practice-tag-dropdown-btn">
-        <button class="range-option" data-range="tag" style="display: flex; align-items: center; gap: 8px; min-width: 130px; justify-content: space-between;">
-            <i class="fas fa-folder"></i> 
-            <span id="practice-tag-selected-name">${currentTag ? currentTag.name : (isGerman ? 'پوشه' : 'Folder')}</span>
-            <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
-        </button>
-        <div class="practice-tag-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; min-width: 220px; background: var(--white); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; margin-top: 5px; border: 1px solid var(--gray-200); overflow: hidden;">
-            <button class="practice-tag-option ${!this.selectedPracticeTag ? 'active' : ''}" data-tag-id="all" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; transition: all 0.2s; border-right: 3px solid transparent;">
-                <i class="fas fa-globe"></i> ${isGerman ? 'همه پوشه‌ها' : 'All folders'}
-            </button>
-            ${tags.map(tag => `
-                <button class="practice-tag-option ${this.selectedPracticeTag === tag.id ? 'active' : ''}" data-tag-id="${tag.id}" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; transition: all 0.2s; border-right: 3px solid ${tag.color};">
-                    <span class="tag-dot" style="width: 10px; height: 10px; border-radius: 50%; background: ${tag.color}; display: inline-block;"></span>
-                    ${this.escapeHtml(tag.name)}
-                    <span class="tag-count" style="font-size: 11px; color: var(--gray-500); margin-right: auto;">(${tag.wordCount})</span>
-                    ${this.selectedPracticeTag === tag.id ? '<i class="fas fa-check" style="margin-right: 5px;"></i>' : ''}
+        tagDropdownWrapper.innerHTML = `
+            <div class="practice-tag-dropdown-btn">
+                <button class="range-option ${this.selectedPracticeTag ? 'active' : ''}" data-range="tag" style="display: flex; align-items: center; gap: 8px; min-width: 130px; justify-content: space-between;">
+                    <i class="fas fa-folder"></i> 
+                    <span id="practice-tag-selected-name">${currentTag ? currentTag.name : (isGerman ? 'پوشه' : 'Folder')}</span>
+                    <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
                 </button>
-            `).join('')}
-        </div>
-    </div>
-`;
+                <div class="practice-tag-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; min-width: 220px; background: var(--white); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; margin-top: 5px; border: 1px solid var(--gray-200); overflow: hidden;">
+                    <button class="practice-tag-option ${!this.selectedPracticeTag ? 'active' : ''}" data-tag-id="all" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; transition: all 0.2s; border-right: 3px solid transparent;">
+                        <i class="fas fa-globe"></i> ${isGerman ? 'همه پوشه‌ها' : 'All folders'}
+                    </button>
+                    ${tags.map(tag => `
+                        <button class="practice-tag-option ${this.selectedPracticeTag === tag.id ? 'active' : ''}" data-tag-id="${tag.id}" style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 15px; border: none; background: transparent; cursor: pointer; text-align: right; font-size: 13px; transition: all 0.2s; border-right: 3px solid ${tag.color};">
+                            <span class="tag-dot" style="width: 10px; height: 10px; border-radius: 50%; background: ${tag.color}; display: inline-block;"></span>
+                            ${this.escapeHtml(tag.name)}
+                            <span class="tag-count" style="font-size: 11px; color: var(--gray-500); margin-right: auto;">(${tag.wordCount})</span>
+                            ${this.selectedPracticeTag === tag.id ? '<i class="fas fa-check" style="margin-right: 5px;"></i>' : ''}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
         
         rangeButtons.appendChild(tagDropdownWrapper);
         
@@ -4592,11 +4596,13 @@ updatePracticeTagFilter() {
                 dropdownMenu.style.display = isOpen ? 'none' : 'block';
             };
             
-            document.addEventListener('click', (e) => {
-                if (!tagDropdownWrapper.contains(e.target)) {
+            const closeDropdownHandler = (e) => {
+                if (!tagDropdownWrapper.contains(e.target) && !dropdownMenu.contains(e.target)) {
                     dropdownMenu.style.display = 'none';
                 }
-            });
+            };
+            document.removeEventListener('click', closeDropdownHandler);
+            document.addEventListener('click', closeDropdownHandler);
         }
         
         document.querySelectorAll('.practice-tag-option').forEach(opt => {
@@ -4604,23 +4610,33 @@ updatePracticeTagFilter() {
                 e.stopPropagation();
                 const tagId = opt.dataset.tagId;
                 
-                console.log('📁 انتخاب پوشه در تمرین:', tagId); // برای دیباگ
-                
                 if (tagId === 'all') {
                     this.selectedPracticeTag = null;
                     if (selectedNameSpan) selectedNameSpan.textContent = isGerman ? 'پوشه' : 'Folder';
                     this.showToast(`📁 تمرین از همه پوشه‌ها`, 'info');
+                    const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+                    if (tagRangeBtn) tagRangeBtn.classList.remove('active');
                 } else {
                     this.selectedPracticeTag = tagId;
                     const tag = tags.find(t => t.id === tagId);
                     if (selectedNameSpan && tag) selectedNameSpan.textContent = tag.name;
                     this.showToast(`📁 تمرین از پوشه "${tag.name}"`, 'success');
-                    console.log('✅ selectedPracticeTag set to:', this.selectedPracticeTag); // برای دیباگ
+                    const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+                    if (tagRangeBtn) tagRangeBtn.classList.add('active');
+                    
+                    // ========== مهم: وقتی پوشه انتخاب شد، اگه محدوده custom فعال بود پیام بده ==========
+                    const activeRange = document.querySelector('.range-option.active');
+                    if (activeRange && activeRange.dataset.range === 'custom') {
+                        const startInput = document.getElementById('range-start');
+                        const endInput = document.getElementById('range-end');
+                        if (startInput?.value && endInput?.value) {
+                            this.showToast(`📏 محدوده ${startInput.value} تا ${endInput.value} از پوشه "${tag.name}" اعمال می‌شود`, 'info');
+                        }
+                    }
                 }
                 
                 dropdownMenu.style.display = 'none';
                 
-                // بروزرسانی کلاس active
                 document.querySelectorAll('.practice-tag-option').forEach(o => {
                     o.classList.remove('active');
                     const checkIcon = o.querySelector('.fa-check');
@@ -4633,21 +4649,126 @@ updatePracticeTagFilter() {
                     opt.classList.add('active');
                 }
                 
-                // ذخیره در localStorage برای یادآوری
                 if (this.selectedPracticeTag) {
                     localStorage.setItem('selectedPracticeTag', this.selectedPracticeTag);
                 } else {
                     localStorage.removeItem('selectedPracticeTag');
                 }
+            };
+        });
+        
+        // ========== اصلاح گزینه‌های محدوده ==========
+        // قانون: فقط "custom range" می‌تونه با پوشه ترکیب بشه
+        // گزینه‌های "all", "favorites", "recent" وقتی پوشه انتخاب شده باشه، پوشه رو لغو می‌کنن
+        
+        const allRangeOptions = rangeButtons.querySelectorAll('.range-option:not([data-range="tag"])');
+        allRangeOptions.forEach(btn => {
+            const originalOnClick = btn.onclick;
+            btn.onclick = (e) => {
+                e.stopPropagation();
                 
-                // برای اطمینان از اعمال شدن، دکمه range-option رو فعال نگه دار
-                const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
-                if (tagRangeBtn) {
-                    document.querySelectorAll('.range-option').forEach(btn => btn.classList.remove('active'));
-                    tagRangeBtn.classList.add('active');
+                const rangeValue = btn.dataset.range;
+                const isCustomRange = (rangeValue === 'custom');
+                const hasTagSelected = (this.selectedPracticeTag !== null && this.selectedPracticeTag !== 'all');
+                
+                // ========== قانون 1: اگه پوشه انتخاب شده و این گزینه custom نیست → پوشه رو لغو کن ==========
+                if (hasTagSelected && !isCustomRange) {
+                    this.selectedPracticeTag = null;
+                    const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+                    if (tagRangeBtn) tagRangeBtn.classList.remove('active');
+                    if (selectedNameSpan) selectedNameSpan.textContent = isGerman ? 'پوشه' : 'Folder';
+                    this.showToast(`📁 پوشه لغو شد - فقط محدوده ${btn.querySelector('span')?.textContent || rangeValue} اعمال می‌شود`, 'info');
+                }
+                
+                // ========== قانون 2: اگه پوشه انتخاب شده و این گزینه custom است → هر دو فعال می‌مونن ==========
+                if (hasTagSelected && isCustomRange) {
+                    const tag = tags.find(t => t.id === this.selectedPracticeTag);
+                    this.showToast(`📁 پوشه "${tag?.name}" + محدوده دلخواه (از پوشه حساب می‌شود)`, 'success');
+                }
+                
+                // ========== قانون 3: اگه پوشه انتخاب نشده → محدوده تنها ==========
+                if (!hasTagSelected) {
+                    this.showToast(`🌍 محدوده: ${btn.querySelector('span')?.textContent || rangeValue}`, 'info');
+                }
+                
+                // حذف active از همه range options (به جز پوشه)
+                document.querySelectorAll('.range-option').forEach(r => {
+                    if (r.dataset.range !== 'tag') {
+                        r.classList.remove('active');
+                    }
+                });
+                btn.classList.add('active');
+                
+                // ذخیره در localStorage
+                localStorage.setItem('practiceRange', rangeValue);
+                
+                // نمایش یا مخفی کردن input محدوده دلخواه
+                const customInputs = document.querySelector('.custom-range-inputs');
+                if (customInputs) {
+                    customInputs.style.display = rangeValue === 'custom' ? 'block' : 'none';
+                }
+                
+                // اگه پوشه انتخاب شده و این custom است، دکمه پوشه active بمونه
+                if (this.selectedPracticeTag && isCustomRange) {
+                    const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+                    if (tagRangeBtn) tagRangeBtn.classList.add('active');
+                }
+                
+                // اجرای onclick اصلی
+                if (originalOnClick) {
+                    originalOnClick.call(btn, e);
                 }
             };
         });
+        
+        // ========== اضافه کردن نشانگر وضعیت ==========
+        let statusIndicator = rangeButtons.querySelector('.practice-status-indicator');
+        if (!statusIndicator) {
+            statusIndicator = document.createElement('div');
+            statusIndicator.className = 'practice-status-indicator';
+            statusIndicator.style.cssText = `
+                display: inline-block;
+                margin-right: 15px;
+                padding: 6px 14px;
+                background: var(--primary-light);
+                border-radius: 30px;
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--primary);
+                direction: rtl;
+            `;
+            rangeButtons.appendChild(statusIndicator);
+        }
+        
+        const updateStatusIndicator = () => {
+            let statusText = '';
+            const activeRange = document.querySelector('.range-option.active:not([data-range="tag"])');
+            const isCustomActive = activeRange?.dataset.range === 'custom';
+            
+            if (this.selectedPracticeTag && isCustomActive) {
+                const tag = this.getAllTags().find(t => t.id === this.selectedPracticeTag);
+                statusText = `📁 ${tag?.name} | 📏 محدوده دلخواه`;
+            } 
+            else if (this.selectedPracticeTag && !isCustomActive) {
+                const tag = this.getAllTags().find(t => t.id === this.selectedPracticeTag);
+                statusText = `📁 ${tag?.name} (همه لغات پوشه)`;
+            }
+            else if (!this.selectedPracticeTag && activeRange) {
+                const rangeName = activeRange.dataset.range === 'custom' ? 'محدوده دلخواه' :
+                                  activeRange.dataset.range === 'favorites' ? 'علاقه‌مندی‌ها' :
+                                  activeRange.dataset.range === 'recent' ? 'لغات اخیر' : 'همه لغات';
+                statusText = `🌍 ${rangeName}`;
+            }
+            else {
+                statusText = `🌍 همه لغات`;
+            }
+            
+            statusIndicator.innerHTML = `<i class="fas fa-chart-simple"></i> ${statusText}`;
+        };
+        
+        const observer = new MutationObserver(updateStatusIndicator);
+        observer.observe(rangeButtons, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        updateStatusIndicator();
         
         // بازیابی انتخاب قبلی از localStorage
         const savedTag = localStorage.getItem('selectedPracticeTag');
@@ -4655,7 +4776,8 @@ updatePracticeTagFilter() {
             this.selectedPracticeTag = savedTag;
             const tag = tags.find(t => t.id === savedTag);
             if (selectedNameSpan && tag) selectedNameSpan.textContent = tag.name;
-            // بروزرسانی کلاس active
+            const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
+            if (tagRangeBtn) tagRangeBtn.classList.add('active');
             setTimeout(() => {
                 const activeOpt = document.querySelector(`.practice-tag-option[data-tag-id="${savedTag}"]`);
                 if (activeOpt) {
@@ -4667,32 +4789,25 @@ updatePracticeTagFilter() {
                     activeOpt.classList.add('active');
                     activeOpt.insertAdjacentHTML('beforeend', '<i class="fas fa-check" style="margin-right: 5px;"></i>');
                 }
-                // دکمه range رو هم فعال کن
-                const tagRangeBtn = rangeButtons.querySelector('.range-option[data-range="tag"]');
-                if (tagRangeBtn) {
-                    document.querySelectorAll('.range-option').forEach(btn => btn.classList.remove('active'));
-                    tagRangeBtn.classList.add('active');
-                }
+                updateStatusIndicator();
             }, 100);
         }
         
-        const otherRangeBtns = rangeButtons.querySelectorAll('.range-option[data-range="all"], .range-option[data-range="favorites"], .range-option[data-range="recent"], .range-option[data-range="custom"]');
-        otherRangeBtns.forEach(btn => {
-            const oldOnClick = btn.onclick;
-            btn.onclick = (e) => {
-                if (oldOnClick) oldOnClick(e);
-                if (dropdownMenu) dropdownMenu.style.display = 'none';
-                // وقتی گزینه دیگه‌ای انتخاب شد، انتخاب پوشه رو لغو کن
-                this.selectedPracticeTag = null;
-                localStorage.removeItem('selectedPracticeTag');
-                if (selectedNameSpan) selectedNameSpan.textContent = isGerman ? 'پوشه' : 'Folder';
-            };
+        // بازیابی محدوده ذخیره شده
+        const savedRange = localStorage.getItem('practiceRange') || 'all';
+        document.querySelectorAll('.range-option').forEach(btn => {
+            if (btn.dataset.range === savedRange && btn.dataset.range !== 'tag') {
+                btn.classList.add('active');
+                const customInputs = document.querySelector('.custom-range-inputs');
+                if (customInputs) {
+                    customInputs.style.display = savedRange === 'custom' ? 'block' : 'none';
+                }
+            }
         });
+        updateStatusIndicator();
         
     }, 300);
 }
-
-
 async renderWordList(filter = 'all') {
     const words = await this.getAllWords();
     const container = document.getElementById('word-list-container');
@@ -5137,6 +5252,7 @@ updateFavoritesCount() {
     // مدیریت تمرین فلش کارت
     // ================================================
 renderPracticeOptions() {
+      this.addAIBadgeStyles();
     const container = document.getElementById('practice-section');
     const isGerman = LanguageSystem.isGerman();
     
@@ -5260,16 +5376,21 @@ renderPracticeOptions() {
                          <i class="fas fa-play"></i> ${LanguageSystem.t('practice.start')}
                           </button>
                       </div>
-                <div class="practice-option-card">
-                    <div class="practice-icon">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <h3>${LanguageSystem.t('practice.speaking')}</h3>
-                    <p>${isGerman ? 'ساخت جمله با لغات' : 'Make sentences with words'}</p>
-                    <button class="btn btn-primary" id="start-speaking-btn">
-                        <i class="fas fa-play"></i> ${LanguageSystem.t('practice.start')}
-                    </button>
-                </div>
+                <div class="practice-option-card" style="position: relative;">
+    <div class="ai-badge" style="padding: 6px 16px; font-size: 13px;">
+        <i class="fas fa-microchip" style="font-size: 12px;"></i>
+        <span>AI</span>
+        <div class="ai-fire-smoke"></div>
+    </div>
+    <div class="practice-icon">
+        <i class="fas fa-comments"></i>
+    </div>
+    <h3>${LanguageSystem.t('practice.speaking')}</h3>
+    <p>${isGerman ? 'ساخت جمله با هوش مصنوعی' : 'Sentence building with AI'}</p>
+    <button class="btn btn-primary" id="start-speaking-btn">
+        <i class="fas fa-play"></i> ${LanguageSystem.t('practice.start')}
+    </button>
+</div>
             </div>
             
             <!-- ========== ردیف دوم: تمرین‌های پیشرفته ========== -->
@@ -5793,13 +5914,38 @@ async startFillBlanksPractice() {
     // ========== از کل لغات فیلتر شده استفاده کن ==========
     let selectedWords = [...wordsToPractice];
     
+    const activeCount = document.querySelector('.count-option.active');
+    let questionCount = activeCount ? (activeCount.dataset.count === 'all' ? selectedWords.length : parseInt(activeCount.dataset.count)) : 10;
+    
+    if (selectedWords.length < questionCount) {
+        questionCount = selectedWords.length;
+    }
+    
+    const activeOrder = document.querySelector('.order-option.active');
+    const order = activeOrder ? activeOrder.dataset.order : 'random';
+    
+    if (order === 'sequential') {
+        selectedWords = selectedWords.sort((a, b) => a.german.localeCompare(b.german, 'de')).slice(0, questionCount);
+    } else if (order === 'hardest') {
+        const history = await this.getAllPracticeHistory();
+        const errorCounts = {};
+        history.forEach(record => {
+            if (!record.correct) {
+                errorCounts[record.wordId] = (errorCounts[record.wordId] || 0) + 1;
+            }
+        });
+        selectedWords = selectedWords.sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0)).slice(0, questionCount);
+    } else {
+        selectedWords = this.shuffleArray([...selectedWords]).slice(0, questionCount);
+    }
+    
     const questionTypes = [
         { type: 'meaning_to_german', name: isGerman ? 'معنی به آلمانی' : 'Meaning to German' },
         { type: 'german_to_meaning', name: isGerman ? 'آلمانی به معنی' : 'German to Meaning' }
     ];
     
     this.fillBlanksSession = {
-        questions: [],
+        words: selectedWords,  // ذخیره لیست کلمات برای استفاده در هر سوال
         currentIndex: 0,
         score: 0,
         typeStats: {
@@ -5808,66 +5954,100 @@ async startFillBlanksPractice() {
         }
     };
     
-    for (let word of selectedWords) {
-        const qType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
-        
-        let questionText = '';
-        let correctAnswer = '';
-        let options = [];
-        
-        let otherWords = wordsToPractice.filter(w => w.id !== word.id).slice(0, 3);
-        while (otherWords.length < 3) {
-            otherWords.push({ german: '???', persian: '???' });
-        }
-        
-        if (qType.type === 'meaning_to_german') {
-            questionText = `<i class="fa-solid fa-language"></i> ${isGerman ? 'معنی فارسی:' : 'Persian meaning:'} <strong>"${word.persian}"</strong><br>
-                            <span style="font-size: 14px;">${isGerman ? 'معادل آلمانی کدام است؟' : 'Which is the German equivalent?'}</span>`;
-            correctAnswer = word.german;
-            options = [word.german, ...otherWords.map(w => w.german)];
-        } else {
-            questionText = `<i class="fa-solid fa-language"></i> ${isGerman ? 'لغت آلمانی:' : 'German word:'} <strong>"${word.german}"</strong><br>
-                            <span style="font-size: 14px;">${isGerman ? 'معنی فارسی کدام است؟' : 'Which is the Persian meaning?'}</span>`;
-            correctAnswer = word.persian;
-            options = [word.persian, ...otherWords.map(w => w.persian)];
-        }
-        
-        options = this.shuffleArray(options);
-        
-        this.fillBlanksSession.questions.push({
-            word: word,
-            type: qType.type,
-            typeName: qType.name,
-            questionText: questionText,
-            correctAnswer: correctAnswer,
-            options: options
-        });
-        
-        this.fillBlanksSession.typeStats[qType.type].total++;
-    }
-    
-    if (this.fillBlanksSession.questions.length === 0) {
-        this.showToast('❌ خطا در ساخت سوالات', 'error');
-        return;
-    }
-    
-    this.showToast(`📊 تعداد سوالات در این بازه: ${this.fillBlanksSession.questions.length} سوال`, 'info');
+    this.showToast(`📊 تعداد سوالات در این بازه: ${selectedWords.length} سوال`, 'info');
     
     this.showFillBlanksQuestion();
     this.showSection('practice-section');
 }
 
+// ================================================
+// 4. اصلاح تابع showFillBlanksQuestion در scripts.js
+// ================================================
+
 showFillBlanksQuestion() {
-    if (this.fillBlanksSession.currentIndex >= this.fillBlanksSession.questions.length) {
+    if (this.fillBlanksSession.currentIndex >= this.fillBlanksSession.words.length) {
         this.showFillBlanksResults();
         return;
     }
     
-    const q = this.fillBlanksSession.questions[this.fillBlanksSession.currentIndex];
+    const word = this.fillBlanksSession.words[this.fillBlanksSession.currentIndex];
     const isGerman = LanguageSystem.isGerman();
     const current = this.fillBlanksSession.currentIndex + 1;
-    const total = this.fillBlanksSession.questions.length;
+    const total = this.fillBlanksSession.words.length;
     const progress = (current - 1) / total * 100;
+    
+    // انتخاب تصادفی نوع سوال
+    const qType = Math.random() > 0.5 ? 'meaning_to_german' : 'german_to_meaning';
+    const typeName = qType === 'meaning_to_german' ? (isGerman ? 'معنی به آلمانی' : 'Meaning to German') : (isGerman ? 'آلمانی به معنی' : 'German to Meaning');
+    
+    // ========== مهم: هر بار گزینه‌های اشتباه جدید از لیست کلمات دیگه بگیر ==========
+    const allOtherWords = this.fillBlanksSession.words.filter(w => w.id !== word.id);
+    const shuffledOthers = this.shuffleArray([...allOtherWords]);
+    
+    let questionText = '';
+    let correctAnswer = '';
+    let options = [];
+    
+    if (qType === 'meaning_to_german') {
+        questionText = `<i class="fa-solid fa-language"></i> ${isGerman ? 'معنی فارسی:' : 'Persian meaning:'} <strong>"${word.persian}"</strong><br>
+                        <span style="font-size: 14px;">${isGerman ? 'معادل آلمانی کدام است؟' : 'Which is the German equivalent?'}</span>`;
+        correctAnswer = word.german;
+        
+        // ساخت گزینه‌های اشتباه از لغات دیگه (هر بار جدید)
+        const wrongOptions = [];
+        for (let i = 0; i < 3 && i < shuffledOthers.length; i++) {
+            const otherWord = shuffledOthers[i];
+            if (otherWord && otherWord.german && otherWord.german !== correctAnswer) {
+                wrongOptions.push(otherWord.german);
+            } else {
+                wrongOptions.push('???');
+            }
+        }
+        
+        while (wrongOptions.length < 3) {
+            wrongOptions.push('???');
+        }
+        
+        options = [correctAnswer, ...wrongOptions];
+        
+    } else {
+        questionText = `<i class="fa-solid fa-language"></i> ${isGerman ? 'لغت آلمانی:' : 'German word:'} <strong>"${word.german}"</strong><br>
+                        <span style="font-size: 14px;">${isGerman ? 'معنی فارسی کدام است؟' : 'Which is the Persian meaning?'}</span>`;
+        correctAnswer = word.persian;
+        
+        // ساخت گزینه‌های اشتباه از لغات دیگه (هر بار جدید)
+        const wrongOptions = [];
+        for (let i = 0; i < 3 && i < shuffledOthers.length; i++) {
+            const otherWord = shuffledOthers[i];
+            if (otherWord && otherWord.persian && otherWord.persian !== correctAnswer) {
+                wrongOptions.push(otherWord.persian);
+            } else {
+                wrongOptions.push('???');
+            }
+        }
+        
+        while (wrongOptions.length < 3) {
+            wrongOptions.push('???');
+        }
+        
+        options = [correctAnswer, ...wrongOptions];
+    }
+    
+    // شافل کردن نهایی گزینه‌ها
+    options = this.shuffleArray(options);
+    
+    // ذخیره سوال فعلی
+    this.currentFillBlankQuestion = {
+        word: word,
+        type: qType,
+        typeName: typeName,
+        questionText: questionText,
+        correctAnswer: correctAnswer,
+        options: options
+    };
+    
+    // به‌روزرسانی آمار typeStats
+    this.fillBlanksSession.typeStats[qType].total++;
     
     const container = document.getElementById('practice-section');
     if (!container) return;
@@ -5877,7 +6057,7 @@ showFillBlanksQuestion() {
             <div class="section-header">
                 <h2><i class="fa-solid fa-puzzle-piece"></i> ${isGerman ? 'تکمیل جای خالی' : 'Fill in the Blanks'}</h2>
                 <div style="display: flex; gap: 10px;">
-                    <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">${q.typeName}</span>
+                    <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">${typeName}</span>
                     <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #d97706);">${current}/${total}</span>
                 </div>
             </div>
@@ -5885,12 +6065,12 @@ showFillBlanksQuestion() {
             <div style="text-align: center; padding: 30px 20px;">
                 <div style="background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 20px; padding: 25px; margin-bottom: 30px;">
                     <div style="font-size: 18px; font-weight: 500; color: #581c87;">
-                        ${q.questionText}
+                        ${questionText}
                     </div>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px;">
-                    ${q.options.map((opt, idx) => `
+                    ${options.map((opt, idx) => `
                         <button class="blank-option-btn" data-answer="${this.escapeHtml(opt)}" data-index="${idx}"
                             style="padding: 14px 20px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 50px; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease;">
                             ${this.escapeHtml(opt)}
@@ -5907,9 +6087,200 @@ showFillBlanksQuestion() {
         </div>
     `;
     
+    // غیرفعال کردن قفل پاسخ
+    this.fillBlankAnswerLocked = false;
+    
     document.querySelectorAll('.blank-option-btn').forEach(btn => {
-        btn.onclick = () => this.checkBlankAnswer(btn.dataset.answer);
+        btn.onclick = () => {
+            if (this.fillBlankAnswerLocked) return;
+            this.fillBlankAnswerLocked = true;
+            this.checkBlankAnswer(btn.dataset.answer);
+        };
     });
+}
+// ================================================
+// اضافه کردن استایل AI Badge به صفحه
+// ================================================
+
+addAIBadgeStyles() {
+    if (document.getElementById('ai-badge-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'ai-badge-styles';
+    style.textContent = `
+        /* ================================================
+           AI Badge - تگ هوش مصنوعی با افکت آتشین
+           ================================================ */
+        
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            box-shadow: 0 0 8px rgba(255, 80, 0, 0.5);
+            border: 1px solid rgba(255, 80, 0, 0.6);
+            transition: all 0.3s ease;
+        }
+        
+        .ai-badge i {
+            font-size: 10px;
+            animation: aiIconPulse 1.5s ease-in-out infinite;
+        }
+        
+        .ai-badge span {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        /* افکت آتشین رینگ دور */
+        .ai-badge::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                #ff0000, #ff7300, #fffb00, #48ff00, 
+                #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%;
+            border-radius: 40px;
+            z-index: -2;
+            animation: aiFireRing 3s linear infinite;
+            opacity: 0.7;
+        }
+        
+        .ai-badge::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 38px;
+            z-index: -1;
+        }
+        
+        /* دود آتشین */
+        .ai-badge .ai-fire-smoke {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 15px;
+            background: radial-gradient(ellipse, rgba(255, 80, 0, 0.4), transparent);
+            border-radius: 50%;
+            filter: blur(6px);
+            animation: aiSmoke 2s ease-out infinite;
+            pointer-events: none;
+        }
+        
+        /* نسخه کوچک برای کارت‌های تمرین */
+        .practice-option-card .ai-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 3px 10px;
+            font-size: 9px;
+        }
+        
+        .practice-option-card .ai-badge i {
+            font-size: 9px;
+        }
+        
+        /* لایت مود */
+        body:not(.dark-mode) .ai-badge {
+            background: linear-gradient(135deg, #fff5f0, #ffe8e0);
+            color: #d84315;
+            border-color: #ff6e40;
+        }
+        
+        body:not(.dark-mode) .ai-badge::after {
+            background: linear-gradient(135deg, #fff5f0, #ffe8e0);
+        }
+        
+        /* انیمیشن‌ها */
+        @keyframes aiFireRing {
+            0% { background-position: 0% 0%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 0%; }
+        }
+        
+        @keyframes aiIconPulse {
+            0%, 100% {
+                opacity: 1;
+                text-shadow: 0 0 2px rgba(255, 80, 0, 0.5);
+            }
+            50% {
+                opacity: 0.8;
+                text-shadow: 0 0 6px rgba(255, 80, 0, 0.8);
+            }
+        }
+        
+        @keyframes aiSmoke {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(0) scale(0.5);
+            }
+            50% {
+                opacity: 0.4;
+                transform: translateX(-50%) translateY(-3px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-10px) scale(1.3);
+            }
+        }
+        
+        /* هاور افکت */
+        .ai-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 12px rgba(255, 80, 0, 0.7);
+        }
+        
+        .ai-badge:hover::before {
+            animation: aiFireRing 1.5s linear infinite;
+        }
+        
+        /* دارک مود */
+        .dark-mode .ai-badge {
+            background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+            color: #ff9f4a;
+            border-color: #ff6e40;
+            box-shadow: 0 0 10px rgba(255, 80, 0, 0.4);
+        }
+        
+        .dark-mode .ai-badge::after {
+            background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+        }
+        
+        /* ریسپانسیو */
+        @media (max-width: 768px) {
+            .ai-badge {
+                padding: 3px 8px;
+                font-size: 9px;
+            }
+            .ai-badge i {
+                font-size: 8px;
+            }
+            .practice-option-card .ai-badge {
+                padding: 2px 8px;
+                font-size: 8px;
+                top: 8px;
+                right: 8px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(style);
 }
 // ================================================
 // ابزار صرف افعال پیشرفته - نسخه تصحیح شده
@@ -7011,6 +7382,10 @@ async applySortToFilteredWordsAsync(words, sortType) {
     }
     return words;
 }
+// ================================================
+// اصلاح کامل تابع getFilteredWordsForPractice در scripts.js
+// ================================================
+
 async getFilteredWordsForPractice() {
     const activeRange = document.querySelector('.range-option.active');
     let rangeType = activeRange ? activeRange.dataset.range : 'all';
@@ -7025,94 +7400,114 @@ async getFilteredWordsForPractice() {
         return [];
     }
     
-    // ========== مرحله 1: فیلتر بر اساس پوشه (اگر انتخاب شده) ==========
-    let filteredWords = [...allWords];
+    // ========== مرحله 1: مرتب‌سازی بر اساس sortType ذخیره شده ==========
+    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
+    this.applySortToFilteredWords(allWords, savedSort);
+    
+    // ========== مرحله 2: فیلتر بر اساس پوشه (اگر انتخاب شده) ==========
+    let folderFilteredWords = [...allWords];
     let tagName = '';
+    let hasTagFilter = false;
     
     if (this.selectedPracticeTag && this.selectedPracticeTag !== 'all') {
         const tagWords = await this.getWordsByTag(this.selectedPracticeTag);
         const tagWordIds = new Set(tagWords.map(w => w.id));
-        filteredWords = filteredWords.filter(w => tagWordIds.has(w.id));
+        folderFilteredWords = allWords.filter(w => tagWordIds.has(w.id));
+        hasTagFilter = true;
         
         const tag = this.getAllTags().find(t => t.id === this.selectedPracticeTag);
         tagName = tag ? tag.name : '';
         
-        if (filteredWords.length === 0) {
+        if (folderFilteredWords.length === 0) {
             this.showToast(`📁 هیچ لغتی در پوشه "${tagName}" وجود ندارد`, 'warning');
             return [];
         }
+        
+        console.log(`📁 پوشه "${tagName}" - ${folderFilteredWords.length} لغت (مرتب شده بر اساس ${savedSort})`);
     }
     
-    // ========== مرحله 2: فیلتر بر اساس نوع کلمه (از دکمه‌های filter-btn) ==========
+    // ========== مرحله 3: فیلتر بر اساس نوع کلمه ==========
     const activeFilter = document.querySelector('.filter-btn.active');
     let filterType = activeFilter ? activeFilter.dataset.filter : 'all';
     
+    let typeFilteredWords = [...folderFilteredWords];
+    
     switch(filterType) {
         case 'favorites':
-            filteredWords = filteredWords.filter(word => this.favorites.has(word.id));
+            typeFilteredWords = folderFilteredWords.filter(word => this.favorites.has(word.id));
             break;
         case 'nouns':
-            filteredWords = filteredWords.filter(word => word.type === 'noun');
+            typeFilteredWords = folderFilteredWords.filter(word => word.type === 'noun');
             break;
         case 'verbs':
-            filteredWords = filteredWords.filter(word => word.type === 'verb');
+            typeFilteredWords = folderFilteredWords.filter(word => word.type === 'verb');
             break;
         case 'adjectives':
-            filteredWords = filteredWords.filter(word => word.type === 'adjective');
+            typeFilteredWords = folderFilteredWords.filter(word => word.type === 'adjective');
             break;
         case 'adverbs':
-            filteredWords = filteredWords.filter(word => word.type === 'adverb');
+            typeFilteredWords = folderFilteredWords.filter(word => word.type === 'adverb');
             break;
         default:
             break;
     }
     
-    if (filteredWords.length === 0) {
-        let msg = this.selectedPracticeTag ? `در پوشه "${tagName}"` : '';
+    if (typeFilteredWords.length === 0) {
+        let msg = hasTagFilter ? `در پوشه "${tagName}"` : '';
         this.showToast(`❌ هیچ لغتی ${msg} با این فیلتر وجود ندارد`, 'error');
         return [];
     }
     
-    // ========== مرحله 3: مرتب‌سازی بر اساس sortType ذخیره شده (همون سورت لیست لغات) ==========
-    const savedSort = localStorage.getItem('wordListSort') || 'alphabetical';
-    this.applySortToFilteredWords(filteredWords, savedSort);
+    // ========== مرحله 4: اعمال محدوده (Range) روی لیست مناسب ==========
+    // مهم: اگر پوشه انتخاب شده، محدوده از folderFilteredWords گرفته می‌شود
+    // اگر پوشه انتخاب نشده، محدوده از typeFilteredWords (همون کل لغات فیلتر شده) گرفته می‌شود
     
-    // ========== مرحله 4: اعمال محدوده (Range) روی لیست مرتب شده ==========
+    let baseListForRange = hasTagFilter ? folderFilteredWords : typeFilteredWords;
     let rangeFilteredWords = [];
     
     switch(rangeType) {
         case 'favorites':
-            rangeFilteredWords = filteredWords.filter(word => this.favorites.has(word.id));
+            rangeFilteredWords = baseListForRange.filter(word => this.favorites.has(word.id));
             if (rangeFilteredWords.length === 0) {
                 this.showToast('⭐ هیچ لغت مورد علاقه‌ای در این لیست وجود ندارد', 'warning');
                 return [];
             }
             break;
+            
         case 'recent':
-            // جدیدترین: 50 لغت اول لیست مرتب شده (که بر اساس تاریخ سورت شده)
-            rangeFilteredWords = filteredWords.slice(0, Math.min(50, filteredWords.length));
+            // 50 لغت جدید از لیست پایه (که اگر پوشه باشه، از پوشه میگیره)
+            rangeFilteredWords = baseListForRange.slice(0, Math.min(50, baseListForRange.length));
             break;
+            
         case 'custom':
             const startInput = document.getElementById('range-start');
             const endInput = document.getElementById('range-end');
             let start = parseInt(startInput?.value) || 1;
-            let end = parseInt(endInput?.value) || filteredWords.length;
+            let end = parseInt(endInput?.value) || baseListForRange.length;
             
-            // اعتبارسنجی محدوده
             if (start < 1) start = 1;
-            if (end > filteredWords.length) end = filteredWords.length;
+            if (end > baseListForRange.length) end = baseListForRange.length;
             if (start > end) {
                 this.showToast(`❌ محدوده نامعتبر (از ${start} تا ${end})`, 'error');
                 return [];
             }
             
-            // ========== مهم: برش از لیست مرتب شده ==========
-            rangeFilteredWords = filteredWords.slice(start - 1, end);
+            // ========== کلید اصلی: برش از baseListForRange (که اگر پوشه باشه، همون پوشه است) ==========
+            rangeFilteredWords = baseListForRange.slice(start - 1, end);
             
-            this.showToast(`📏 محدوده ${start} تا ${end} از ${filteredWords.length} لغت`, 'info');
+            let rangeMsg = `📏 محدوده ${start} تا ${end} از ${baseListForRange.length} لغت`;
+            if (hasTagFilter) {
+                rangeMsg += ` در پوشه "${tagName}"`;
+                // نمایش سورت فعلی برای شفافیت
+                if (savedSort === 'date-desc') rangeMsg += ` (مرتب شده بر اساس جدیدترین)`;
+                else if (savedSort === 'date-asc') rangeMsg += ` (مرتب شده بر اساس قدیمی‌ترین)`;
+                else if (savedSort === 'alphabetical') rangeMsg += ` (مرتب شده بر اساس الفبای آلمانی)`;
+            }
+            this.showToast(rangeMsg, 'info');
             break;
+            
         default: // 'all'
-            rangeFilteredWords = [...filteredWords];
+            rangeFilteredWords = [...baseListForRange];
             break;
     }
     
@@ -7138,7 +7533,6 @@ async getFilteredWordsForPractice() {
     let result = [];
     const usedIds = new Set();
     
-    // اول اضافه کردن لغات نیاز به مرور
     for (const word of needReview) {
         if (result.length >= finalCount) break;
         if (!usedIds.has(word.id)) {
@@ -7147,7 +7541,6 @@ async getFilteredWordsForPractice() {
         }
     }
     
-    // سپس بقیه لغات
     if (result.length < finalCount) {
         const shuffledOther = this.shuffleArray([...otherWords]);
         for (const word of shuffledOther) {
@@ -7175,26 +7568,18 @@ async getFilteredWordsForPractice() {
         });
         result.sort((a, b) => (errorCounts[b.id] || 0) - (errorCounts[a.id] || 0));
     }
-    // else random: قبلاً تصادفی شده
     
-    // ========== نمایش پیام خلاصه ==========
+    // ========== پیام نهایی ==========
     let summaryMsg = '';
-    if (this.selectedPracticeTag && this.selectedPracticeTag !== 'all') {
-        summaryMsg += `📁 پوشه "${tagName}" | `;
-    }
-    if (rangeType === 'custom') {
-        summaryMsg += `📏 محدوده دلخواه | `;
-    } else if (rangeType === 'favorites') {
-        summaryMsg += `⭐ علاقه‌مندی‌ها | `;
-    } else if (rangeType === 'recent') {
-        summaryMsg += `🆕 جدیدترین | `;
-    }
+    if (hasTagFilter) summaryMsg += `📁 پوشه "${tagName}" | `;
+    if (rangeType === 'custom') summaryMsg += `📏 محدوده دلخواه | `;
+    else if (rangeType === 'favorites') summaryMsg += `⭐ علاقه‌مندی‌ها | `;
+    else if (rangeType === 'recent') summaryMsg += `🆕 جدیدترین | `;
+    else if (rangeType === 'all') summaryMsg += `🌍 همه لغات | `;
     summaryMsg += `📊 ${result.length} لغت`;
     
     const reviewCount = result.filter(w => this.reviewWords.includes(w.id)).length;
-    if (reviewCount > 0) {
-        summaryMsg += ` (${reviewCount} لغت نیاز به مرور)`;
-    }
+    if (reviewCount > 0) summaryMsg += ` (${reviewCount} لغت نیاز به مرور)`;
     this.showToast(summaryMsg, 'info');
     
     return result;
@@ -10463,6 +10848,7 @@ showSpeakingQuestion() {
         };
     }
 }
+
 async startQuiz() {
     const wordsToPractice = await this.getFilteredWordsForPractice();
     
@@ -10501,7 +10887,7 @@ async startQuiz() {
         words: selectedWords,
         currentIndex: 0,
         score: 0,
-        questions: [],
+        questions: [], // سوالات از قبل ساخته نمی‌شن، هر بار ساخته می‌شن
         userAnswers: []
     };
     
@@ -10510,6 +10896,11 @@ async startQuiz() {
     this.showQuizQuestion();
     this.showSection('quiz-section');
 }
+
+// ================================================
+// 2. اصلاح تابع showQuizQuestion در scripts.js
+// ================================================
+
 showQuizQuestion() {
     if (this.quizSession.currentIndex >= this.quizSession.words.length) {
         this.showQuizResults();
@@ -10522,12 +10913,13 @@ showQuizQuestion() {
     const total = this.quizSession.words.length;
     const progress = (current - 1) / total * 100;
     
+    // انتخاب تصادفی نوع سوال
     const questionType = Math.random() > 0.5 ? 'german_to_persian' : 'persian_to_german';
     
-    const otherWords = this.quizSession.words.filter(w => w.id !== word.id).slice(0, 3);
-    while (otherWords.length < 3) {
-        otherWords.push({ german: '???', persian: '???' });
-    }
+    // ========== مهم: گرفتن 3 لغت متفاوت از کل لیست (نه از سوالات فعلی) برای ساخت گزینه‌های اشتباه ==========
+    // اینطوری هر بار که سوال عوض می‌شه، گزینه‌های اشتباه هم عوض می‌شن
+    const allOtherWords = this.quizSession.words.filter(w => w.id !== word.id);
+    const shuffledOthers = this.shuffleArray([...allOtherWords]);
     
     let questionText = '';
     let correctAnswer = '';
@@ -10536,14 +10928,58 @@ showQuizQuestion() {
     if (questionType === 'german_to_persian') {
         questionText = `${isGerman ? 'معنی لغت' : 'Meaning of'} <strong style="font-size: 28px;">${word.german}</strong> ${isGerman ? 'چیست؟' : '?'}`;
         correctAnswer = word.persian;
-        options = [word.persian, ...otherWords.map(w => w.persian)];
+        
+        // ساخت گزینه‌های اشتباه از لغات دیگه (هر بار جدید)
+        const wrongOptions = [];
+        for (let i = 0; i < 3 && i < shuffledOthers.length; i++) {
+            const otherWord = shuffledOthers[i];
+            if (otherWord && otherWord.persian && otherWord.persian !== correctAnswer) {
+                wrongOptions.push(otherWord.persian);
+            } else {
+                // اگه نتونستیم 3 تا پیدا کنیم، یه گزینه پیش‌فرض اضافه کن
+                wrongOptions.push('???');
+            }
+        }
+        
+        // اگه کمتر از 3 تا شد، پر کن
+        while (wrongOptions.length < 3) {
+            wrongOptions.push('???');
+        }
+        
+        options = [correctAnswer, ...wrongOptions];
+        
     } else {
         questionText = `${isGerman ? 'معادل آلمانی' : 'German equivalent of'} <strong style="font-size: 28px;">${word.persian}</strong> ${isGerman ? 'کدام است؟' : '?'}`;
         correctAnswer = word.german;
-        options = [word.german, ...otherWords.map(w => w.german)];
+        
+        // ساخت گزینه‌های اشتباه از لغات دیگه (هر بار جدید)
+        const wrongOptions = [];
+        for (let i = 0; i < 3 && i < shuffledOthers.length; i++) {
+            const otherWord = shuffledOthers[i];
+            if (otherWord && otherWord.german && otherWord.german !== correctAnswer) {
+                wrongOptions.push(otherWord.german);
+            } else {
+                wrongOptions.push('???');
+            }
+        }
+        
+        while (wrongOptions.length < 3) {
+            wrongOptions.push('???');
+        }
+        
+        options = [correctAnswer, ...wrongOptions];
     }
     
+    // شافل کردن نهایی گزینه‌ها
     options = this.shuffleArray(options);
+    
+    // ذخیره سوال فعلی
+    this.currentQuizQuestion = {
+        word: word,
+        correctAnswer: correctAnswer,
+        options: options,
+        questionType: questionType
+    };
     
     const container = document.getElementById('quiz-section');
     if (!container) return;
@@ -10580,12 +11016,8 @@ showQuizQuestion() {
         </div>
     `;
     
-    this.currentQuizQuestion = {
-        word: word,
-        correctAnswer: correctAnswer,
-        options: options,
-        questionType: questionType
-    };
+    // غیرفعال کردن قفل پاسخ
+    this.answerLocked = false;
     
     document.querySelectorAll('.quiz-option-btn').forEach(btn => {
         btn.onclick = () => {
@@ -10596,6 +11028,7 @@ showQuizQuestion() {
         };
     });
 }
+
 checkQuizAnswer(selectedAnswer) {
     const question = this.currentQuizQuestion;
     const isCorrect = (selectedAnswer === question.correctAnswer);
