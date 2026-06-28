@@ -12263,8 +12263,15 @@ async performAutoTranslation(text) {
             </div>`;
     }
 }
+// ================================================
+// ارتباط با Worker - با پشتیبانی از مدل‌های مختلف
+// ================================================
+
 async _puterChat(messages, options = {}) {
     const WORKER_URL = 'https://groq.ysadat180.workers.dev';
+    
+    // مدل پیش‌فرض برای بخش‌های غیر از چت
+    const defaultModel = options.model || 'llama-3.3-70b';
     
     // تبدیل messages به فرمت ساده
     let simpleMessages = [];
@@ -12278,6 +12285,14 @@ async _puterChat(messages, options = {}) {
             }
             if (Array.isArray(m.content)) {
                 const text = m.content.filter(c => c.type === 'text').map(c => c.text).join(' ');
+                const image = m.content.find(c => c.type === 'image_url');
+                if (image) {
+                    return {
+                        role: m.role,
+                        content: text || 'این تصویر را تحلیل کن.',
+                        image_url: image.image_url.url
+                    };
+                }
                 return { role: m.role, content: text || '...' };
             }
             return { role: m.role, content: String(m.content) };
@@ -12286,38 +12301,44 @@ async _puterChat(messages, options = {}) {
     
     simpleMessages = simpleMessages.filter(m => m.content && m.content.trim());
     
-    console.log('📤 Sending to Worker (Llama 4 Scout):', simpleMessages.length, 'messages');
+    // استخراج system message (اگر وجود داشت)
+    let systemMessage = null;
+    const filteredMessages = simpleMessages.filter(m => {
+        if (m.role === 'system') {
+            systemMessage = m.content;
+            return false;
+        }
+        return true;
+    });
+    
+    // اگر system message وجود داشت، به ابتدای array اضافه کن
+    if (systemMessage) {
+        filteredMessages.unshift({ role: 'system', content: systemMessage });
+    }
+    
+    const payload = {
+        messages: filteredMessages,
+        model: defaultModel,
+        max_tokens: options.max_tokens || 4096,
+        temperature: options.temperature || 0.7
+    };
     
     try {
         const response = await fetch(WORKER_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messages: simpleMessages,
-                max_tokens:5000,
-                temperature: 0.7
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
         
         const data = await response.json();
         
         if (!response.ok) {
             console.error('Worker error:', data);
-            
-            // اگه خطای Rate Limit بود، پیام مناسب
-            if (response.status === 429) {
-                throw new Error('سرور شلوغ است، لطفاً چند ثانیه بعد دوباره تلاش کنید');
-            }
             throw new Error(data.error || `HTTP ${response.status}`);
         }
         
         const text = data.choices?.[0]?.message?.content || '';
-        
-        if (!text) {
-            throw new Error('پاسخی دریافت نشد');
-        }
+        if (!text) throw new Error('پاسخی دریافت نشد');
         
         return { message: { content: [{ text }] } };
         
@@ -17214,6 +17235,24 @@ renderAIChat() {
     this.isGeneratingImage = false;
     this.loadChatMemory();
     
+    // ========== مدل‌های Groq ==========
+    const models = [
+        { id: 'llama-3.3-70b', name: '🦙 Llama 3.3 70B', desc: 'پیشرفته‌ترین • دقت عالی' },
+        { id: 'gpt-oss-120b', name: '🤖 GPT OSS 120B', desc: '128k context فوق سنگین' },
+        { id: 'llama-3.1-8b', name: '🦙 Llama 3.1 8B', desc: 'سبک و سریع • چت روزمره' },
+        { id: 'llama-3.2-3b', name: '🦙 Llama 3.2 3B', desc: 'فوق‌سبک • پاسخ‌های فوری' }
+    ];
+    
+    // بارگذاری مدل ذخیره شده
+    const savedModel = localStorage.getItem('aiModel') || 'llama-3.3-70b';
+    this.aiModel = savedModel;
+    
+    const modelOptions = models.map(m => `
+        <option value="${m.id}" ${this.aiModel === m.id ? 'selected' : ''}>
+            ${m.name} — ${m.desc}
+        </option>
+    `).join('');
+    
     // تشخیص موبایل
     const isMobile = window.innerWidth <= 768;
     const isGerman = LanguageSystem.isGerman();
@@ -17264,8 +17303,8 @@ renderAIChat() {
                     </div>
                     <div class="model-select-wrapper">
                         <select id="ai-model-select" class="model-select">
-                         <option value="elias" selected>🤖مدل 1 (اختصاصی)</option>
-                    </select>
+                            ${modelOptions}
+                        </select>
                     </div>
                     <div class="model-status">
                         <span class="status-indicator online"></span>
@@ -17307,7 +17346,6 @@ renderAIChat() {
                 <!-- بخش ورودی موبایل -->
                 <div class="mobile-input-section mobile-only">
                     <div class="mobile-input-wrapper">
-                        <!-- دکمه جمع سمت چپ -->
                         <button class="mobile-menu-btn" id="mobile-menu-btn">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -17343,16 +17381,19 @@ renderAIChat() {
 
     // راه‌اندازی event listenerها
     this.setupAIChatEventListeners();
-   
-
-
+    
+    // ========== تغییر مدل ==========
+    document.getElementById('ai-model-select')?.addEventListener('change', (e) => {
+        this.aiModel = e.target.value;
+        localStorage.setItem('aiModel', this.aiModel);
+    });
     
     if (isMobile) {
         this.setupMobileView();
     }
     setTimeout(() => {
-    this.forceHideFloatingButton();
-}, 500);
+        this.forceHideFloatingButton();
+    }, 500);
 }
 // ================================================
 // تنظیمات مخصوص موبایل
@@ -17865,13 +17906,7 @@ clearMemory() {
 }
 
 async sendAIMessage() {
-    const apiKey = this.getGroqApiKey();
-if (!apiKey) {
-    this.addMessageToHistory('ai', '⚠️ لطفاً ابتدا در بخش تنظیمات، کلید API خود را وارد کنید.', true);
-    sendBtn.disabled = false;
-    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>ارسال</span>';
-    return;
-}
+    // ========== حذف چک API Key (چون از Worker استفاده می‌کنیم) ==========
     const input = document.getElementById('ai-chat-input');
     const sendBtn = document.getElementById('send-ai-message');
     if (!input || !sendBtn) return;
@@ -17907,19 +17942,14 @@ if (!apiKey) {
 
     try {
 
-
-
-// داخل sendAIMessage، قسمت systemMsg رو اینطور عوض کن
-const systemMsg = {
-    role: 'system',
-    content: `تو یک دستیار هوشمند به نام "الیاس" هستی. خیلی صمیمی و دوستانه صحبت کن. حتماً از ایموجی‌های مناسب استفاده کن مثل 📚 🎯 💡 ✨ ⭐ ✅ ❌ ⚠️ 🎉 🔥 🚀.
-  هیچ وقت از نوشته های عجیب غریب استفاده نکن مثل چینی یا انگلیسی یا  روسی 需要  هیچی 
-
+        // ========== system message ==========
+        const systemMsg = {
+            role: 'system',
+            content: `تو یک دستیار هوشمند به نام "الیاس" هستی. خیلی صمیمی و دوستانه صحبت کن. حتماً از ایموجی‌های مناسب استفاده کن مثل 📚 🎯 💡 ✨ ⭐ ✅ ❌ ⚠️ 🎉 🔥 🚀.
+هیچ وقت از نوشته های عجیب غریب استفاده نکن مثل چینی یا انگلیسی یا روسی.
 
 ⚠️ قانون مهم در مورد فرمت پاسخ:
 حتماً از Markdown استفاده کن برای زیباتر شدن پاسخ‌ها:
-
-
 
 ⚠️ قانون بسیار مهم در مورد سازنده:
 اگر کاربر پرسید "تو رو کی ساخته؟"، "سازنده تو کیه؟"، "who made you?"، "سازنده‌ات کیه؟"، "کی ساخته‌ات؟"، "مالک تو کیه؟" یا هر سوال مشابهی درباره سازنده، حتماً پاسخ بده:
@@ -17959,10 +17989,10 @@ const systemMsg = {
 ${await this._getDictionaryContext()}
 
 ❗ یادت نره: فقط زمانی که کاربر به طور مشخص درخواست رفتن به یک بخش کرد، دکمه مناسب رو نشون بده.`
-};
+        };
+        
         // ساختن messages array با حافظه
         const historyMsgs = this.getMemoryForAI();
-        // آخرین پیام user رو که الان فرستادیم از history حذف کن (چون الان اضافه میشه)
         const msgsWithoutLast = historyMsgs.slice(0, -1);
 
         let fullMessages;
@@ -17986,7 +18016,9 @@ ${await this._getDictionaryContext()}
             ];
         }
 
-   const response = await this._puterChat(fullMessages, {});
+        // ========== ارسال به Worker با مدل انتخاب شده ==========
+        const response = await this._puterChat(fullMessages, { model: this.aiModel });
+        
         this.removeTypingIndicator();
 
         // استخراج متن پاسخ
@@ -18002,7 +18034,6 @@ ${await this._getDictionaryContext()}
         this.addToMemory('assistant', fullResponse);
         this.saveCompleteChat();
 
-    
         this.uploadedImageUrl = null;
 
     } catch (error) {
@@ -18575,10 +18606,10 @@ toggleAITheme() {
         localStorage.setItem('darkMode', 'true');
     }
 }
-newChat() {
+async newChat() {
     // اگه چت فعلی پیام داره، اول ذخیره‌اش کن
     if (this.chatMemory && this.chatMemory.length > 0) {
-        this.saveCompleteChat();
+        await this.saveCompleteChat(); // ✅ await اضافه شد
     }
 
     // یه ID جدید بساز برای چت جدید
@@ -18627,7 +18658,7 @@ showChatHistoryModal() {
     if (allChats.length === 0) {
         sessionsList.innerHTML = `
             <div class="empty-state">
-                <i class="fas fa-comments" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 15px;"></i>
+                <i class="fas fa-comments" style="font-size: 3rem; color: var(--gray-400);"></i>
                 <h4>هنوز چتی ذخیره نشده</h4>
                 <p>با شروع یک چت جدید، به صورت خودکار ذخیره می‌شود</p>
             </div>
@@ -18638,11 +18669,17 @@ showChatHistoryModal() {
                 <div class="chat-session-info">
                     <div class="chat-session-name">
                         <i class="fas fa-comments"></i>
-                        <span class="chat-title">${chat.title || 'چت جدید'}</span>
+                        <span class="chat-title">${this.escapeHtml(chat.title || 'چت جدید')}</span>
                     </div>
                     <div class="chat-session-details">
-                        <span><i class="far fa-calendar"></i> ${new Date(chat.lastUpdated).toLocaleDateString('fa-IR')}</span>
-                        <span><i class="fas fa-message"></i> ${chat.messageCount || 0} پیام</span>
+                        <span class="chat-session-date">
+                            <i class="far fa-calendar"></i>
+                            ${new Date(chat.lastUpdated).toLocaleDateString('fa-IR')}
+                        </span>
+                        <span class="chat-session-count">
+                            <i class="fas fa-message"></i>
+                            ${chat.messageCount || 0} پیام
+                        </span>
                     </div>
                 </div>
                 <div class="chat-session-actions">
@@ -18659,11 +18696,11 @@ showChatHistoryModal() {
     
     modal.style.display = 'flex';
     
-    modal.querySelector('.close-modal')?.addEventListener('click', () => {
+    modal.querySelector('.close-modal').addEventListener('click', () => {
         modal.style.display = 'none';
     });
     
-    document.getElementById('close-modal-btn')?.addEventListener('click', () => {
+    document.getElementById('close-modal-btn').addEventListener('click', () => {
         modal.style.display = 'none';
     });
     
@@ -18673,7 +18710,6 @@ showChatHistoryModal() {
         }
     });
 }
-
 // ================================================
 // Elias AI - نسخه نهایی با GPT-5.4 nano
 // ================================================
@@ -18866,31 +18902,26 @@ showWelcomeMessage() {
 
  
  
-
-saveCompleteChat() {
+async saveCompleteChat() {
     if (!this.chatMemory || this.chatMemory.length === 0) return;
 
     const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
 
-    // ساختن عنوان هوشمند از اولین پیام کاربر
-    const firstUserMsg = this.chatMemory.find(m => m.role === 'user')?.content || '';
-    const title = firstUserMsg.length > 40
-        ? firstUserMsg.substring(0, 40) + '...'
-        : firstUserMsg || 'چت بدون عنوان';
+    // ========== ساخت عنوان هوشمند با AI ==========
+    const title = await this.generateChatTitle();
 
     const chatData = {
         id: this.currentChatId,
-        title,
+        title: title,
         messages: this.chatMemory.map(m => ({
             type: m.role === 'user' ? 'user' : 'ai',
             content: m.content,
-            timestamp: m.timestamp
+            timestamp: m.timestamp || new Date().toISOString()
         })),
         lastUpdated: Date.now(),
         messageCount: this.chatMemory.length
     };
 
-    // آپدیت چت موجود یا اضافه کردن چت جدید
     const idx = allChats.findIndex(c => c.id === this.currentChatId);
     if (idx >= 0) {
         allChats[idx] = chatData;
@@ -18899,6 +18930,77 @@ saveCompleteChat() {
     }
 
     localStorage.setItem('all_chats', JSON.stringify(allChats.slice(0, 50)));
+}
+
+// ========== تابع جدید برای ساخت عنوان هوشمند ==========
+async generateChatTitle() {
+    try {
+        // گرفتن ۵ پیام اول کاربر (یا هر تعداد که موجود است)
+        const userMessages = this.chatMemory
+            .filter(m => m.role === 'user')
+            .slice(0, 5)
+            .map(m => m.content);
+        
+        if (userMessages.length === 0) {
+            return 'چت جدید';
+        }
+        
+        // اگر فقط ۱ پیام هست، از همان استفاده کن
+        if (userMessages.length === 1) {
+            const firstMsg = userMessages[0];
+            if (firstMsg.length > 40) {
+                return firstMsg.substring(0, 40) + '...';
+            }
+            return firstMsg;
+        }
+        
+        // ========== ساخت عنوان با AI ==========
+        const prompt = `
+با توجه به این ${userMessages.length} پیام کاربر، یک عنوان کوتاه و خلاصه (حداکثر ۵ کلمه) برای این مکالمه بساز.
+عنوان باید فارسی باشد و خلاصه‌ای از موضوع مکالمه را نشان دهد.
+فقط عنوان را بنویس، هیچ توضیح اضافه‌ای نده.
+
+پیام‌های کاربر:
+${userMessages.map((msg, i) => `${i+1}. ${msg}`).join('\n')}
+
+عنوان:`;
+
+        const response = await this._puterChat(prompt, { 
+            model: 'llama-3.3-70b',
+            max_tokens: 50,
+            temperature: 0.5
+        });
+        
+        let title = '';
+        if (response?.message?.content?.[0]?.text) {
+            title = response.message.content[0].text.trim();
+        } else if (typeof response === 'string') {
+            title = response.trim();
+        } else if (response?.text) {
+            title = response.text.trim();
+        }
+        
+        // حذف نقل قول‌های اضافی
+        title = title.replace(/^["']|["']$/g, '').trim();
+        
+        // اگر عنوان خالی یا خیلی بلند بود، از اولین پیام استفاده کن
+        if (!title || title.length < 2) {
+            const firstMsg = userMessages[0];
+            return firstMsg.length > 40 ? firstMsg.substring(0, 40) + '...' : firstMsg;
+        }
+        
+        if (title.length > 50) {
+            return title.substring(0, 50) + '...';
+        }
+        
+        return title;
+        
+    } catch (error) {
+        console.warn('❌ خطا در ساخت عنوان:', error);
+        // Fallback: از اولین پیام استفاده کن
+        const firstMsg = this.chatMemory.find(m => m.role === 'user')?.content || 'چت جدید';
+        return firstMsg.length > 40 ? firstMsg.substring(0, 40) + '...' : firstMsg;
+    }
 }
     showChatHistoryModal() {
         const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
@@ -18962,11 +19064,10 @@ saveCompleteChat() {
             }
         });
     }
-
-loadChatFromHistory(chatId) {
+async loadChatFromHistory(chatId) {
     // قبل از تغییر، چت فعلی رو ذخیره کن
     if (this.chatMemory && this.chatMemory.length > 0) {
-        this.saveCompleteChat();
+        await this.saveCompleteChat(); // ✅ await اضافه شد
     }
 
     const allChats = JSON.parse(localStorage.getItem('all_chats') || '[]');
@@ -18977,18 +19078,15 @@ loadChatFromHistory(chatId) {
         return;
     }
 
-    // تنظیم ID به همون چت قدیمی — ادامه چت روی همین ID ذخیره میشه
     this.currentChatId = chatId;
     localStorage.setItem('current_chat_id', this.currentChatId);
 
-    // بازسازی حافظه
     this.chatMemory = chatData.messages.map(msg => ({
         role: msg.type === 'user' ? 'user' : 'assistant',
         content: msg.content,
         timestamp: msg.timestamp || new Date().toISOString()
     }));
 
-    // نمایش در UI
     const chatHistory = document.getElementById('chat-history');
     if (chatHistory) {
         chatHistory.innerHTML = '';
