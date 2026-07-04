@@ -1,17 +1,20 @@
 // sw.js - نسخه 2.0 با مدیریت کش پویا
-const CACHE_VERSION = 'v2';  // تغییر نسخه = پاک شدن کش قبلی
+const CACHE_VERSION = 'v4';  // تغییر نسخه = پاک شدن کش قبلی
 const CACHE_NAME = `elias-dict-${CACHE_VERSION}`;
 const urlsToCache = [
     './',
     './index.html',
     './manifest.json',
     './scripts.js',
-    './styles-1.css',
-    './styles-2.css',
-    './styles-3.css',
-    './styles-4.css',
-    './styles-5.css',
-    './styles-6.css',
+    './css/variables.css',
+    './css/base.css',
+    './css/layout.css',
+    './css/components.css',
+    './css/sections.css',
+    './css/responsive.css',
+    './css/dark-mode.css',
+    './css/animations.css',
+    './css/word-details.css',
     './floating-menu-system.js',
     './language-config.js',
     './language-loader.js',
