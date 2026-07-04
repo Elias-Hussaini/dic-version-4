@@ -11,6 +11,7 @@ const urlsToCache = [
     './styles-3.css',
     './styles-4.css',
     './styles-5.css',
+    './styles-6.css',
     './floating-menu-system.js',
     './language-config.js',
     './language-loader.js',

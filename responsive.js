@@ -205,14 +205,19 @@
             
             // دکمه‌های فیلتر
             document.querySelectorAll('.filter-buttons').forEach(btns => {
-                btns.style.display = 'flex';
-                btns.style.flexDirection = 'column';
-                btns.style.gap = '8px';
+                btns.style.setProperty('display', 'flex', 'important');
+                btns.style.setProperty('flex-direction', 'row', 'important');
+                btns.style.setProperty('flex-wrap', 'nowrap', 'important');
+                btns.style.setProperty('overflow-x', 'auto', 'important');
+                btns.style.setProperty('gap', '8px', 'important');
+                btns.style.setProperty('padding', '6px', 'important');
             });
             
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.style.width = '100%';
-                btn.style.justifyContent = 'center';
+                btn.style.setProperty('width', 'auto', 'important');
+                btn.style.setProperty('flex-shrink', '0', 'important');
+                btn.style.setProperty('white-space', 'nowrap', 'important');
+                btn.style.setProperty('justify-content', 'center', 'important');
             });
             
             // اکشن بوتن‌ها

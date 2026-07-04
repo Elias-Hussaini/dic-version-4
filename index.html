@@ -7,16 +7,19 @@
     <title>DE.Dictionary | دیکشنری هوشمند آلمانی-فارسی</title>
     
     
-    <link rel="manifest" href="manifest.json">
+    
     <!-- GoogleFontVazirmatn -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="styles-1.css">
-    <link rel="stylesheet" href="styles-2.css">
-    <link rel="stylesheet" href="styles-3.css">
-    <link rel="stylesheet" href="styles-4.css">
-    <link rel="stylesheet" href="styles-5.css">
-    <link rel="stylesheet" href="styles-6.css">
+    <link rel="stylesheet" href="css/animations.css">
+   <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+   <link rel="stylesheet" href="css/dark-mode.css">
+   <link rel="stylesheet" href="css/layout.css">
+   <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/sections.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/word-details.css">
     
     <meta name="theme-color" content="#4361ee">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,38 +48,18 @@
    
 <div id="loading-screen">
     <div class="loading-content">
-        <div class="loading-ring">
+        <div class="loading-logo">
             <i class="fas fa-book-open"></i>
-            <div class="ring-outer"></div>
-            <div class="ring-inner"></div>
-            <div class="floating-icons">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-heart"></i>
-                <i class="fas fa-gem"></i>
-                <i class="fas fa-crown"></i>
-            </div>
         </div>
-        
         <h1 class="loading-title">DE.Dictionary</h1>
         <p class="loading-subtitle">دیکشنری هوشمند آلمانی - فارسی</p>
-        
-        <div class="loading-progress-container">
-            <div class="loading-progress-bg">
-                <div class="loading-progress-fill"></div>
+        <div class="loading-bar-wrap">
+            <div class="loading-bar-track">
+                <div class="loading-bar-fill" id="loading-bar-fill"></div>
             </div>
+            <span class="loading-percent" id="loading-percent">۰٪</span>
         </div>
-        
-        <div class="loading-words">
-            <div class="loading-word">📚 در حال بارگذاری لغات...</div>
-            <div class="loading-word">🤖 راه‌اندازی هوش مصنوعی...</div>
-            <div class="loading-word">✨ آماده‌سازی تمرین‌ها...</div>
-        </div>
-        
-        <div class="loading-dots">
-            <div class="loading-dot"></div>
-            <div class="loading-dot"></div>
-            <div class="loading-dot"></div>
-        </div>
+        <p class="loading-status" id="loading-status">در حال راه‌اندازی...</p>
     </div>
 </div>
         <!-- محتوای اصلی - تمام عرض -->
@@ -920,108 +903,9 @@
 </div>
 <!-- بخش 13: ابزارها -->
 <div id="tools-section" class="content-section">
-    <div class="word-card">
-        <div class="section-header">
-            <h2><i class="fas fa-tools"></i> ابزارهای زبان آلمانی</h2>
-            <div style="display: flex; gap: 10px;">
-                <span id="tools-verbs-count" class="badge" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">0 فعل</span>
-            </div>
-        </div>
-        
-        <div class="tools-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px;">
-            
-            <!-- کارت صرف افعال پیشرفته -->
-            <div class="tool-card" id="verb-conjugation-tool" style="background: var(--white); border-radius: 24px; border: 1px solid var(--gray-200); overflow: hidden; transition: all 0.3s ease;">
-                <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 20px; color: white;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <i class="fas fa-table-list" style="font-size: 28px;"></i>
-                        <div>
-                            <h3 style="margin: 0; font-size: 20px;">صرف افعال پیشرفته</h3>
-                            <p style="margin: 5px 0 0; opacity: 0.9; font-size: 13px;">صرف کامل + مثال + تمرین</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="padding: 20px;">
-                    <!-- جستجو -->
-                    <div class="search-box" style="margin-bottom: 20px;">
-                        <input type="text" id="verb-search-input" class="form-control" placeholder="نام فعل آلمانی را وارد کنید... (مثال: machen, gehen, sein)" autocomplete="off">
-                        <button id="verb-search-btn" class="btn btn-primary">
-                             🔍 جستجو 
-                            </button>
-                    </div>
-                    
-                    <!-- فیلترها -->
-                    <div class="verb-filters" style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                        <button class="filter-verb-btn active" data-filter="all">همه</button>
-                        <button class="filter-verb-btn" data-filter="regular">با قاعده</button>
-                        <button class="filter-verb-btn" data-filter="irregular">بی‌قاعده</button>
-                        <button class="filter-verb-btn" data-filter="A1">A1</button>
-                        <button class="filter-verb-btn" data-filter="A2">A2</button>
-                        <button class="filter-verb-btn" data-filter="B1">B1</button>
-                        <button class="filter-verb-btn" data-filter="B2">B2</button>
-                    </div>
-                    
-                    <!-- لیست پیشنهادات -->
-                    <div id="verb-suggestions" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; display: none;"></div>
-                    
-                    <!-- نتیجه صرف -->
-                    <div id="conjugation-result" style="display: none;">
-                        <div id="selected-verb-header" style="background: linear-gradient(135deg, var(--primary-light), var(--gray-50)); border-radius: 16px; padding: 15px; margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                                <div>
-                                    <h3 id="selected-verb-name" style="font-size: 28px; font-weight: 800; margin: 0; color: var(--primary);"></h3>
-                                    <span id="selected-verb-type" class="badge" style="margin-top: 8px; display: inline-block;"></span>
-                                    <span id="selected-verb-level" class="badge" style="margin-top: 8px; background: #6b7280;"></span>
-                                </div>
-                                <div class="verb-actions" style="display: flex; gap: 10px;">
-                                   <button id="speak-verb-btn" class="btn btn-outline btn-sm" title="تلفظ فعل">
-    🔊
-</button>
-<button id="practice-verb-btn" class="btn btn-success btn-sm" title="تمرین این فعل">
-    🎯
-</button>
-<button id="save-conjugation-btn" class="btn btn-outline btn-sm" title="ذخیره در دیکشنری">
-    💾
-</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- تب‌های زمان‌ها -->
-                        <div class="tense-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px;">
-                            <button class="tense-tab active" data-tense="present">📖 Präsens<br><small>حال ساده</small></button>
-                            <button class="tense-tab" data-tense="praeteritum">⏮️ Präteritum<br><small>گذشته ساده</small></button>
-                            <button class="tense-tab" data-tense="perfekt">✅ Perfekt<br><small>گذشته کامل</small></button>
-                            <button class="tense-tab" data-tense="futur">🔮 Futur I<br><small>آینده</small></button>
-                            <button class="tense-tab" data-tense="konjunktiv">🤔 Konjunktiv II<br><small>التزامی</small></button>
-                        </div>
-                        
-                        <!-- جدول صرف -->
-                        <div id="conjugation-table" style="background: var(--gray-50); border-radius: 20px; overflow: hidden;">
-                            <!-- محتوای جدول توسط JS پر می‌شود -->
-                        </div>
-                        
-                        <!-- مثال‌ها -->
-                        <div id="verb-examples" style="margin-top: 20px; padding: 15px; background: var(--primary-light); border-radius: 16px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                                <i class="fas fa-quote-right" style="color: var(--primary);"></i>
-                                <strong>مثال‌های کاربردی:</strong>
-                            </div>
-                            <div id="examples-list"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- حالت خالی -->
-                    <div id="verb-empty-state" class="empty-state" style="padding: 40px;">
-                        <div class="empty-icon"><i class="fas fa-search"></i></div>
-                        <h3>جستجوی فعل</h3>
-                        <p>نام فعل آلمانی را وارد کنید تا صرف کامل آن را ببینید</p>
-                        <small>مثال: machen, gehen, sein, haben, werden, können...</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="word-card" style="padding: 0; overflow: hidden;">
+        <!-- محتوای کامل توسط JavaScript پر می‌شود -->
+        <div id="verb-tool-container"></div>
     </div>
 </div>
 
@@ -1072,10 +956,8 @@
         <script src="html2canvas.min.js"></script>
  
 <!-- دیتابیس‌ها اول -->
-<script src="verb-prepositions-db.js"></script>
-<script src="verb-conjugation-data.js"></script>
-
-<script src="progress-dashboard.js"></script>
+<!-- <script src="verb-prepositions-db.js"></script>
+<script src="verb-conjugation-data.js"></script> -->
 
 <!-- کانفیگ‌ها -->
 <script src="language-config.js"></script>
@@ -1084,7 +966,31 @@
 <!-- منو و اسکریپت اصلی -->
 <script src="floating-menu-system.js"></script>
 <script src="scripts.js"></script>
-
+<script src="modules/dict-tags.js"></script>
+<script src="modules/dict-renderers.js"></script>
+<script src="modules/dict-srs-db.js"></script>
+<script src="modules/dict-search.js"></script>
+<script src="modules/dict-library.js"></script>
+<script src="modules/dict-word-details.js"></script>
+<script src="modules/dict-lexicard.js"></script>
+<script src="modules/dict-add-word.js"></script>
+<script src="modules/dict-tag-ui-wordlist.js"></script>
+<script src="modules/dict-practice-conj.js"></script>
+<script src="modules/dict-verb-tool.js"></script>
+<script src="modules/dict-study-srs.js"></script>
+<script src="modules/dict-practice-modes.js"></script>
+<script src="modules/dict-speaking.js"></script>
+<script src="modules/dict-quiz-translator.js"></script>
+<script src="modules/dict-ai-api.js"></script>
+<script src="modules/dict-srs-stats.js"></script>
+<script src="modules/dict-settings-export.js"></script>
+<script src="modules/dict-music-data.js"></script>
+<script src="modules/dict-ai-chat.js"></script>
+<script src="modules/dict-utils-events.js"></script>
+<script src="modules/dict-favorites.js"></script>
+<script src="modules/dict-practice-pro.js"></script>
+<script src="progress-dashboard.js"></script>
+<script src="word-details-pro.js"></script>
 <!-- اسکریپت افعال (بعد از دیتابیسش) -->
 
 
@@ -1109,7 +1015,7 @@
     <i class="fas fa-music"></i>
 </div>
 
-<script>
+<!-- <script>
     // ثبت Service Worker برای PWA
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -1122,7 +1028,7 @@
                 });
         });
     }
-</script>
+</script> -->
 
 </body>
 </html>

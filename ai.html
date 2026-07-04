@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 استودیو هوش مصنوعی - تولید تصویر</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6C3CE1;
+            --primary-dark: #5A2FC7;
+            --secondary: #E8E0F5;
+            --bg: #0A0A1A;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text: #FFFFFF;
+            --text-secondary: #B0B0C8;
+            --border: rgba(255, 255, 255, 0.1);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --radius: 20px;
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 10% 20%, rgba(108, 60, 225, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 80%, rgba(108, 60, 225, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(108, 60, 225, 0.05) 0%, transparent 70%);
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        /* ===== Container ===== */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+            position: relative;
+        }
+
+        .header .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #6C3CE1, #A78BFA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .header .logo span {
+            font-size: 36px;
+            -webkit-text-fill-color: initial;
+            color: #fff;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        .header .badge {
+            display: inline-block;
+            background: rgba(108, 60, 225, 0.2);
+            border: 1px solid rgba(108, 60, 225, 0.3);
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 12px;
+            color: #A78BFA;
+            margin-top: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== Stats ===== */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 25px 0 35px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .stat-card .number {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #6C3CE1, #A78BFA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ===== Main Card ===== */
+        .main-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 35px 40px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .main-card:hover {
+            border-color: rgba(108, 60, 225, 0.3);
+        }
+
+        /* ===== API Key ===== */
+        .api-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .api-section input {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .api-section input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .api-section input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary {
+            padding: 14px 28px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--primary);
+        }
+
+        .btn-secondary.success {
+            border-color: #22C55E;
+            color: #22C55E;
+        }
+
+        /* ===== Prompt Input ===== */
+        .prompt-section {
+            margin-bottom: 20px;
+        }
+
+        .prompt-section label {
+            display: block;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .prompt-input-wrapper {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .prompt-input-wrapper textarea {
+            flex: 1;
+            min-width: 200px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 70px;
+            max-height: 150px;
+            transition: var(--transition);
+            outline: none;
+            line-height: 1.6;
+        }
+
+        .prompt-input-wrapper textarea:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .prompt-input-wrapper textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            padding: 16px 40px;
+            background: linear-gradient(135deg, #6C3CE1, #8B5CF6);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 70px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(108, 60, 225, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ===== Preset Buttons ===== */
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .presets button {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .presets button:hover {
+            background: rgba(108, 60, 225, 0.2);
+            border-color: var(--primary);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* ===== Loading ===== */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            border: 3px solid rgba(108, 60, 225, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .loading .progress-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin: 12px auto 0;
+            overflow: hidden;
+        }
+
+        .loading .progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6C3CE1, #A78BFA);
+            border-radius: 10px;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        /* ===== Result ===== */
+        .result {
+            display: none;
+            margin-top: 30px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .result.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result img {
+            width: 100%;
+            display: block;
+            max-height: 600px;
+            object-fit: contain;
+        }
+
+        .result .actions {
+            display: flex;
+            gap: 12px;
+            padding: 18px 24px;
+            background: rgba(0, 0, 0, 0.5);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .result .actions a,
+        .result .actions button {
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result .actions .btn-download {
+            background: #22C55E;
+            color: white;
+        }
+
+        .result .actions .btn-download:hover {
+            background: #16A34A;
+            transform: translateY(-2px);
+        }
+
+        .result .actions .btn-copy {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .result .actions .btn-copy:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .result .actions .btn-new {
+            background: var(--primary);
+            color: white;
+        }
+
+        .result .actions .btn-new:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* ===== Error ===== */
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            color: #FCA5A5;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .error.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .error.success {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #86EFAC;
+        }
+
+        /* ===== Footer ===== */
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+            padding-top: 25px;
+        }
+
+        .footer a {
+            color: #A78BFA;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+
+            .header .logo {
+                font-size: 24px;
+            }
+
+            .prompt-input-wrapper {
+                flex-direction: column;
+            }
+
+            .prompt-input-wrapper textarea {
+                min-height: 60px;
+            }
+
+            .btn-primary {
+                min-height: 54px;
+                justify-content: center;
+                padding: 14px 24px;
+                font-size: 15px;
+            }
+
+            .api-section {
+                flex-direction: column;
+            }
+
+            .api-section input {
+                min-width: auto;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .result .actions {
+                flex-direction: column;
+            }
+
+            .result .actions a,
+            .result .actions button {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .presets {
+                justify-content: center;
+            }
+
+            .header .logo {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ===== HEADER ===== -->
+        <header class="header">
+            <div class="logo">
+                <span>🎨</span> استودیو هوش مصنوعی
+            </div>
+            <p class="subtitle">با قدرت Stable Diffusion XL — ۱۰۰٬۰۰۰ درخواست رایگان در روز</p>
+            <span class="badge">⚡ Cloudflare Workers AI</span>
+        </header>
+
+        <!-- ===== STATS ===== -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number">۱۰۰K</div>
+                <div class="label">درخواست در روز</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">⚡</div>
+                <div class="label">تولید سریع</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">🎯</div>
+                <div class="label">کیفیت بالا</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">🆓</div>
+                <div class="label">کاملاً رایگان</div>
+            </div>
+        </div>
+
+        <!-- ===== MAIN CARD ===== -->
+        <div class="main-card">
+
+            <!-- API Key -->
+            <div class="api-section">
+                <input type="password" id="apiKey" placeholder="🔑 کلید API خود را وارد کنید..." value="Mazari1234">
+                <button class="btn-secondary" id="saveKeyBtn">💾 ذخیره</button>
+                <button class="btn-secondary" id="resetKeyBtn">🔄 بازنشانی</button>
+            </div>
+
+            <!-- Presets -->
+            <div class="presets">
+                <button onclick="setPrompt('یک گربه بامزه روی رنگین‌کمان نشسته است، سینمایی، با کیفیت بالا')">🐱 گربه</button>
+                <button onclick="setPrompt('یک منظره خیره‌کننده از کوه‌های آلپ با دریاچه آبی، عکاسی، واقع‌گرایانه')">🏔️ کوه</button>
+                <button onclick="setPrompt('یک شهر آینده‌نگر با برج‌های شیشه‌ای و ماشین‌های پرنده، سایبرپانکی')">🌆 شهر</button>
+                <button onclick="setPrompt('یک ربات انسان‌نما در حال آشپزی در آشپزخانه مدرن، هنر دیجیتال')">🤖 ربات</button>
+                <button onclick="setPrompt('جنگلی افسانه‌ای با نورهای جادویی و موجودات اسرارآمیز، فانتزی')">🌲 جنگل</button>
+                <button onclick="setPrompt('یک پرتره زیبا از یک زن با لباس سنتی، هنر رئالیستی')">👩 پرتره</button>
+                <button onclick="setPrompt('فضای عمیق با کهکشان‌های رنگارنگ و ستاره‌های درخشان')">🌌 فضا</button>
+                <button onclick="setPrompt('یک اژدهای بزرگ در حال پرواز بر فراز یک قلعه قدیمی، نقاشی فانتزی')">🐉 اژدها</button>
+            </div>
+
+            <!-- Prompt -->
+            <div class="prompt-section">
+                <label for="prompt">📝 توضیحات تصویر</label>
+                <div class="prompt-input-wrapper">
+                    <textarea id="prompt" placeholder="هر چیزی که دوست داری تصویر کن...">یک گربه بامزه روی رنگین‌کمان نشسته است، سینمایی، با کیفیت بالا</textarea>
+                    <button class="btn-primary" id="generateBtn">
+                        <span>✨</span> تولید تصویر
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>🎨 در حال تولید تصویر با هوش مصنوعی...</p>
+                <div class="progress-bar">
+                    <div class="fill"></div>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div class="error" id="error"></div>
+
+            <!-- Result -->
+            <div class="result" id="result">
+                <img id="resultImage" alt="تصویر تولید شده">
+                <div class="actions">
+                    <a href="#" id="downloadBtn" class="btn-download" download="image.jpg">📥 دانلود تصویر</a>
+                    <button class="btn-copy" id="copyBtn">📋 کپی پرامپت</button>
+                    <button class="btn-new" id="newBtn">🔄 تصویر جدید</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <p>ساخته شده با ❤️ با استفاده از Cloudflare Workers AI &bull; 
+            <a href="https://github.com" target="_blank">متن‌باز</a> &bull;
+            <a href="#" onclick="location.reload()">🔄 بارگذاری مجدد</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        //  CONFIGURATION
+        // ============================================
+        const WORKER_URL = 'https://image.ysadat180.workers.dev';
+        const DEFAULT_API_KEY = 'Mazari1234';
+
+        // ============================================
+        //  DOM ELEMENTS
+        // ============================================
+        const promptInput = document.getElementById('prompt');
+        const apiKeyInput = document.getElementById('apiKey');
+        const generateBtn = document.getElementById('generateBtn');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+        const resetKeyBtn = document.getElementById('resetKeyBtn');
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const resultImage = document.getElementById('resultImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const newBtn = document.getElementById('newBtn');
+        const errorDiv = document.getElementById('error');
+
+        // ============================================
+        //  API KEY MANAGEMENT
+        // ============================================
+        function loadApiKey() {
+            const saved = localStorage.getItem('api_key');
+            if (saved) {
+                apiKeyInput.value = saved;
+            } else {
+                apiKeyInput.value = DEFAULT_API_KEY;
+            }
+        }
+
+        function saveApiKey(key) {
+            localStorage.setItem('api_key', key);
+        }
+
+        loadApiKey();
+
+        saveKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                saveApiKey(key);
+                showSuccess('✅ کلید API با موفقیت ذخیره شد!');
+                setTimeout(hideError, 2500);
+            } else {
+                showError('❌ لطفاً یک کلید معتبر وارد کنید.');
+            }
+        });
+
+        resetKeyBtn.addEventListener('click', () => {
+            apiKeyInput.value = DEFAULT_API_KEY;
+            saveApiKey(DEFAULT_API_KEY);
+            showSuccess('🔄 کلید API به حالت پیش‌فرض بازنشانی شد.');
+            setTimeout(hideError, 2500);
+        });
+
+        // ============================================
+        //  PRESET PROMPTS
+        // ============================================
+        function setPrompt(text) {
+            promptInput.value = text;
+            promptInput.focus();
+        }
+
+        // ============================================
+        //  UI HELPERS
+        // ============================================
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.className = 'error active';
+            errorDiv.classList.remove('success');
+        }
+
+        function showSuccess(message) {
+            errorDiv.textContent = message;
+            errorDiv.className = 'error active success';
+        }
+
+        function hideError() {
+            errorDiv.className = 'error';
+        }
+
+        function showLoading() {
+            loading.className = 'loading active';
+            resultDiv.className = 'result';
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span>⏳</span> در حال تولید...';
+        }
+
+        function hideLoading() {
+            loading.className = 'loading';
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<span>✨</span> تولید تصویر';
+        }
+
+        function showResult(imageBlob) {
+            const url = URL.createObjectURL(imageBlob);
+            resultImage.src = url;
+            downloadBtn.href = url;
+            resultDiv.className = 'result active';
+            // Scroll to result
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // ============================================
+        //  GENERATE IMAGE
+        // ============================================
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            // Validation
+            if (!prompt) {
+                showError('❌ لطفاً یک توضیح برای تصویر وارد کنید.');
+                return;
+            }
+
+            if (!apiKey) {
+                showError('❌ لطفاً کلید API خود را وارد کنید.');
+                return;
+            }
+
+            hideError();
+            showLoading();
+
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `خطا: ${response.status}`;
+                    try {
+                        const data = await response.json();
+                        if (data.error) errorMsg = data.error;
+                        if (data.details) errorMsg += ` — ${data.details}`;
+                    } catch (e) {
+                        // If response is not JSON
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const blob = await response.blob();
+                showResult(blob);
+
+            } catch (error) {
+                showError(`❌ ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ============================================
+        //  EVENT LISTENERS
+        // ============================================
+        generateBtn.addEventListener('click', generateImage);
+
+        // Enter key in textarea
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generateBtn.click();
+            }
+        });
+
+        // Copy prompt
+        copyBtn.addEventListener('click', () => {
+            const prompt = promptInput.value.trim();
+            if (prompt) {
+                navigator.clipboard.writeText(prompt).then(() => {
+                    showSuccess('📋 پرامپت کپی شد!');
+                    setTimeout(hideError, 2000);
+                }).catch(() => {
+                    // Fallback
+                    const textarea = document.createElement('textarea');
+                    textarea.value = prompt;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showSuccess('📋 پرامپت کپی شد!');
+                    setTimeout(hideError, 2000);
+                });
+            }
+        });
+
+        // New image (clear result)
+        newBtn.addEventListener('click', () => {
+            resultDiv.className = 'result';
+            resultImage.src = '';
+            promptInput.focus();
+            // Clear any error
+            hideError();
+        });
+
+        // ============================================
+        //  KEYBOARD SHORTCUTS
+        // ============================================
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Enter or Cmd+Enter to generate
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                generateBtn.click();
+            }
+            // Escape to clear result
+            if (e.key === 'Escape') {
+                if (resultDiv.classList.contains('active')) {
+                    newBtn.click();
+                }
+            }
+        });
+
+        // ============================================
+        //  INIT
+        // ============================================
+        console.log('🎨 استودیو هوش مصنوعی آماده است!');
+        console.log(`📍 Worker: ${WORKER_URL}`);
+        console.log('💡 Ctrl+Enter برای تولید سریع');
+        console.log('💡 Escape برای پاک کردن نتیجه');
+    </script>
+
+</body>
+</html>
