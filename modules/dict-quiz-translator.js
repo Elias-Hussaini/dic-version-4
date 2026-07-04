@@ -753,7 +753,7 @@ GermanDictionary.prototype.renderTranslate = function() {
     if (!container) return;
 
     const activeTab = localStorage.getItem('professionalTranslateTab') || 'simple';
-    const isGerman = LanguageSystem.isGerman();
+    const isGerman = (typeof LanguageSystem !== 'undefined' && LanguageSystem.isGerman) ? LanguageSystem.isGerman() : true;
     const dir = this.translateDirection || 'de-fa';
 
     container.innerHTML = `
@@ -902,7 +902,7 @@ GermanDictionary.prototype.initSimpleTranslate = function() {
     const input = document.getElementById('translate-input-field');
     const resultDiv = document.getElementById('translate-result-wrapper');
     const clearBtn = document.getElementById('translate-clear-btn');
-    const isGerman = LanguageSystem.isGerman();
+    const isGerman = (typeof LanguageSystem !== 'undefined' && LanguageSystem.isGerman) ? LanguageSystem.isGerman() : true;
 
     if (!input) return;
 
@@ -1076,7 +1076,7 @@ GermanDictionary.prototype.initProTranslate = function() {
     const emptyDiv = document.getElementById('translate-pro-empty');
     const statusDot = document.querySelector('.tr-pro-dot');
     const statusText = document.querySelector('.tr-pro-status-text');
-    const isGerman = LanguageSystem.isGerman();
+    const isGerman = (typeof LanguageSystem !== 'undefined' && LanguageSystem.isGerman) ? LanguageSystem.isGerman() : true;
 
     if (!searchInput) return;
 
@@ -1233,7 +1233,7 @@ GermanDictionary.prototype.proAnalyzeWord = async function(word) {
     const emptyDiv = document.getElementById('translate-pro-empty');
     const statusDot = document.querySelector('.tr-pro-dot');
     const statusText = document.querySelector('.tr-pro-status-text');
-    const isGerman = LanguageSystem.isGerman();
+    const isGerman = (typeof LanguageSystem !== 'undefined' && LanguageSystem.isGerman) ? LanguageSystem.isGerman() : true;
 
     if (!resultDiv) return;
 
@@ -1353,7 +1353,7 @@ GermanDictionary.prototype.fetchAIWordAnalysis = async function(word) {
 
 GermanDictionary.prototype.renderProWordAnalysis = async function(word) {
     const resultDiv = document.getElementById('translate-pro-result');
-    const isGerman = LanguageSystem.isGerman();
+    const isGerman = (typeof LanguageSystem !== 'undefined' && LanguageSystem.isGerman) ? LanguageSystem.isGerman() : true;
     if (!resultDiv) return;
 
     const type = word.type || 'other';
@@ -1613,7 +1613,7 @@ GermanDictionary.prototype.renderProWordAnalysis = async function(word) {
 };
 
 GermanDictionary.prototype.showSaveWordDialog = function(german, persian, preselect) {
-    const isGerman = LanguageSystem.isGerman();
+    const isGerman = (typeof LanguageSystem !== 'undefined' && LanguageSystem.isGerman) ? LanguageSystem.isGerman() : true;
 
     const existingModal = document.querySelector('.tr-modal-overlay');
     if (existingModal) existingModal.remove();

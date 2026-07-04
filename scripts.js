@@ -1,3 +1,14 @@
+// Fallback for LanguageSystem in case language-config.js is missing
+if (typeof LanguageSystem === 'undefined') {
+    window.LanguageSystem = {
+        currentLang: 'de',
+        isGerman: function() { return true; },
+        isEnglish: function() { return false; },
+        t: function(key) { return key; }
+    };
+    var LanguageSystem = window.LanguageSystem;
+}
+
 class APIKeyManager {
     constructor() {
         this.keys = [];
