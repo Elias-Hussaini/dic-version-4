@@ -596,7 +596,7 @@ GermanDictionary.prototype._awAISmartFillAll = async function() {
 ⚠️ فقط JSON برگردان، بدون متن اضافه. اگر اطلاعاتی نامشخص است، null بگذار.`;
 
         // صدا زدن Worker
-        const result = await chatFn.call(this, prompt, { model: 'gpt-oss-120b', temperature: 0.3, max_tokens: 1000 });
+        const result = await chatFn.call(this, prompt, { model: 'llama-4-scout-17b-16e-instruct', temperature: 0.3, max_tokens: 1000 });
 
         // استخراج متن از نتیجه
         let responseText = '';

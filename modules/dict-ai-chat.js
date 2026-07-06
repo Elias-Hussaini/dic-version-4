@@ -429,15 +429,15 @@
             }
 
             var models = [
-                { id: 'gpt-oss-120b', name: '🤖 GPT OSS 120B', desc: 'پیشرفته‌ترین' },
-                { id: 'qwen-2.5-32b', name: '🧠 Qwen 2.5 32B', desc: 'حرفه‌ای' },
-                { id: 'llama-3.1-8b', name: '🦙 Llama 3.1 8B', desc: 'سریع' },
-                { id: 'llama-3.2-3b', name: '🦙 Llama 3.2 3B', desc: 'فوری' }
+                { id: 'llama-4-scout-17b-16e-instruct', name: '🦙 Llama 4 Scout 17B', desc: 'پیشرفته‌ترین + تصویر' },
+                { id: 'groq/compound', name: '⚡ Groq Compound', desc: 'ترکیبی هوشمند' },
+                { id: 'gpt-oss-120b', name: '🤖 GPT OSS 120B', desc: 'فوق سنگین + تصویر' },
+                { id: 'llama-3.1-8b', name: '🦙 Llama 3.1 8B', desc: 'سریع' }
             ];
             this._acModels = models; // ذخیره برای استفاده در _acSetupEvents
 
-            var savedModel = 'gpt-oss-120b';
-            try { savedModel = localStorage.getItem('aiModel') || 'gpt-oss-120b'; } catch (e) {}
+            var savedModel = 'llama-4-scout-17b-16e-instruct';
+            try { savedModel = localStorage.getItem('aiModel') || 'llama-4-scout-17b-16e-instruct'; } catch (e) {}
             this.aiModel = savedModel;
 
             var modelOptions = models.map(function (m) {
@@ -469,6 +469,7 @@
                     '<div class="ac-messages" id="chat-history">' + this._acWelcomeHTML() + '</div>' +
                     '<div class="ac-input-bar">' +
                         '<div class="ac-input-actions-left">' +
+                            '<button class="ac-input-action" id="upload-image-btn" title="آپلود تصویر" aria-label="آپلود تصویر"><i class="fas fa-image"></i></button>' +
                             '<button class="ac-input-action" id="voice-input-toggle" title="ورودی صوتی" aria-label="ورودی صوتی"><i class="fas fa-microphone"></i></button>' +
                         '</div>' +
                         '<textarea id="ai-chat-input" class="ac-textarea" placeholder="سوال خود را بپرسید..." rows="1" aria-label="متن پیام"></textarea>' +
@@ -686,6 +687,37 @@
                 voiceBtn.addEventListener('click', function () {
                     if (typeof self.toggleVoiceInput === 'function') self.toggleVoiceInput();
                     else if (typeof self.showToast === 'function') self.showToast('ورودی صوتی در دسترس نیست', 'info');
+                });
+            }
+
+            // دکمه آپلود تصویر
+            var imageBtn = document.getElementById('upload-image-btn');
+            var imageInput = document.getElementById('image-upload-input');
+            if (imageBtn && imageInput) {
+                imageBtn.addEventListener('click', function () {
+                    imageInput.click();
+                });
+                imageInput.addEventListener('change', function () {
+                    if (this.files && this.files[0]) {
+                        var file = this.files[0];
+                        if (!file.type.startsWith('image/')) {
+                            if (typeof self.showToast === 'function') self.showToast('فقط فایل تصویری', 'warning');
+                            return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                            if (typeof self.showToast === 'function') self.showToast('حداکثر حجم تصویر ۵ مگابایت', 'warning');
+                            return;
+                        }
+                        var reader = new FileReader();
+                        reader.onload = function (ev) {
+                            self.uploadedImage = file;
+                            self.uploadedImageUrl = ev.target.result;
+                            self._acShowImagePreview(ev.target.result, file.name);
+                            if (typeof self.showToast === 'function') self.showToast('📷 تصویر بارگذاری شد', 'success');
+                        };
+                        reader.readAsDataURL(file);
+                        this.value = ''; // reset
+                    }
                 });
             }
         };

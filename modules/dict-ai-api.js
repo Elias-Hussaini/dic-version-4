@@ -4,7 +4,7 @@ GermanDictionary.prototype._puterChat = async function(messages, options = {}) {
     const WORKER_URL = 'https://groq.ysadat180.workers.dev';
     
     // مدل پیش‌فرض برای بخش‌های غیر از چت
-    const defaultModel = options.model || 'gpt-oss-120b';
+    const defaultModel = options.model || 'llama-4-scout-17b-16e-instruct';
     
     // تبدیل messages به فرمت ساده
     let simpleMessages = [];
