@@ -1,5 +1,5 @@
 // sw.js - نسخه 2.0 با مدیریت کش پویا
-const CACHE_VERSION = 'v6';  // تغییر نسخه = پاک شدن کش قبلی
+const CACHE_VERSION = 'v13';  // تغییر نسخه = پاک شدن کش قبلی
 const CACHE_NAME = `elias-dict-${CACHE_VERSION}`;
 const urlsToCache = [
     './',
@@ -15,6 +15,9 @@ const urlsToCache = [
     './css/dark-mode.css',
     './css/animations.css',
     './css/word-details.css',
+    './css/mobile-fixes.css',
+    './modules/dict-image-gen.js',
+    './modules/dict-auto-fullscreen.js',
     './floating-menu-system.js',
     './language-config.js',
     './language-loader.js',
