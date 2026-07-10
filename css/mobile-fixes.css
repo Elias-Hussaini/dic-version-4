@@ -1,0 +1,281 @@
+/* ================================================================
+   mobile-fixes.css — اصلاحات ریسپانسیو موبایل (نسخه نهایی)
+   ================================================================ */
+
+/* ===== جستجو: موبایل ===== */
+@media (max-width: 640px) {
+  .sp-search-box { flex-direction: column; gap: 8px !important; padding: 8px !important; }
+  .sp-search-box .sp-input { font-size: 14px !important; padding: 10px 12px !important; }
+  .sp-search-box .sp-search-btn { width: 100%; padding: 10px 14px !important; font-size: 13px !important; }
+  .sp-search-box .sp-search-btn span { display: inline !important; }
+  .sp-header { padding: 16px 14px !important; }
+  .sp-header h2 { font-size: 16px !important; }
+  .sp-header .sp-sub { font-size: 11px !important; }
+  .sp-toolbar { flex-wrap: wrap; gap: 6px !important; }
+  .sp-tool-btn { font-size: 11px !important; padding: 6px 10px !important; }
+  .sp-filter-chips { gap: 4px !important; }
+  .sp-chip { font-size: 11px !important; padding: 4px 10px !important; }
+  .sp-item { padding: 10px !important; gap: 8px !important; }
+  .sp-item .sp-word { font-size: 16px !important; }
+  .sp-item .sp-meaning { font-size: 13px !important; }
+}
+
+/* ===== افزودن لغت: موبایل ===== */
+@media (max-width: 640px) {
+  .aw-header { padding: 14px 12px !important; }
+  .aw-header h2 { font-size: 15px !important; }
+  .aw-header .aw-sub { font-size: 11px !important; }
+  .aw-header .aw-h-ic { width: 36px !important; height: 36px !important; font-size: 15px !important; }
+  .aw-header .aw-badge { font-size: 10px !important; padding: 4px 10px !important; }
+  .aw-header .aw-ai-btn { font-size: 10px !important; padding: 5px 10px !important; }
+  .aw-body { padding: 12px !important; }
+  .aw-input, .aw-textarea { font-size: 14px !important; padding: 10px 12px !important; }
+  .aw-input::placeholder, .aw-textarea::placeholder { font-size: 12px !important; }
+  .aw-type-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+  .aw-type-card { padding: 8px 4px !important; }
+  .aw-type-card .aw-type-name { font-size: 11px !important; }
+  .aw-type-card .aw-type-sub { font-size: 9px !important; }
+  .aw-form-row { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .aw-label { font-size: 12px !important; }
+  .aw-actions { flex-direction: column !important; }
+  .aw-btn { width: 100% !important; justify-content: center !important; }
+  .aw-fields-panel { padding: 12px !important; }
+}
+
+/* ===== LexiCard: موبایل ===== */
+@media (max-width: 640px) {
+  .lexi-search-area .search-box { flex-direction: column; gap: 8px; }
+  .lexi-search-area .search-box input { width: 100%; font-size: 14px; }
+  .lexi-search-area .search-box button { width: 100%; }
+  .lexi-style-bar { flex-wrap: wrap; gap: 6px; }
+  .lexi-style-bar .style-btn { font-size: 12px; padding: 6px 12px; }
+}
+
+/* ===== صرف افعال: موبایل ===== */
+@media (max-width: 640px) {
+  .vt-header { padding: 14px 12px !important; }
+  .vt-header h2 { font-size: 15px !important; }
+  .vt-header p { font-size: 11px !important; }
+  .vt-header-icon { width: 38px !important; height: 38px !important; font-size: 16px !important; }
+  .vt-header-badge { font-size: 10px !important; padding: 4px 10px !important; }
+  .vt-body { padding: 12px !important; }
+  .vt-search-box { flex-direction: column !important; }
+  .vt-search-input { font-size: 14px !important; padding: 10px 12px !important; }
+  .vt-search-input::placeholder { font-size: 12px !important; }
+  .vt-search-btn { width: 100% !important; justify-content: center !important; }
+  .vt-suggestions { padding: 10px !important; gap: 5px !important; }
+  .vt-suggest-chip { font-size: 12px !important; padding: 5px 10px !important; }
+  .vt-verb-name { font-size: 22px !important; }
+  .vt-verb-header { padding: 14px !important; }
+  .vt-tense-tabs { gap: 5px !important; }
+  .vt-tense-tab { min-width: 75px !important; padding: 8px 10px !important; }
+  .vt-tense-tab-title { font-size: 11px !important; }
+  .vt-tense-tab-sub { font-size: 10px !important; }
+  .vt-conj-row { padding: 10px 12px !important; }
+  .vt-conj-form { font-size: 14px !important; }
+  .vt-conj-person { font-size: 12px !important; }
+  .vt-conj-grid { grid-template-columns: 1fr !important; }
+  .vt-examples { padding: 14px !important; }
+  .vt-example-item { padding: 10px 12px !important; }
+}
+
+/* ===== لیست لغات: فیلتر موبایل ===== */
+@media (max-width: 640px) {
+  #word-list-section .filter-buttons {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  #word-list-section .filter-btn {
+    flex-shrink: 0 !important;
+    width: auto !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+  #word-list-section .section-header {
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
+  }
+  #word-list-section .section-header h2 {
+    font-size: 14px !important;
+  }
+  .sort-circle-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .sort-circle-btn i {
+    font-size: 13px !important;
+  }
+}
+
+/* ===== کتابخانه: متن سفید هدر در لایت مود ===== */
+#library-section .lb-reader-header,
+#library-section .lb-reader-header * {
+  color: #f8fafc !important;
+}
+#library-section .lb-reader-header button,
+#library-section .lb-reader-header .lb-reader-close {
+  color: #fff !important;
+  background: rgba(255,255,255,.15) !important;
+}
+.lb-book-card .lb-book-cover-overlay-btn {
+  color: #0f172a !important;
+}
+
+/* ===== چت هوش مصنوعی: موبایل ===== */
+@media (max-width: 640px) {
+  /* هدر چت: فشرده‌سازی */
+  .ac-topbar { padding: 8px 10px !important; gap: 8px !important; min-height: 48px !important; }
+  .ac-topbar-left { gap: 8px !important; }
+  .ac-avatar { width: 34px !important; height: 34px !important; font-size: 14px !important; }
+  .ac-topbar-title { font-size: 13px !important; }
+  .ac-topbar-sub { font-size: 10px !important; }
+  .ac-topbar-actions { gap: 4px !important; }
+  .ac-icon-btn { width: 32px !important; height: 32px !important; font-size: 12px !important; }
+  #chat-history-btn { display: inline-flex !important; visibility: visible !important; }
+
+  /* نوار مدل: فشرده */
+  .ac-model-bar { padding: 6px 8px !important; }
+
+  /* نوار ورودی: بزرگ و خوانا */
+  .ac-input-bar {
+    padding: 8px !important;
+    gap: 6px !important;
+  }
+  .ac-textarea {
+    font-size: 15px !important;
+    min-height: 44px !important;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    flex: 1 !important;
+  }
+  .ac-input-action {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+  .ac-send-btn {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  /* پیام‌ها */
+  .ac-msg-content {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* جداول: اسکرول افقی */
+  .ac-msg-content table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100% !important;
+    border-collapse: collapse;
+  }
+  .ac-msg-content th,
+  .ac-msg-content td {
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+    border: 1px solid rgba(0,0,0,.1);
+  }
+  body.dark-mode .ac-msg-content th,
+  body.dark-mode .ac-msg-content td {
+    border-color: rgba(255,255,255,.1);
+  }
+
+  /* code blocks */
+  .ac-msg-content pre,
+  .ac-msg-content code {
+    font-size: 12px !important;
+    overflow-x: auto !important;
+    display: block !important;
+    max-width: 100% !important;
+  }
+
+  /* سوالات سریع */
+  .ac-quick {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .ac-quick-btn {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .ac-topbar-sub { display: none !important; }
+  .ac-quick { grid-template-columns: 1fr !important; }
+}
+
+/* ===== تنظیمات: موسیقی موبایل ===== */
+@media (max-width: 640px) {
+  .st-music-item {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  .st-music-item-icon {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 10px !important;
+  }
+  .st-music-item-name { font-size: 12px !important; }
+  .st-music-item-size { font-size: 10px !important; }
+  .st-music-item-del {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 10px !important;
+  }
+  .st-upload-area { padding: 14px !important; }
+  .st-upload-area i { font-size: 24px !important; }
+  .st-upload-area h4 { font-size: 13px !important; }
+  .st-upload-area p { font-size: 11px !important; }
+}
+
+/* ===== دکمه حالت تاریک موبایل ===== */
+@media (max-width: 640px) {
+  .dark-mode-btn,
+  #dark-mode-toggle-btn,
+  .st-switch {
+    width: 44px !important;
+    height: 26px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* ===== PDF Reader: تمام صفحات با اسکرول ===== */
+#lb-pdf-canvas-wrap {
+  gap: 12px;
+}
+#lb-pdf-canvas-wrap canvas {
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,.4);
+  background: #fff;
+  border-radius: 4px;
+}
+
+/* ===== منوی شناور موبایل ===== */
+@media (max-width: 640px) {
+  .fm-trigger {
+    width: 52px !important;
+    height: 52px !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    font-size: 20px !important;
+  }
+}
+
+/* ===== صفحه لودینگ موبایل ===== */
+@media (max-width: 480px) {
+  .loading-title { font-size: 22px !important; }
+  .loading-logo { width: 60px !important; height: 60px !important; font-size: 26px !important; }
+  .loading-bar-track { height: 5px !important; }
+}

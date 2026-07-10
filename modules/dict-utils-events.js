@@ -292,9 +292,12 @@ GermanDictionary.prototype.setupEventListeners = function() {
     // ذخیره لغت
     const saveWordBtn = document.getElementById('save-word-btn');
     if (saveWordBtn) {
-        saveWordBtn.onclick = async () => {
+        // cloneNode برای حذف listener های قبلی و جلوگیری از دوبار ذخیره شدن
+        const newBtn = saveWordBtn.cloneNode(true);
+        saveWordBtn.parentNode.replaceChild(newBtn, saveWordBtn);
+        newBtn.addEventListener('click', async () => {
             await this.saveWord();
-        };
+        });
     }
     
     // پاک کردن فرم

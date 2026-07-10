@@ -480,9 +480,16 @@ GermanDictionary.prototype._awSetupFormEvents = function() {
         });
     }
 
-    // دکمه ذخیره: onclick را تنظیم نمی‌کنیم چون setupEventListeners (در dict-utils-events.js)
-    // بعد از این تابع اجرا می‌شود و onclick را بازنویسی می‌کند.
-    // اعتبارسنجی در saveWord (بازنویسی‌شده در پایین همین فایل) انجام می‌شود.
+    // دکمه ذخیره: onclick را تنظیم می‌کنیم تا همیشه بعد از re-render کار کند
+    const saveBtn = document.getElementById('save-word-btn');
+    if (saveBtn) {
+        // cloneNode برای حذف event listener های قبلی
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.addEventListener('click', async () => {
+            await this.saveWord();
+        });
+    }
 
     // دکمه پاک کردن (با onclick — اگر setupEventListeners بعداً اجرا شد، بازنویسی می‌شود
     // که اشکالی ندارد چون clearAddWordForm همان کار را می‌کند)
