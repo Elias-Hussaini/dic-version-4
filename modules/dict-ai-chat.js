@@ -295,6 +295,17 @@
             .ac-msg-bubble th,.ac-msg-bubble td{border:1px solid var(--ac-border); padding:7px 10px; text-align:right;}
             .ac-msg-bubble th{background:var(--ac-primary-l); color:var(--ac-primary); font-weight:800;}
             .ac-msg-bubble tr:nth-child(even) td{background:var(--ac-card-3);}
+            /* جدول‌ها: اسکرول افقی روی موبایل — اعمال روی هر دو کلاس محتوای پیام */
+            .ac-msg-bubble table,.ac-msg-content table{
+                display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%;
+                scrollbar-width:thin; border-collapse:collapse; font-size:12px;
+            }
+            .ac-msg-bubble th,.ac-msg-content th{background:var(--ac-primary-l,#eef2ff);padding:6px 10px;text-align:right;font-weight:700;white-space:nowrap;border:1px solid rgba(0,0,0,.08);}
+            .ac-msg-bubble td,.ac-msg-content td{padding:6px 10px;text-align:right;white-space:nowrap;border:1px solid rgba(0,0,0,.06);}
+            body.dark-mode .ac-msg-bubble th,body.dark-mode .ac-msg-content th{background:rgba(108,92,231,.15);border-color:rgba(255,255,255,.08);}
+            body.dark-mode .ac-msg-bubble td,body.dark-mode .ac-msg-content td{border-color:rgba(255,255,255,.06);}
+            .ac-msg-bubble table::-webkit-scrollbar,.ac-msg-content table::-webkit-scrollbar{height:6px;}
+            .ac-msg-bubble table::-webkit-scrollbar-thumb,.ac-msg-content table::-webkit-scrollbar-thumb{background:var(--ac-border); border-radius:3px;}
 
             /* ===== ایندیکاتور تایپ ===== */
             .ac-typing{display:flex; gap:5px; padding:4px 2px; align-items:center;}
@@ -302,6 +313,15 @@
             .ac-typing span:nth-child(2){animation-delay:.18s;}
             .ac-typing span:nth-child(3){animation-delay:.36s;}
             @keyframes ac-typing-bounce{0%,60%,100%{transform:translateY(0); opacity:.4;}30%{transform:translateY(-7px); opacity:1; background:var(--ac-primary);}}
+
+            /* ===== ایندیکاتور «در حال فکر کردن» ===== */
+            .ac-thinking{display:flex; align-items:center; gap:8px; padding:2px 2px; font-size:13.5px; font-weight:600; color:var(--ac-muted); line-height:1.6;}
+            .ac-thinking-emoji{font-size:16px; flex-shrink:0;}
+            .ac-thinking-dots{display:inline-flex; gap:3px; align-items:center;}
+            .ac-thinking-dots span{width:5px; height:5px; border-radius:50%; background:var(--ac-primary); animation:ac-thinking-pulse 1.2s ease-in-out infinite;}
+            .ac-thinking-dots span:nth-child(2){animation-delay:.18s;}
+            .ac-thinking-dots span:nth-child(3){animation-delay:.36s;}
+            @keyframes ac-thinking-pulse{0%,60%,100%{transform:scale(.7); opacity:.4;}30%{transform:scale(1.15); opacity:1;}}
 
             /* ===== پیش‌نمایش تصویر ===== */
             .ac-img-preview{
@@ -386,10 +406,29 @@
                 .ac-msg{gap:9px; margin-bottom:14px;}
                 .ac-msg-avatar{width:30px; height:30px; font-size:12px;}
                 .ac-msg-bubble{font-size:13px; padding:10px 14px; max-width:90%;}
-                .ac-input-bar{padding:8px 10px; gap:6px; padding-left:90px;}
-                .ac-input-action{width:36px; height:36px; font-size:13px;}
-                .ac-textarea{font-size:13px; padding:9px 12px; min-height:38px;}
-                .ac-send-btn{width:40px; height:40px; font-size:14px;}
+                /* نوار ورودی: عرض کامل و فاصله‌گذاری مناسب در موبایل */
+                .ac-input-bar{
+                    width:100%;
+                    padding:10px 10px;
+                    gap:8px;
+                    padding-left:10px;
+                    border-radius:var(--ac-radius-m);
+                    flex-wrap:nowrap;
+                }
+                .ac-input-actions-left{gap:5px;}
+                .ac-input-action{width:38px; height:42px; font-size:14px;}
+                .ac-textarea{
+                    flex:1;
+                    min-width:0;
+                    font-size:15px;
+                    padding:12px 14px;
+                    min-height:48px;
+                    max-height:140px;
+                    border-radius:var(--ac-radius-xs);
+                    line-height:1.6;
+                }
+                .ac-textarea::placeholder{font-size:13px;}
+                .ac-send-btn{width:46px; height:46px; font-size:15px;}
             }
             @media(max-width:768px){
                 .ac-model-bar{width:100%; padding:8px 12px; border-radius:14px; gap:6px;}
@@ -398,14 +437,22 @@
                 .ac-model-select{flex:1; max-width:none; width:100%; font-size:13px; padding:10px 32px 10px 14px; min-height:42px; border-radius:12px;}
             }
             @media(max-width:480px){
-                .ac-topbar-actions .ac-icon-btn:nth-child(2){display:none;}
+                /* دکمه تاریخچه چت روی موبایل باید مرئی باشد — مخفی نکردن دکمه‌ها */
+                .ac-topbar-actions{gap:5px;}
+                .ac-topbar-actions .ac-icon-btn{width:34px; height:34px; font-size:13px; flex-shrink:0;}
+                #chat-history-btn{display:inline-flex !important; visibility:visible !important; opacity:1 !important;}
                 .ac-model-bar{width:100%; padding:6px 10px; border-radius:12px;}
                 .ac-model-label span{display:none;}
                 .ac-model-select{flex:1; width:100%; max-width:none; font-size:13px; padding:10px 32px 10px 14px; min-height:42px; border-radius:10px;}
                 .ac-welcome-features{display:none;}
+                .ac-input-bar{padding:8px 8px; gap:6px;}
+                .ac-input-action{width:36px; height:40px; font-size:13px;}
+                .ac-textarea{font-size:14px; padding:11px 12px; min-height:44px;}
+                .ac-send-btn{width:44px; height:44px; font-size:14px;}
             }
             @media(max-width:380px){
                 .ac-quick{grid-template-columns:1fr;}
+                .ac-topbar-actions .ac-icon-btn{width:32px; height:32px; font-size:12px;}
             }
             @media(min-width:769px){
                 .ac-quick{grid-template-columns:repeat(4,1fr);}
@@ -462,7 +509,7 @@
                     '</div>' +
                     '<div class="ac-model-bar">' +
                         '<button class="ac-model-btn" id="ai-model-btn" aria-label="انتخاب مدل">' +
-                            '<span class="ac-model-btn-left"><i class="fas fa-brain"></i> <span id="ai-model-name">' + (models.find(function(m){return m.id===self.aiModel;})||models[0]).name + '</span></span>' +
+                            '<span class="ac-model-btn-left"><i class="fas fa-brain"></i> <span id="ai-model-name">' + (models.find(function(m){return m.id===savedModel;})||models[0]).name + '</span></span>' +
                             '<i class="fas fa-chevron-down ac-chev"></i>' +
                         '</button>' +
                     '</div>' +
@@ -627,10 +674,22 @@
                 modelSelect.addEventListener('change', function (e) {
                     self.aiModel = e.target.value;
                     try { localStorage.setItem('aiModel', self.aiModel); } catch (err) {}
+                    // به‌روزرسانی نام مدل در هدر
+                    var nameEl = document.getElementById('ai-model-name');
+                    if (nameEl && self._acModels) {
+                        var found = self._acModels.find(function(m) { return m.id === self.aiModel; });
+                        if (found) nameEl.textContent = found.name;
+                    }
                 });
             }
 
             // دکمه انتخاب مدل (custom button + popup)
+            // به‌روزرسانی نام مدل در دکمه هدر
+            var modelNameEl = document.getElementById('ai-model-name');
+            if (modelNameEl && this._acModels) {
+                var found = this._acModels.find(function(m) { return m.id === this.aiModel; }.bind(this));
+                if (found) modelNameEl.textContent = found.name;
+            }
             if (modelBtn) {
                 modelBtn.addEventListener('click', function() {
                     self._acShowModelPopup(self._acModels || []);
@@ -762,7 +821,11 @@
             typing.id = 'typing-indicator';
             typing.innerHTML =
                 '<div class="ac-msg-avatar"><i class="fas fa-robot"></i></div>' +
-                '<div class="ac-msg-body"><div class="ac-msg-bubble"><div class="ac-typing"><span></span><span></span><span></span></div></div></div>';
+                '<div class="ac-msg-body"><div class="ac-msg-bubble"><div class="ac-thinking">' +
+                    '<span class="ac-thinking-emoji">🤖</span>' +
+                    '<span>در حال فکر کردن</span>' +
+                    '<span class="ac-thinking-dots"><span></span><span></span><span></span></span>' +
+                '</div></div></div>';
             ch.appendChild(typing);
             this._acScrollToBottom();
         };
@@ -770,6 +833,116 @@
         GermanDictionary.prototype.removeTypingIndicator = function () {
             var t = document.getElementById('typing-indicator');
             if (t) t.remove();
+        };
+
+        /* ============================================================
+           ایجاد حباب پیام AI خالی برای استریم (برای تایپ کاراکتر به کاراکتر)
+           ============================================================ */
+        GermanDictionary.prototype._acCreateStreamingAIMessage = function () {
+            var ch = document.getElementById('chat-history');
+            if (!ch) return null;
+            // حذف ایندیکاتور تایپ اگر وجود دارد
+            this.removeTypingIndicator();
+            var welcome = ch.querySelector('.ac-welcome');
+            if (welcome) welcome.remove();
+            var time = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+            var msg = document.createElement('div');
+            msg.className = 'ac-msg ai';
+            msg.id = 'ac-streaming-msg';
+            msg.innerHTML =
+                '<div class="ac-msg-avatar"><i class="fas fa-robot"></i></div>' +
+                '<div class="ac-msg-body">' +
+                    '<div class="ac-msg-bubble" id="ac-streaming-bubble"></div>' +
+                    '<div class="ac-msg-time">' + time + '</div>' +
+                '</div>';
+            ch.appendChild(msg);
+            this._acScrollToBottom();
+            return msg;
+        };
+
+        /* ============================================================
+           به‌روزرسانی متن حباب پیام در حال استریم
+           ============================================================ */
+        GermanDictionary.prototype._acUpdateStreamingBubble = function (fullText) {
+            var bubble = document.getElementById('ac-streaming-bubble');
+            if (!bubble) return;
+            // قالب‌بندی مارک‌داون روی متن کامل انباشته‌شده
+            bubble.innerHTML = this._formatAIMessage(fullText);
+            this._acScrollToBottom();
+        };
+
+        /* ============================================================
+           نهایی‌سازی پیام استریم‌شده (افزودن دکمه‌های کپی/بازتولید)
+           ============================================================ */
+        GermanDictionary.prototype._acFinalizeStreamingMessage = function (fullText) {
+            var msg = document.getElementById('ac-streaming-msg');
+            if (!msg) {
+                // اگر حباب استریم وجود نداشت، پیام را به‌صورت عادی اضافه کن
+                this.addMessageToHistory('ai', fullText);
+                return;
+            }
+            // حذف id تا با پیام‌های بعدی تداخل نکند
+            msg.removeAttribute('id');
+            var bubble = msg.querySelector('.ac-msg-bubble');
+            if (bubble) {
+                bubble.removeAttribute('id');
+                bubble.innerHTML = this._formatAIMessage(fullText);
+            }
+            // افزودن دکمه‌های کپی/بازتولید
+            var body = msg.querySelector('.ac-msg-body');
+            if (body && !body.querySelector('.ac-msg-actions')) {
+                var actions = document.createElement('div');
+                actions.className = 'ac-msg-actions';
+                actions.innerHTML =
+                    '<button class="ac-msg-action-btn ac-copy-btn" title="کپی"><i class="fas fa-copy"></i> کپی</button>' +
+                    '<button class="ac-msg-action-btn ac-regen-btn" title="باز تولید"><i class="fas fa-rotate-right"></i> باز تولید</button>';
+                body.appendChild(actions);
+                // رویداد کپی
+                var copyBtn = actions.querySelector('.ac-copy-btn');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', function() {
+                        navigator.clipboard.writeText(fullText).then(function() {
+                            copyBtn.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+                            setTimeout(function() { copyBtn.innerHTML = '<i class="fas fa-copy"></i> کپی'; }, 2000);
+                        }).catch(function() {
+                            var ta = document.createElement('textarea');
+                            ta.value = fullText;
+                            document.body.appendChild(ta);
+                            ta.select();
+                            document.execCommand('copy');
+                            ta.remove();
+                            copyBtn.innerHTML = '<i class="fas fa-check"></i> کپی شد';
+                            setTimeout(function() { copyBtn.innerHTML = '<i class="fas fa-copy"></i> کپی'; }, 2000);
+                        });
+                    });
+                }
+                // رویداد باز تولید
+                var regenBtn = actions.querySelector('.ac-regen-btn');
+                if (regenBtn) {
+                    var self = this;
+                    regenBtn.addEventListener('click', function() {
+                        var prevMsg = msg.previousElementSibling;
+                        var userText = '';
+                        while (prevMsg) {
+                            if (prevMsg.classList.contains('user')) {
+                                var b = prevMsg.querySelector('.ac-msg-bubble');
+                                userText = b ? b.textContent : '';
+                                break;
+                            }
+                            prevMsg = prevMsg.previousElementSibling;
+                        }
+                        if (userText) {
+                            msg.remove();
+                            var input = document.getElementById('ai-chat-input');
+                            if (input) {
+                                input.value = userText;
+                                self.sendAIMessage();
+                            }
+                        }
+                    });
+                }
+            }
+            this._acScrollToBottom();
         };
 
         /* ============================================================
@@ -977,26 +1150,53 @@
                     fullMessages = [systemMsg].concat(msgsWithoutLast, [{ role: 'user', content: message }]);
                 }
 
-                var response = await this._puterChat(fullMessages, { model: this.aiModel });
-                this.removeTypingIndicator();
+                // خواندن مدل انتخاب‌شده از localStorage (تضمین پایداری انتخاب کاربر)
+                var currentModel = this.aiModel;
+                try { currentModel = localStorage.getItem('aiModel') || currentModel; } catch (e) {}
+                if (currentModel) this.aiModel = currentModel;
 
+                // ایندیکاتور «در حال فکر کردن» هم‌اکنون نمایش داده شده (قبل از try)
+                var self = this;
+                var streamingStarted = false;
                 var fullResponse = '';
-                if (response && response.message && response.message.content) {
-                    var c = response.message.content;
-                    if (Array.isArray(c)) {
-                        fullResponse = c.map(function (x) { return x.text || ''; }).join('');
-                    } else if (typeof c === 'string') {
-                        fullResponse = c;
-                    } else if (c[0] && c[0].text) {
-                        fullResponse = c[0].text;
+
+                // فراخوانی استریمی: تکه‌ها به‌محض دریافت به حباب اضافه می‌شوند (بدون تأخیر)
+                var response = await this._puterChat(fullMessages, {
+                    model: currentModel,
+                    onChunk: function (chunk, accumulated) {
+                        // اولین تکه: ایندیکاتور تایپ را با حباب پیام جایگزین کن
+                        if (!streamingStarted) {
+                            streamingStarted = true;
+                            self._acCreateStreamingAIMessage();
+                        }
+                        fullResponse = accumulated || (fullResponse + chunk);
+                        self._acUpdateStreamingBubble(fullResponse);
                     }
-                } else if (typeof response === 'string') {
-                    fullResponse = response;
+                });
+
+                // اگر استریمی شروع نشد (مثلاً fallback غیراستریم)، از پاسخ کامل استفاده کن
+                if (!streamingStarted) {
+                    this.removeTypingIndicator();
+                    if (response && response.message && response.message.content) {
+                        var c = response.message.content;
+                        if (Array.isArray(c)) {
+                            fullResponse = c.map(function (x) { return x.text || ''; }).join('');
+                        } else if (typeof c === 'string') {
+                            fullResponse = c;
+                        } else if (c[0] && c[0].text) {
+                            fullResponse = c[0].text;
+                        }
+                    } else if (typeof response === 'string') {
+                        fullResponse = response;
+                    }
+                    if (!fullResponse) fullResponse = '⚠️ پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید.';
+                    this.addMessageToHistory('ai', fullResponse);
                 } else {
-                    fullResponse = '⚠️ پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید.';
+                    // نهایی‌سازی پیام استریم‌شده: افزودن دکمه‌های کپی/بازتولید
+                    if (!fullResponse) fullResponse = '';
+                    this._acFinalizeStreamingMessage(fullResponse);
                 }
 
-                this.addMessageToHistory('ai', fullResponse);
                 this.addToMemory('assistant', fullResponse);
                 if (typeof this.saveCompleteChat === 'function') this.saveCompleteChat();
                 this.uploadedImage = null;
@@ -1005,7 +1205,10 @@
             } catch (error) {
                 console.error('خطا در ارسال پیام AI:', error);
                 this.removeTypingIndicator();
-                this.addMessageToHistory('ai', '⚠️ خطا در ارتباط با سرور. لطفاً اتصال اینترنت را بررسی کرده و دوباره تلاش کنید.');
+                // حذف حباب استریم ناقص در صورت خطا
+                var streamMsg = document.getElementById('ac-streaming-msg');
+                if (streamMsg) streamMsg.remove();
+                this.addMessageToHistory('ai', '⚠️ خطا در ارتباط با سرور. لطفاً اتصال اینترنت را بررسی کرده و دوباره تلاش کنید.\n\n' + (error && error.message ? error.message : ''));
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';

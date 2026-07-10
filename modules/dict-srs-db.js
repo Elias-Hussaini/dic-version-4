@@ -423,6 +423,88 @@ GermanDictionary.prototype.getAllWords = async function() {
         });
 };
 
+GermanDictionary.prototype.updateWord = async function(wordData) {
+    return new Promise((resolve, reject) => {
+        if (!this.db) {
+            reject(new Error('دیتابیس در دسترس نیست'));
+            return;
+        }
+        try {
+            const transaction = this.db.transaction(['words'], 'readwrite');
+            const store = transaction.objectStore('words');
+            
+            // دریافت کلمه فعلی
+            const getRequest = store.get(wordData.id);
+            getRequest.onsuccess = () => {
+                const existing = getRequest.result;
+                if (!existing) {
+                    reject(new Error('لغت یافت نشد'));
+                    return;
+                }
+                
+                // ادغام داده‌های جدید با داده‌های موجود
+                const updated = Object.assign({}, existing, wordData);
+                updated.updatedAt = new Date().toISOString();
+                
+                const putRequest = store.put(updated);
+                putRequest.onsuccess = () => {
+                    console.log('✅ لغت به‌روزرسانی شد:', updated.german);
+                    resolve(updated);
+                };
+                putRequest.onerror = (e) => reject(e.target.error);
+            };
+            getRequest.onerror = (e) => reject(e.target.error);
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+GermanDictionary.prototype.deleteWord = async function(wordId) {
+    return new Promise((resolve, reject) => {
+        if (!this.db) {
+            reject(new Error('دیتابیس در دسترس نیست'));
+            return;
+        }
+        const transaction = this.db.transaction(['words', 'favorites', 'examples', 'practiceHistory'], 'readwrite');
+        
+        // حذف از words
+        transaction.objectStore('words').delete(wordId);
+        
+        // حذف از favorites
+        try { transaction.objectStore('favorites').delete(wordId); } catch(e) {}
+        
+        // حذف examples مرتبط
+        try {
+            const exStore = transaction.objectStore('examples');
+            const exIndex = exStore.index('wordId');
+            const exRequest = exIndex.getAll(wordId);
+            exRequest.onsuccess = () => {
+                (exRequest.result || []).forEach(ex => exStore.delete(ex.id));
+            };
+        } catch(e) {}
+        
+        // حذف practiceHistory مرتبط
+        try {
+            const phStore = transaction.objectStore('practiceHistory');
+            const phIndex = phStore.index('wordId');
+            const phRequest = phIndex.getAll(wordId);
+            phRequest.onsuccess = () => {
+                (phRequest.result || []).forEach(ph => phStore.delete(ph.id));
+            };
+        } catch(e) {}
+        
+        transaction.oncomplete = () => {
+            console.log('✅ لغت و داده‌های مرتبط حذف شد:', wordId);
+            // حذف از SRS و favorites در حافظه
+            if (this.favorites) this.favorites.delete(wordId);
+            if (this.srsData) delete this.srsData[wordId];
+            resolve();
+        };
+        transaction.onerror = (e) => reject(e.target.error);
+    });
+};
+
 GermanDictionary.prototype.getWord = async function(id) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction(['words'], 'readonly');

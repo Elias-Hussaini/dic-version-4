@@ -85,6 +85,8 @@
            ============================================================ */
         async renderWordDetails(word) {
             if (!word) return;
+            
+            try {
 
             this.currentWord = word;
             const examples = await this.getExamplesForWord(word.id);
@@ -305,6 +307,19 @@
             this.setupDetailNavigation();
             this._wdSetupTabs();
             this._wdUpdateSticky(word, positionText);
+            
+            } catch (err) {
+                console.error('[wd-pro] renderWordDetails error:', err);
+                console.error('[wd-pro] stack:', err.stack);
+                // fallback: show basic details
+                const container = document.getElementById('search-results-container');
+                if (container && word) {
+                    container.innerHTML = '<div class="wd-card" style="padding:20px;"><h1 style="font-size:28px;">' + (word.german||'?') + '</h1><p style="font-size:18px;color:#64748b;">' + (word.persian||'') + '</p><p style="color:#ef4444;font-size:13px;">خطا در رندر: ' + (err.message||'') + '</p><button onclick="history.back()" style="margin-top:10px;padding:8px 16px;background:#4361ee;color:#fff;border:none;border-radius:8px;cursor:pointer;">بازگشت</button></div>';
+                }
+                if (typeof this.showToast === 'function') {
+                    this.showToast('⚠️ خطا در نمایش جزئیات: ' + (err.message || ''), 'error');
+                }
+            }
         },
 
         /* ============================================================
@@ -510,6 +525,7 @@
             // رویدادها
             const speakBtn = sticky.querySelector('.wd-sticky-speak');
             if (speakBtn) speakBtn.onclick = () => this.speakText(word.german, 'de-DE');
+                
 
             const prevBtn = sticky.querySelector('#wd-sticky-prev');
             if (prevBtn) prevBtn.onclick = (e) => { e.preventDefault(); this.goToPrevWord(); };
@@ -699,6 +715,150 @@
                     <div class="wd-rows">${rows.join('')}</div>
                 </div>
             `;
+        },
+
+        /* ============================================================
+           setupDetailEventListeners — بازنویسی امن
+           ----------------------------------------------------------------
+           نسخه اصلی در dict-word-details.js به دنبال عناصر قدیمی 
+           (.action-icon.favorite, #add-example-btn و...) می‌گردد که
+           در کارت جدید وجود ندارند و باعث خطا می‌شوند.
+           
+           این نسخه فقط رویدادهای ضروری را با بررسی وجود عنصر بایند می‌کند.
+           ============================================================ */
+        setupDetailEventListeners(word) {
+            if (!word) return;
+
+            // دکمه بازگشت
+            const backBtn = document.getElementById('backFromDetailBtn');
+            if (backBtn) {
+                backBtn.onclick = () => {
+                    const wordId = word.id;
+                    localStorage.setItem('returnToWordId', wordId);
+                    this.showSection('word-list-section');
+                    this.renderWordList();
+                    setTimeout(() => {
+                        const target = document.querySelector('.wl-card[data-id="' + wordId + '"], .word-list-item[data-id="' + wordId + '"]');
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            target.style.transition = 'all 0.3s ease';
+                            target.style.background = 'var(--primary-light, #eef2ff)';
+                            setTimeout(() => {
+                                target.style.background = '';
+                            }, 1500);
+                        }
+                        localStorage.removeItem('returnToWordId');
+                    }, 200);
+                };
+            }
+
+            // دکمه علاقه‌مندی
+            const favBtn = document.querySelector('.wd-action.favorite, .action-icon.favorite');
+            if (favBtn) {
+                favBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    await this.toggleFavorite(word.id);
+                    favBtn.classList.toggle('active');
+                    this.updateFavoritesCount?.();
+                };
+            }
+
+            // دکمه تلفظ
+            const speakBtn = document.querySelector('.wd-action.speak, .wd-listen-btn, .action-icon.speak');
+            if (speakBtn) {
+                speakBtn.onclick = () => this.speakText(word.german, 'de-DE');
+            }
+
+            // دکمه ویرایش
+            const editBtn = document.querySelector('.wd-action.edit, .action-icon.edit');
+            if (editBtn) {
+                editBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof this.showEditWordForm === 'function') {
+                        this.showEditWordForm(word);
+                    }
+                };
+            }
+
+            // دکمه حذف
+            const deleteBtn = document.querySelector('.wd-action.delete, .action-icon.delete');
+            if (deleteBtn) {
+                deleteBtn.onclick = async () => {
+                    if (confirm('آیا از حذف "' + word.german + '" مطمئن هستید؟')) {
+                        await this.deleteWord(word.id);
+                        this.showSection('word-list-section');
+                        this.renderWordList();
+                    }
+                };
+            }
+
+            // دکمه تمرین
+            const practiceBtn = document.getElementById('practice-now-btn');
+            if (practiceBtn) {
+                practiceBtn.onclick = () => {
+                    this.startPracticeSession([word.id]);
+                    this.showSection('flashcards-section');
+                };
+            }
+
+            // تب‌ها (اگر وجود دارند)
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content-modern').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    const tabContent = document.getElementById('tab-' + btn.dataset.tab);
+                    if (tabContent) tabContent.classList.add('active');
+                };
+            });
+
+            // دکمه افزودن مثال
+            const addExampleBtn = document.getElementById('add-example-btn');
+            if (addExampleBtn) {
+                addExampleBtn.onclick = async () => {
+                    const german = document.getElementById('new-example-german')?.value.trim();
+                    const persian = document.getElementById('new-example-persian')?.value.trim();
+                    if (german && persian) {
+                        await this.addExample(word.id, { german, persian });
+                        this.renderWordDetails(word);
+                        this.showToast('✅ مثال اضافه شد', 'success');
+                    } else {
+                        this.showToast('❌ لطفاً هر دو فیلد را پر کنید', 'error');
+                    }
+                };
+            }
+
+            // حذف مثال
+            document.querySelectorAll('.example-delete').forEach(btn => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
+                    const exampleId = parseInt(btn.dataset.id);
+                    if (confirm('آیا از حذف این مثال مطمئن هستید؟')) {
+                        await this.deleteExample(exampleId);
+                        this.renderWordDetails(word);
+                        this.showToast('✅ مثال حذف شد', 'success');
+                    }
+                };
+            });
+
+            // تلفظ مثال‌ها
+            document.querySelectorAll('.wd-example-btn.speak, .speak-example-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const text = btn.dataset.text || btn.closest('[data-text]')?.dataset.text || '';
+                    if (text) this.speakText(text, 'de-DE');
+                };
+            });
+
+            // تلفظ فرم‌های صرف
+            document.querySelectorAll('.wd-conj-speak').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const text = btn.dataset.text || '';
+                    if (text) this.speakText(text, 'de-DE');
+                };
+            });
         }
     });
 

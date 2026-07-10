@@ -3,14 +3,9 @@
    ================================================================ */
 
 /* ===== جستجو: موبایل ===== */
+/* NOTE: sp-search-box mobile styles are managed by dict-search.js (_injectStyles).
+   Do NOT add !important overrides here — they break the responsive design. */
 @media (max-width: 640px) {
-  .sp-search-box { flex-direction: column; gap: 8px !important; padding: 8px !important; }
-  .sp-search-box .sp-input { font-size: 14px !important; padding: 10px 12px !important; }
-  .sp-search-box .sp-search-btn { width: 100%; padding: 10px 14px !important; font-size: 13px !important; }
-  .sp-search-box .sp-search-btn span { display: inline !important; }
-  .sp-header { padding: 16px 14px !important; }
-  .sp-header h2 { font-size: 16px !important; }
-  .sp-header .sp-sub { font-size: 11px !important; }
   .sp-toolbar { flex-wrap: wrap; gap: 6px !important; }
   .sp-tool-btn { font-size: 11px !important; padding: 6px 10px !important; }
   .sp-filter-chips { gap: 4px !important; }
@@ -51,19 +46,19 @@
   .lexi-style-bar .style-btn { font-size: 12px; padding: 6px 12px; }
 }
 
-/* ===== صرف افعال: موبایل ===== */
+/* ===== صرف افعال: موبایل — هدر زیبا و فشرده ===== */
 @media (max-width: 640px) {
-  .vt-header { padding: 14px 12px !important; }
+  .vt-header { padding: 14px 12px !important; border-radius: 14px !important; margin-bottom: 12px !important; }
   .vt-header h2 { font-size: 15px !important; }
-  .vt-header p { font-size: 11px !important; }
-  .vt-header-icon { width: 38px !important; height: 38px !important; font-size: 16px !important; }
-  .vt-header-badge { font-size: 10px !important; padding: 4px 10px !important; }
+  .vt-header p { display: none !important; }
+  .vt-header-badge { font-size: 9px !important; padding: 3px 8px !important; }
+  .vt-header-icon { width: 36px !important; height: 36px !important; font-size: 15px !important; border-radius: 11px !important; }
   .vt-body { padding: 12px !important; }
   .vt-search-box { flex-direction: column !important; }
   .vt-search-input { font-size: 14px !important; padding: 10px 12px !important; }
   .vt-search-input::placeholder { font-size: 12px !important; }
   .vt-search-btn { width: 100% !important; justify-content: center !important; }
-  .vt-suggestions { padding: 10px !important; gap: 5px !important; }
+  .vt-suggestions { padding: 8px !important; gap: 5px !important; }
   .vt-suggest-chip { font-size: 12px !important; padding: 5px 10px !important; }
   .vt-verb-name { font-size: 22px !important; }
   .vt-verb-header { padding: 14px !important; }
@@ -82,6 +77,7 @@
 /* ===== لیست لغات: فیلتر موبایل ===== */
 @media (max-width: 640px) {
   #word-list-section .filter-buttons {
+    display: flex !important;
     flex-direction: row !important;
     overflow-x: auto !important;
     flex-wrap: nowrap !important;
@@ -90,14 +86,17 @@
     width: 100% !important;
     max-width: 100% !important;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
   #word-list-section .filter-btn {
     flex-shrink: 0 !important;
     width: auto !important;
-    padding: 8px 12px !important;
+    min-width: auto !important;
+    padding: 8px 14px !important;
     font-size: 12px !important;
     white-space: nowrap !important;
   }
+  #word-list-section .filter-btn i { font-size: 12px !important; }
   #word-list-section .section-header {
     margin-bottom: 12px !important;
     padding-bottom: 8px !important;
@@ -278,4 +277,253 @@
   .loading-title { font-size: 22px !important; }
   .loading-logo { width: 60px !important; height: 60px !important; font-size: 26px !important; }
   .loading-bar-track { height: 5px !important; }
+}
+
+
+/* ===== کارت‌های لیست لغات: فشرده‌تر با متن خوانا ===== */
+.wl-card {
+  padding: 14px 16px 12px 16px !important;
+  gap: 8px !important;
+}
+.wl-card-top { gap: 6px !important; }
+.wl-card-body { gap: 4px !important; }
+.wl-word { font-size: 20px !important; }
+.wl-meaning { font-size: 15px !important; }
+.wl-actions { padding-top: 8px !important; gap: 6px !important; }
+.wl-act { padding: 7px 12px !important; font-size: 11px !important; }
+
+@media (max-width: 640px) {
+  .wl-card {
+    padding: 12px 14px 10px 14px !important;
+    gap: 6px !important;
+  }
+  .wl-word { font-size: 18px !important; }
+  .wl-meaning { font-size: 14px !important; }
+  .wl-number { min-width: 26px !important; height: 22px !important; font-size: 10px !important; }
+  .wl-srs { padding: 3px 8px !important; font-size: 10px !important; }
+  .wl-fav-btn { width: 30px !important; height: 30px !important; }
+  .wl-act { padding: 6px 10px !important; font-size: 11px !important; }
+  .wl-actions { gap: 5px !important; }
+}
+
+
+/* ================================================================
+   اصلاحات موبایل — هدر و جعبه جستجوی اصلی (نسخه ۳.۰ — کاملاً فشرده)
+   ----------------------------------------------------------------
+   • جعبه جستجو در موبایل: نازک و جمع‌وجور (سبک iOS)
+   • ارتفاع کل input ≈ ۳۶px، دکمه ≈ ۳۶px
+   • بدون padding اضافی، font-size مناسب موبایل
+   ================================================================ */
+
+/* ===== موبایل (≤ ۶۴۰px): جعبه جستجوی فشرده ===== */
+@media (max-width: 640px) {
+  #search-section .word-card {
+    padding: 10px 10px 14px 10px !important;
+    border-radius: 14px !important;
+  }
+  #search-section .section-header {
+    margin-bottom: 8px !important;
+    padding-bottom: 8px !important;
+    border-bottom-width: 1px !important;
+    gap: 6px !important;
+  }
+  #search-section .section-header h2 {
+    font-size: 14px !important;
+    gap: 6px !important;
+    line-height: 1.3 !important;
+  }
+  #search-section .section-header h2 i {
+    font-size: 14px !important;
+  }
+
+  /* جعبه جستجو: ردیفی فشرده — input + دکمه آیکنی */
+  #search-section .search-box {
+    flex-direction: row !important;
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+    align-items: stretch !important;
+  }
+  /* ✔️ input نازک و جمع‌وجور */
+  #search-section .search-box .form-control,
+  #search-section .search-box #search-input {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    border-radius: 10px !important;
+    line-height: 1.4 !important;
+    height: 38px !important;
+    box-sizing: border-box !important;
+  }
+  #search-section .search-box .form-control::placeholder,
+  #search-section .search-box #search-input::placeholder {
+    font-size: 12px !important;
+  }
+  /* ✔️ دکمه جستجو: فقط آیکن، مربع ۳۸px */
+  #search-section .search-box .btn,
+  #search-section .search-box #search-btn {
+    flex: 0 0 auto !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    border-radius: 10px !important;
+    gap: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+  /* ✔️ مخفی کردن متن دکمه در موبایل — فقط آیکن بماند */
+  #search-section .search-box .btn .btn-text,
+  #search-section .search-box #search-btn .btn-text {
+    display: none !important;
+  }
+  #search-section .search-box .btn .fa-search,
+  #search-section .search-box #search-btn .fa-search,
+  #search-section .search-box .btn i,
+  #search-section .search-box #search-btn i {
+    font-size: 14px !important;
+    margin: 0 !important;
+    color: #fff !important;
+  }
+}
+
+/* ===== گوشی‌های خیلی کوچک (≤ ۳۸۰px) — حتی فشرده‌تر ===== */
+@media (max-width: 380px) {
+  #search-section .word-card {
+    padding: 8px 8px 12px 8px !important;
+  }
+  #search-section .search-box {
+    gap: 4px !important;
+  }
+  #search-section .search-box .form-control,
+  #search-section .search-box #search-input {
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+  #search-section .search-box .form-control::placeholder,
+  #search-section .search-box #search-input::placeholder {
+    font-size: 11px !important;
+  }
+  #search-section .search-box .btn,
+  #search-section .search-box #search-btn {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+  #search-section .search-box .btn .fa-search,
+  #search-section .search-box #search-btn .fa-search {
+    font-size: 13px !important;
+  }
+  #search-section .section-header h2 {
+    font-size: 13px !important;
+  }
+}
+
+/* ===== تبلت (۴۸۱–۷۶۸px) — اندازه متعادل ===== */
+@media (min-width: 481px) and (max-width: 768px) {
+  #search-section .search-box {
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
+  #search-section .search-box .form-control,
+  #search-section .search-box #search-input {
+    font-size: 14px !important;
+    padding: 10px 14px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+  }
+  #search-section .search-box .btn,
+  #search-section .search-box #search-btn {
+    height: 40px !important;
+    padding: 0 16px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+  }
+  #search-section .section-header h2 {
+    font-size: 16px !important;
+  }
+}
+
+/* ===== اصلاح سراسری هدر و فرم در موبایل (≤ ۶۴۰px) ===== */
+@media (max-width: 640px) {
+  .word-card {
+    padding: 10px !important;
+    border-radius: 14px !important;
+  }
+  .word-card .section-header {
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+    border-bottom-width: 1px !important;
+    gap: 6px !important;
+  }
+  .word-card .section-header h2 {
+    font-size: 14px !important;
+    gap: 6px !important;
+  }
+  .word-card .section-header h2 i {
+    font-size: 14px !important;
+  }
+  .form-control {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+  }
+  .form-control::placeholder {
+    font-size: 12px !important;
+  }
+  .btn {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    min-height: 38px;
+  }
+}
+
+/* ===== اصلاح هدر بخش افزودن لغت در موبایل ===== */
+@media (max-width: 640px) {
+  #add-word-section .section-header {
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+    gap: 6px !important;
+  }
+  #add-word-section .section-header h2 {
+    font-size: 14px !important;
+    gap: 6px !important;
+  }
+  #add-word-section .section-header h2 i {
+    font-size: 14px !important;
+  }
+  #add-word-section .header-badges {
+    gap: 4px !important;
+    flex-wrap: wrap !important;
+  }
+  #add-word-section .header-badges .badge {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+}
+
+/* ===== حالت تمام‌صفحه (Fullscreen): فشرده‌سازی نوار بالایی ===== */
+:fullscreen .word-card,
+:-webkit-full-screen .word-card {
+  border-radius: 0 !important;
+}
+:fullscreen #search-section .section-header,
+:-webkit-full-screen #search-section .section-header {
+  position: sticky;
+  top: 0;
+  background: var(--white, #fff);
+  z-index: 10;
+  padding-top: 8px;
+}
+body.dark-mode:fullscreen #search-section .section-header,
+body.dark-mode:-webkit-full-screen #search-section .section-header {
+  background: var(--gray-900, #0f172a);
 }

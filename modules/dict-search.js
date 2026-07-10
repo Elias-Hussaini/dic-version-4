@@ -609,14 +609,61 @@
 
             /* ===== ریسپانسیو ===== */
             @media (max-width: 640px) {
-                .sp-header { padding: 20px 18px; }
-                .sp-search-box { padding: 4px 4px 4px 14px; }
-                .sp-search-box .sp-search-btn { padding: 10px 14px; font-size: 13px; }
+                .sp-header { padding: 14px 12px; border-radius: 14px; margin-bottom: 10px; }
+                .sp-header::before { width: 140px; height: 140px; top: -60px; right: -40px; }
+                .sp-header::after { width: 120px; height: 120px; bottom: -60px; left: -30px; }
+                .sp-header h2 { font-size: 14px; gap: 6px; }
+                .sp-header h2 .sp-h-ic { width: 26px; height: 26px; font-size: 12px; border-radius: 7px; }
+                .sp-header .sp-sub { font-size: 10px; line-height: 1.4; }
+                .sp-search-box {
+                    width: 100%;
+                    margin-top: 10px;
+                    padding: 3px 3px 3px 10px;
+                    gap: 4px;
+                    border-radius: 10px;
+                    flex-wrap: nowrap;
+                    align-items: center;
+                }
+                .sp-search-box .sp-search-ic { font-size: 13px; }
+                .sp-search-box input.sp-input {
+                    font-size: 13px;
+                    padding: 7px 0;
+                    min-width: 0;
+                    font-weight: 500;
+                }
+                .sp-search-box input.sp-input::placeholder { font-size: 12px; }
+                .sp-search-box .sp-clear-btn { width: 24px; height: 24px; font-size: 10px; border-radius: 6px; }
+                /* ✔️ دکمه جستجو: فقط آیکن، مربع کوچک */
+                .sp-search-box .sp-search-btn {
+                    width: 34px;
+                    height: 34px;
+                    min-width: 34px;
+                    padding: 0 !important;
+                    font-size: 0;
+                    flex-shrink: 0;
+                    border-radius: 8px;
+                    gap: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 8px rgba(16,185,129,.25);
+                }
+                .sp-search-box .sp-search-btn i { font-size: 13px; }
                 .sp-search-box .sp-search-btn span { display: none; }
                 .sp-item { padding: 12px; gap: 10px; }
                 .sp-item .sp-num { display: none; }
                 .sp-item .sp-word { font-size: 15px; }
                 .sp-item .sp-actions .sp-act span { display: none; }
+            }
+            /* ===== گوشی‌های خیلی کوچک (≤ ۳۸۰px) ===== */
+            @media (max-width: 380px) {
+                .sp-header { padding: 12px 10px; }
+                .sp-header h2 { font-size: 13px; }
+                .sp-search-box { padding: 2px 2px 2px 8px; gap: 3px; }
+                .sp-search-box input.sp-input { font-size: 12px; padding: 6px 0; }
+                .sp-search-box input.sp-input::placeholder { font-size: 11px; }
+                .sp-search-box .sp-search-btn { width: 32px; height: 32px; min-width: 32px; }
+                .sp-search-box .sp-search-btn i { font-size: 12px; }
             }
         `;
         document.head.appendChild(style);

@@ -735,10 +735,38 @@ GermanDictionary.prototype._injectVerbToolProStyles = function() {
             .vt-conj-form { font-size: 15px; }
             .vt-conj-form-speak { opacity: 1; } /* همیشه قابل دیدن در موبایل */
         }
+        @media (max-width: 640px) {
+            /* هدر کوچک‌تر در موبایل */
+            .vt-header { padding: 16px 14px; }
+            .vt-header-inner { gap: 10px; }
+            .vt-header-icon { width: 38px; height: 38px; font-size: 15px; border-radius: 11px; }
+            .vt-header h2 { font-size: 16px; letter-spacing: -0.2px; }
+            .vt-header p { font-size: 11px; line-height: 1.5; }
+            .vt-header-badge { padding: 4px 10px; font-size: 10px; margin-top: 8px; }
+            .vt-body { padding: 14px 12px 18px; }
+            /* placeholder و ورودی کوچک‌تر */
+            .vt-search-input { padding: 11px 14px; font-size: 14px; }
+            .vt-search-input::placeholder { font-size: 12px; }
+            .vt-search-btn { padding: 11px 16px; font-size: 13px; }
+            /* چیپس پیشنهادی فشرده‌تر */
+            .vt-suggestions { padding: 10px; gap: 6px; margin-bottom: 16px; }
+            .vt-suggest-label { font-size: 11px; }
+            .vt-suggest-chip { padding: 5px 11px; font-size: 12px; gap: 4px; }
+            /* سایزهای نتیجه */
+            .vt-verb-name { font-size: 22px; }
+            .vt-verb-header { padding: 14px 12px; }
+            .vt-tense-tabs { gap: 5px; }
+            .vt-tense-tab { min-width: 78px; padding: 9px 11px; font-size: 12px; }
+            .vt-conj-row { padding: 10px 12px; gap: 8px; }
+            .vt-conj-person { font-size: 11px; }
+            .vt-conj-form { font-size: 14px; }
+        }
         @media (max-width: 480px) {
             .vt-verb-header { flex-direction: column; align-items: flex-start; }
             .vt-verb-actions { width: 100%; justify-content: flex-end; }
             .vt-act-btn { width: 40px; height: 40px; }
+            .vt-header-icon { width: 34px; height: 34px; font-size: 14px; }
+            .vt-header h2 { font-size: 15px; }
         }
     `;
 };

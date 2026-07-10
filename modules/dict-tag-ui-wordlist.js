@@ -2052,16 +2052,7 @@ GermanDictionary.prototype._injectWordListProStyles = function() {
             gap: 12px;
             min-width: 0; /* مهم: اجازه shrink در grid cell */
         }
-        .wl-card::before {
-            content: "";
-            position: absolute;
-            top: 0; bottom: 0;
-            right: 0;
-            width: 4px;
-            background: var(--wl-accent, var(--wl-primary));
-            border-radius: 4px 0 0 4px;
-            opacity: .9;
-        }
+        /* نوار رنگی کناری حذف شد */
         .wl-card:hover {
             transform: translateY(-3px);
             box-shadow: var(--wl-shadow-hover);
@@ -2233,7 +2224,7 @@ GermanDictionary.prototype._injectWordListProStyles = function() {
             padding: 8px 12px;
             background: var(--wl-line-2);
             border-radius: 10px;
-            border-right: 3px solid var(--wl-accent, var(--wl-primary));
+            border-right: none;
             direction: ltr;
             text-align: left;
             display: flex;
@@ -2443,13 +2434,16 @@ GermanDictionary.prototype._injectWordListProStyles = function() {
             #word-list-section .sort-circle-btn {
                 margin: 0 !important;
             }
-            /* فیلترها در موبایل: اسکرول افقی */
+            /* فیلترها در موبایل: عرض کامل و اسکرول افقی */
             #word-list-section .filter-buttons {
                 flex-direction: row !important;
                 overflow-x: auto !important;
                 flex-wrap: nowrap !important;
                 gap: 8px !important;
                 padding: 6px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                justify-content: flex-start !important;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: thin;
             }
@@ -2466,6 +2460,8 @@ GermanDictionary.prototype._injectWordListProStyles = function() {
                 font-size: 12px !important;
                 gap: 5px !important;
                 width: auto !important;
+                min-width: auto !important;
+                max-width: none !important;
                 white-space: nowrap !important;
             }
             #word-list-section .filter-btn i {

@@ -659,11 +659,21 @@ GermanDictionary.prototype.saveWord = async function() {
         const tags = document.getElementById('word-tags')?.value.trim();
         wordData.tags = tags ? tags.split(',').map(t => t.trim()) : null;
         
-        await this.addWord(wordData);
+        const savedWord = await this.addWord(wordData);
         
         // پاک کردن فرم فقط بعد از ذخیره موفق
         this.clearAddWordForm();
         this.showToast('✅ لغت با موفقیت ذخیره شد', 'success');
+        
+        // شروع خودکار ساخت تصویر هوش مصنوعی (بدون نیاز به رفتن به لیست لغات)
+        if (savedWord && savedWord.id && typeof this._enqueueImageGeneration === 'function') {
+            try {
+                this._enqueueImageGeneration(savedWord.id);
+                console.log('🎨 ساخت تصویر برای لغت جدید شروع شد:', savedWord.german);
+            } catch (imgErr) {
+                console.warn('[img-gen] خطا در شروع ساخت تصویر:', imgErr);
+            }
+        }
         
         setTimeout(() => {
             this.renderWordList();
@@ -816,6 +826,289 @@ GermanDictionary.prototype.setupWordListEventListeners = function() {
     if (favContainer && favContainer !== container) {
         favContainer.addEventListener('click', this._wlClickHandler);
     }
+};
+
+GermanDictionary.prototype.showEditWordForm = async function(word) {
+    if (!word) return;
+    
+    // حذف مودال قبلی
+    const existing = document.getElementById('edit-word-modal');
+    if (existing) existing.remove();
+    
+    const type = word.type || 'other';
+    const verbForms = word.verbForms || {};
+    
+    // ساخت مودال
+    const modal = document.createElement('div');
+    modal.id = 'edit-word-modal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'display:flex;z-index:100001;';
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:650px;max-height:90vh;overflow-y:auto;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#0f172a,#1e293b,#134e4a);color:#fff;padding:18px 22px;">
+                <h3 style="margin:0;font-size:17px;font-weight:800;display:flex;align-items:center;gap:10px;">
+                    <span style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;"><i class="fas fa-edit"></i></span>
+                    ویرایش لغت
+                </h3>
+                <button class="close-modal" id="close-edit-modal" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:18px;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <!-- لغت آلمانی + معنی -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+                    <div>
+                        <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">لغت آلمانی <span style="color:#ef4444;">*</span></label>
+                        <input type="text" id="edit-german" class="form-control" value="${this.escapeHtml(word.german || '')}" style="direction:ltr;text-align:left;font-size:15px;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:12px;">
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">معنی فارسی <span style="color:#ef4444;">*</span></label>
+                        <input type="text" id="edit-persian" class="form-control" value="${this.escapeHtml(word.persian || '')}" style="font-size:15px;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:12px;">
+                    </div>
+                </div>
+                
+                <!-- نوع کلمه -->
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:8px;display:block;">نوع کلمه</label>
+                    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">
+                        ${['noun','verb','adjective','adverb','preposition','other'].map(t => {
+                            const labels = {noun:'اسم',verb:'فعل',adjective:'صفت',adverb:'قید',preposition:'حرف اضافه',other:'سایر'};
+                            const colors = {noun:'#8b5cf6',verb:'#f59e0b',adjective:'#06b6d4',adverb:'#84cc16',preposition:'#ec4899',other:'#64748b'};
+                            return `<button type="button" class="edit-type-btn" data-type="${t}" style="padding:10px 6px;border:1.5px solid ${type===t?colors[t]:'#e2e8f0'};border-radius:10px;background:${type===t?colors[t]:'#fff'};color:${type===t?'#fff':'#475569'};font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">${labels[t]}</button>`;
+                        }).join('')}
+                    </div>
+                </div>
+                
+                <!-- فیلدهای اسم -->
+                <div id="edit-noun-fields" style="display:${type==='noun'?'block':'none'};margin-bottom:16px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                        <div>
+                            <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:8px;display:block;">جنسیت</label>
+                            <div style="display:flex;gap:8px;">
+                                ${['masculine','feminine','neuter'].map(g => {
+                                    const labels = {masculine:'der',feminine:'die',neuter:'das'};
+                                    const colors = {masculine:'#3b82f6',feminine:'#ec4899',neuter:'#10b981'};
+                                    return `<button type="button" class="edit-gender-btn" data-gender="${g}" style="flex:1;padding:10px;border:1.5px solid ${word.gender===g?colors[g]:'#e2e8f0'};border-radius:10px;background:${word.gender===g?colors[g]:'#fff'};color:${word.gender===g?'#fff':'#475569'};font-weight:700;font-size:13px;cursor:pointer;">${labels[g]}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">جمع (Plural)</label>
+                            <input type="text" id="edit-plural" class="form-control" value="${this.escapeHtml(word.plural || '')}" style="direction:ltr;text-align:left;font-size:14px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- فیلدهای فعل -->
+                <div id="edit-verb-fields" style="display:${type==='verb'?'block':'none'};margin-bottom:16px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Präsens (حال)</label>
+                            <input type="text" id="edit-verb-present" class="form-control" value="${this.escapeHtml(verbForms.present || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Präteritum (گذشته)</label>
+                            <input type="text" id="edit-verb-past" class="form-control" value="${this.escapeHtml(verbForms.past || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Perfekt (گذشته کامل)</label>
+                            <input type="text" id="edit-verb-perfect" class="form-control" value="${this.escapeHtml(verbForms.perfect || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Futur I (آینده)</label>
+                            <input type="text" id="edit-verb-future" class="form-control" value="${this.escapeHtml(verbForms.future || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Konjunktiv II</label>
+                            <input type="text" id="edit-verb-konjunktiv" class="form-control" value="${this.escapeHtml(verbForms.konjunktiv || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">فعل کمکی</label>
+                            <select id="edit-verb-helper" class="form-control" style="font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                                <option value="haben" ${(verbForms.helper||'haben')==='haben'?'selected':''}>haben</option>
+                                <option value="sein" ${verbForms.helper==='sein'?'selected':''}>sein</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="edit-verb-separable" ${verbForms.separable?'checked':''} style="width:18px;height:18px;accent-color:#4361ee;">
+                        <label for="edit-verb-separable" style="font-size:13px;font-weight:600;color:#475569;cursor:pointer;">فعل جداشدنی (trennbar)</label>
+                    </div>
+                </div>
+                
+                <!-- فیلدهای صفت -->
+                <div id="edit-adj-fields" style="display:${type==='adjective'?'block':'none'};margin-bottom:16px;">
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Komparativ</label>
+                            <input type="text" id="edit-adj-komparativ" class="form-control" value="${this.escapeHtml(word.comparative || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">Superlativ</label>
+                            <input type="text" id="edit-adj-superlativ" class="form-control" value="${this.escapeHtml(word.superlative || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;display:block;">متضاد (Antonym)</label>
+                            <input type="text" id="edit-adj-antonym" class="form-control" value="${this.escapeHtml(word.antonym || '')}" style="direction:ltr;text-align:left;font-size:13px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- تلفظ + برچسب‌ها -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+                    <div>
+                        <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">تلفظ</label>
+                        <input type="text" id="edit-pronunciation" class="form-control" value="${this.escapeHtml(word.pronunciation || '')}" style="font-size:14px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">برچسب‌ها (با کاما)</label>
+                        <input type="text" id="edit-tags" class="form-control" value="${word.tags ? this.escapeHtml(Array.isArray(word.tags) ? word.tags.join(', ') : word.tags) : ''}" style="font-size:14px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;">
+                    </div>
+                </div>
+                
+                <!-- مثال + ترجمه -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+                    <div>
+                        <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">مثال (آلمانی)</label>
+                        <textarea id="edit-example" class="form-control" rows="2" style="direction:ltr;text-align:left;font-size:14px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;resize:vertical;">${this.escapeHtml(word.example || (word.examples && word.examples[0] ? word.examples[0].german : ''))}</textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">ترجمه مثال</label>
+                        <textarea id="edit-example-translation" class="form-control" rows="2" style="font-size:14px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;resize:vertical;">${this.escapeHtml(word.exampleTranslation || (word.examples && word.examples[0] ? word.examples[0].persian : ''))}</textarea>
+                    </div>
+                </div>
+                
+                <!-- توضیحات -->
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:13px;font-weight:700;color:#475569;margin-bottom:6px;display:block;">توضیحات (Notes)</label>
+                    <textarea id="edit-notes" class="form-control" rows="3" style="font-size:14px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;resize:vertical;">${this.escapeHtml(word.notes || '')}</textarea>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding:14px 20px;display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn btn-outline" id="cancel-edit-btn" style="padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">انصراف</button>
+                <button class="btn btn-primary" id="save-edit-btn" style="padding:10px 22px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#4361ee,#3a56d4);color:#fff;border:none;box-shadow:0 4px 12px rgba(67,97,238,.25);"><i class="fas fa-save"></i> ذخیره تغییرات</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // مدیریت نوع کلمه
+    let selectedType = type;
+    let selectedGender = word.gender || null;
+    
+    modal.querySelectorAll('.edit-type-btn').forEach(btn => {
+        btn.onclick = () => {
+            selectedType = btn.dataset.type;
+            const colors = {noun:'#8b5cf6',verb:'#f59e0b',adjective:'#06b6d4',adverb:'#84cc16',preposition:'#ec4899',other:'#64748b'};
+            modal.querySelectorAll('.edit-type-btn').forEach(b => {
+                b.style.borderColor = '#e2e8f0';
+                b.style.background = '#fff';
+                b.style.color = '#475569';
+            });
+            btn.style.borderColor = colors[selectedType];
+            btn.style.background = colors[selectedType];
+            btn.style.color = '#fff';
+            
+            // نمایش/مخفی کردن فیلدها
+            document.getElementById('edit-noun-fields').style.display = selectedType === 'noun' ? 'block' : 'none';
+            document.getElementById('edit-verb-fields').style.display = selectedType === 'verb' ? 'block' : 'none';
+            document.getElementById('edit-adj-fields').style.display = selectedType === 'adjective' ? 'block' : 'none';
+        };
+    });
+    
+    // مدیریت جنسیت
+    modal.querySelectorAll('.edit-gender-btn').forEach(btn => {
+        btn.onclick = () => {
+            selectedGender = btn.dataset.gender;
+            const colors = {masculine:'#3b82f6',feminine:'#ec4899',neuter:'#10b981'};
+            modal.querySelectorAll('.edit-gender-btn').forEach(b => {
+                b.style.borderColor = '#e2e8f0';
+                b.style.background = '#fff';
+                b.style.color = '#475569';
+            });
+            btn.style.borderColor = colors[selectedGender];
+            btn.style.background = colors[selectedGender];
+            btn.style.color = '#fff';
+        };
+    });
+    
+    // بستن مودال
+    const closeFn = () => modal.remove();
+    document.getElementById('close-edit-modal')?.addEventListener('click', closeFn);
+    document.getElementById('cancel-edit-btn')?.addEventListener('click', closeFn);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeFn(); });
+    
+    // ذخیره تغییرات
+    document.getElementById('save-edit-btn')?.addEventListener('click', async () => {
+        const saveBtn = document.getElementById('save-edit-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ذخیره...';
+        
+        try {
+            const updated = {
+                id: word.id,
+                german: document.getElementById('edit-german').value.trim(),
+                persian: document.getElementById('edit-persian').value.trim(),
+                type: selectedType,
+                pronunciation: document.getElementById('edit-pronunciation')?.value.trim() || null,
+                example: document.getElementById('edit-example')?.value.trim() || null,
+                exampleTranslation: document.getElementById('edit-example-translation')?.value.trim() || null,
+                notes: document.getElementById('edit-notes')?.value.trim() || null,
+                updatedAt: new Date().toISOString()
+            };
+            
+            // فیلدهای اسم
+            if (selectedType === 'noun') {
+                updated.gender = selectedGender;
+                updated.plural = document.getElementById('edit-plural')?.value.trim() || null;
+            }
+            
+            // فیلدهای فعل
+            if (selectedType === 'verb') {
+                updated.verbForms = {
+                    present: document.getElementById('edit-verb-present')?.value.trim() || null,
+                    past: document.getElementById('edit-verb-past')?.value.trim() || null,
+                    perfect: document.getElementById('edit-verb-perfect')?.value.trim() || null,
+                    future: document.getElementById('edit-verb-future')?.value.trim() || null,
+                    konjunktiv: document.getElementById('edit-verb-konjunktiv')?.value.trim() || null,
+                    helper: document.getElementById('edit-verb-helper')?.value || 'haben',
+                    separable: document.getElementById('edit-verb-separable')?.checked || false
+                };
+            }
+            
+            // فیلدهای صفت
+            if (selectedType === 'adjective') {
+                updated.comparative = document.getElementById('edit-adj-komparativ')?.value.trim() || null;
+                updated.superlative = document.getElementById('edit-adj-superlativ')?.value.trim() || null;
+                updated.antonym = document.getElementById('edit-adj-antonym')?.value.trim() || null;
+            }
+            
+            // برچسب‌ها
+            const tagsVal = document.getElementById('edit-tags')?.value.trim();
+            updated.tags = tagsVal ? tagsVal.split(',').map(t => t.trim()) : null;
+            
+            // حفظ imageData
+            if (word.imageData) updated.imageData = word.imageData;
+            
+            await this.updateWord(updated);
+            modal.remove();
+            this.showToast('✅ لغت ویرایش شد', 'success');
+            
+            // رندر مجدد
+            const fresh = await this.getWord(word.id);
+            if (fresh && typeof this.renderWordDetails === 'function') {
+                this.renderWordDetails(fresh);
+            }
+            if (typeof this.renderWordList === 'function') {
+                this.renderWordList();
+            }
+        } catch (err) {
+            console.error('خطا در ویرایش:', err);
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> ذخیره تغییرات';
+            this.showToast('❌ خطا در ویرایش: ' + err.message, 'error');
+        }
+    });
 };
 
 GermanDictionary.prototype.setupWordDetailsEventListeners = function(word) {

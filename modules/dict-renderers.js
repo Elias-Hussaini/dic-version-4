@@ -3,21 +3,21 @@
 GermanDictionary.prototype.renderSearchSection = function() {
     const container = document.getElementById('search-section');
     if (!container) return;
-    
+
     container.innerHTML = `
         <div class="word-card">
             <div class="section-header">
                 <h2><i class="fas fa-search" style="color: var(--primary);"></i> جستجوی پیشرفته لغات</h2>
             </div>
-            
+
             <div class="search-box">
-                <input type="text" id="search-input" class="form-control" 
+                <input type="text" id="search-input" class="form-control"
                        placeholder="لغت آلمانی یا فارسی را جستجو کنید..." autofocus>
-                <button id="search-btn" class="btn btn-primary">
-                    <i class="fas fa-search"></i> جستجو
+                <button id="search-btn" class="btn btn-primary" aria-label="جستجو">
+                    <i class="fas fa-search" aria-hidden="true"></i><span class="btn-text"> جستجو</span>
                 </button>
             </div>
-            
+
             <div id="search-results-container">
                 <div class="empty-state">
                     <div class="empty-icon">
@@ -38,15 +38,15 @@ GermanDictionary.prototype.renderSearchSection = function() {
         <div class="section-header">
             <h2><i class="fas fa-search" style="color: var(--primary);"></i> ${LanguageSystem.t('search.title')}</h2>
         </div>
-        
+
         <div class="search-box">
-            <input type="text" id="search-input" class="form-control" 
+            <input type="text" id="search-input" class="form-control"
                    placeholder="${LanguageSystem.t('search.placeholder')}" autofocus>
-            <button id="search-btn" class="btn btn-primary">
-                <i class="fas fa-search"></i> ${LanguageSystem.t('menu.search')}
+            <button id="search-btn" class="btn btn-primary" aria-label="جستجو">
+                <i class="fas fa-search" aria-hidden="true"></i><span class="btn-text"> ${LanguageSystem.t('menu.search')}</span>
             </button>
         </div>
-        
+
         <div id="search-results-container">
             <div class="empty-state">
                 <div class="empty-icon">

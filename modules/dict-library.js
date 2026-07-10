@@ -362,6 +362,21 @@ GermanDictionary.prototype._injectLibraryProStyles = function() {
             background: rgba(244,63,94,.5);
             transform: rotate(90deg);
         }
+        /* اطمینان از مرئی بودن متن و دکمه‌ها روی گرادینت تیره هدر — در هر دو حالت روشن/تاریک */
+        .lb-reader-header, .lb-reader-header *:not(.lb-tool-btn):not(.lb-page-input):not(.lb-page-info):not(.lb-zoom-display) {
+            color: #f8fafc !important;
+        }
+        .lb-reader-header button:not(.lb-tool-btn) {
+            color: #fff !important;
+            background: rgba(255,255,255,.15) !important;
+            border-color: rgba(255,255,255,.2) !important;
+        }
+        .lb-reader-header button:not(.lb-tool-btn):hover {
+            background: rgba(255,255,255,.25) !important;
+        }
+        /* دکمه‌های روی جلد کتاب (گرادینت) — متن روشن */
+        .lb-book-cover, .lb-book-cover .lb-book-cover-placeholder { color: rgba(255,255,255,.9) !important; }
+        .lb-book-cover-overlay-btn { color: #0f172a !important; background: rgba(255,255,255,.95) !important; }
 
         /* نوار ابزار */
         .lb-reader-toolbar {
@@ -369,11 +384,30 @@ GermanDictionary.prototype._injectLibraryProStyles = function() {
             align-items: center;
             gap: 8px;
             padding: 10px 16px;
-            background: var(--lb-card-2);
-            border-bottom: 1px solid var(--lb-line);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid rgba(255,255,255,.1);
             flex-shrink: 0;
             flex-wrap: wrap;
         }
+        .lb-reader-toolbar * { color: #f8fafc !important; }
+        .lb-tool-btn {
+            background: rgba(255,255,255,.1) !important;
+            border-color: rgba(255,255,255,.15) !important;
+            color: #f8fafc !important;
+        }
+        .lb-tool-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,.2) !important;
+            border-color: rgba(255,255,255,.3) !important;
+        }
+        .lb-page-nav { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.12) !important; }
+        .lb-page-input { background: rgba(255,255,255,.1) !important; color: #fff !important; border-color: rgba(255,255,255,.15) !important; }
+        .lb-page-info { color: rgba(255,255,255,.7) !important; }
+        .lb-page-info b { color: #fff !important; }
+        .lb-zoom-display { color: rgba(255,255,255,.8) !important; }
+        .lb-tool-divider { background: rgba(255,255,255,.12) !important; }
+        .lb-reader-footer { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important; border-top: 1px solid rgba(255,255,255,.1) !important; }
+        .lb-reader-footer-info { color: rgba(255,255,255,.6) !important; }
+        .lb-reader-progress { background: rgba(255,255,255,.1) !important; }
         .lb-tool-btn {
             display: inline-flex;
             align-items: center;
@@ -487,13 +521,39 @@ GermanDictionary.prototype._injectLibraryProStyles = function() {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0;
+            gap: 14px;
+            padding: 6px 0 30px;
+            width: 100%;
         }
         #lb-pdf-canvas {
             display: block;
             box-shadow: 0 10px 40px rgba(0,0,0,.4);
             background: #fff;
             border-radius: 4px;
+        }
+        /* هر صفحه PDF به‌صورت canvas مستقل در حالت نمایش همه صفحات */
+        .lb-pdf-canvas-page {
+            display: block;
+            box-shadow: 0 10px 40px rgba(0,0,0,.4);
+            background: #fff;
+            border-radius: 4px;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+        .lb-pdf-page-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(0,0,0,.55);
+            padding: 3px 10px;
+            border-radius: 999px;
+            margin-bottom: -8px;
+            margin-top: 6px;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(4px);
+            font-family: 'Vazirmatn', sans-serif;
         }
         .lb-pdf-loading {
             position: absolute;
@@ -782,7 +842,7 @@ GermanDictionary.prototype.saveNewBookToIndexedDB = async function() {
     const title = document.getElementById('book-title')?.value.trim();
     const author = document.getElementById('book-author')?.value.trim();
     const pdfFile = document.getElementById('book-pdf')?.files[0];
-    const coverFile = document.getElementById('book-cover')?.files[0];
+    // coverFile removed - AI generates covers
 
     if (!title || !author) {
         this.showToast('❌ لطفاً نام کتاب و نویسنده را وارد کنید', 'error');
@@ -804,21 +864,8 @@ GermanDictionary.prototype.saveNewBookToIndexedDB = async function() {
     const pdfReader = new FileReader();
     pdfReader.onload = async (e) => {
         const pdfData = e.target.result;
-
-        if (coverFile) {
-            if (coverFile.size > 5 * 1024 * 1024) {
-                this.showToast('❌ حجم تصویر جلد نباید بیشتر از 5 مگابایت باشد', 'error');
-                return;
-            }
-
-            const coverReader = new FileReader();
-            coverReader.onload = async (e2) => {
-                await this.saveBookToStorage(title, author, pdfData, e2.target.result);
-            };
-            coverReader.readAsDataURL(coverFile);
-        } else {
-            await this.saveBookToStorage(title, author, pdfData, null);
-        }
+        // جلد کتاب خودکار توسط هوش مصنوعی ساخته می‌شود
+        await this.saveBookToStorage(title, author, pdfData, null);
     };
     pdfReader.onerror = () => {
         this.showToast('❌ خطا در خواندن فایل PDF', 'error');
@@ -842,6 +889,11 @@ GermanDictionary.prototype.saveBookToStorage = async function(title, author, pdf
     try {
         await this.saveBookToIndexedDB(newBook);
         this.showToast(`✅ کتاب "${title}" با موفقیت اضافه شد`, 'success');
+        
+        // ساخت خودکار جلد کتاب با هوش مصنوعی (اختیاری - در پس‌زمینه)
+        if (typeof this._generateBookCover === 'function') {
+            this._generateBookCover(newBook.id, title, author).catch(function(e) { console.warn('[book-cover] Error:', e); });
+        }
         this.clearBookForm();
 
         const addBookForm = document.getElementById('add-book-form');
@@ -853,7 +905,14 @@ GermanDictionary.prototype.saveBookToStorage = async function(title, author, pdf
         await this.renderBooksListFromIndexedDB();
     } catch (error) {
         console.error('خطا در ذخیره کتاب:', error);
-        this.showToast('❌ خطا در ذخیره کتاب. فضای کافی وجود ندارد', 'error');
+        const msg = error.message || '';
+        if (msg.includes('Quota') || msg.includes('quota') || msg.includes('فضا')) {
+            this.showToast('❌ حجم فایل PDF زیاد است. حداکثر ۵۰ مگابایت', 'error');
+        } else if (msg.includes('Constraint') || msg.includes('duplicate') || msg.includes('uniqueness')) {
+            this.showToast('❌ این کتاب قبلاً اضافه شده است', 'warning');
+        } else {
+            this.showToast('❌ خطا در ذخیره کتاب: ' + msg, 'error');
+        }
     }
 };
 
@@ -1153,7 +1212,7 @@ GermanDictionary.prototype._createPDFReaderModal = function() {
                 <!-- محتوای PDF -->
                 <div class="lb-reader-body" id="lb-reader-body">
                     <div class="lb-canvas-wrap">
-                        <canvas id="lb-pdf-canvas"></canvas>
+                        <!-- صفحات PDF به‌صورت پویا ایجاد می‌شوند -->
                     </div>
                     <div class="lb-pdf-loading" id="lb-pdf-loading" style="display: none;">
                         <div class="lb-pdf-loading-spinner"></div>
@@ -1183,12 +1242,11 @@ GermanDictionary.prototype._createPDFReaderModal = function() {
    ============================================================ */
 GermanDictionary.prototype._renderPDF = async function(book) {
     const self = this;
-    const canvas = document.getElementById('lb-pdf-canvas');
     const loading = document.getElementById('lb-pdf-loading');
     const body = document.getElementById('lb-reader-body');
 
-    if (!canvas) {
-        console.error('Canvas پیدا نشد');
+    if (!body) {
+        console.error('Reader body پیدا نشد');
         return;
     }
 
@@ -1199,10 +1257,15 @@ GermanDictionary.prototype._renderPDF = async function(book) {
     this._lbZoom = 1.2; // زوم اولیه
     this._lbRotation = 0;
     this._lbPdfDoc = null;
+    this._lbRenderMode = 'all'; // حالت نمایش همه صفحات
 
     // نمایش لودینگ
-    if (loading) loading.style.display = 'flex';
-    if (canvas) canvas.style.display = 'none';
+    if (loading) {
+        loading.style.display = 'flex';
+        loading.innerHTML = '<div class="lb-pdf-loading-spinner"></div><div class="lb-pdf-loading-text">در حال بارگذاری PDF...</div>';
+    }
+    // مخفی کردن canvas تکی (در حالت همه صفحات استفاده نمی‌شود)
+
 
     try {
         // تبدیل dataURL به typed array برای PDF.js
@@ -1230,11 +1293,16 @@ GermanDictionary.prototype._renderPDF = async function(book) {
         const footerAuthor = document.getElementById('lb-footer-author');
         if (footerAuthor) footerAuthor.textContent = book.author;
 
-        // رندر صفحه اول
-        await this._renderPDFPage(1);
+        const zoomDisplay = document.getElementById('lb-zoom-display');
+        if (zoomDisplay) zoomDisplay.textContent = Math.round(this._lbZoom * 100) + '%';
+
+        // رندر همه صفحات (عمودی، نمایش پیشرونده)
+        await this._renderAllPDFPages();
 
         if (loading) loading.style.display = 'none';
-        if (canvas) canvas.style.display = 'block';
+
+        // راه‌اندازی شنونده اسکرول برای به‌روزرسانی صفحه جاری
+        this._setupPDFScrollListener();
 
     } catch (err) {
         console.error('خطا در بارگذاری PDF:', err);
@@ -1249,10 +1317,148 @@ GermanDictionary.prototype._renderPDF = async function(book) {
 };
 
 /* ============================================================
-   رندر یک صفحه PDF
+   رندر همه صفحات PDF (عمودی، پشت سر هم با نمایش پیشرونده)
+   ============================================================ */
+GermanDictionary.prototype._renderAllPDFPages = async function() {
+    if (!this._lbPdfDoc) return;
+    const wrap = document.querySelector('.lb-canvas-wrap');
+    if (!wrap) return;
+
+    // پاکسازی صفحات قبلی
+    wrap.innerHTML = '';
+
+    const zoomDisplay = document.getElementById('lb-zoom-display');
+    if (zoomDisplay) zoomDisplay.textContent = Math.round(this._lbZoom * 100) + '%';
+
+    const outputScale = window.devicePixelRatio || 1;
+
+    // رندر هر صفحه به‌صورت canvas مستقل — پشت سر هم برای نمایش پیشرونده
+    for (let pageNum = 1; pageNum <= this._lbTotalPages; pageNum++) {
+        try {
+            const page = await this._lbPdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: this._lbZoom, rotation: this._lbRotation });
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'lb-pdf-canvas-page';
+            canvas.dataset.page = pageNum;
+            canvas.id = 'lb-pdf-page-' + pageNum;
+            canvas.width = Math.floor(viewport.width * outputScale);
+            canvas.height = Math.floor(viewport.height * outputScale);
+            canvas.style.width = Math.floor(viewport.width) + 'px';
+            canvas.style.height = Math.floor(viewport.height) + 'px';
+
+            const ctx = canvas.getContext('2d');
+            const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport,
+                transform: transform
+            };
+
+            // برچسب شماره صفحه بالای هر canvas
+            const label = document.createElement('div');
+            label.className = 'lb-pdf-page-label';
+            label.textContent = 'صفحه ' + this._lbFaNum(pageNum);
+            wrap.appendChild(label);
+            wrap.appendChild(canvas);
+
+            const renderTask = page.render(renderContext);
+            await renderTask.promise;
+            // فرصت کوتاه به مرورگر برای رنگ‌آمیزی (بدون تأخیر قابل توجه برای کاربر)
+            if (typeof requestAnimationFrame === 'function') {
+                await new Promise(function(r){ requestAnimationFrame(function(){ r(); }); });
+            }
+        } catch (err) {
+            console.error('خطا در رندر صفحه ' + pageNum + ':', err);
+        }
+    }
+
+    // به‌روزرسانی نوار پیشرفت بر اساس صفحه اول
+    const progressFill = document.getElementById('lb-progress-fill');
+    if (progressFill && this._lbTotalPages > 0) {
+        progressFill.style.width = (1 / this._lbTotalPages) * 100 + '%';
+    }
+};
+
+/* ============================================================
+   شنونده اسکرول برای به‌روزرسانی صفحه جاری در حالت همه صفحات
+   ============================================================ */
+GermanDictionary.prototype._setupPDFScrollListener = function() {
+    const self = this;
+    const body = document.getElementById('lb-reader-body');
+    if (!body) return;
+    // حذف شنونده قبلی اگر وجود دارد
+    if (body._lbScrollHandler) {
+        body.removeEventListener('scroll', body._lbScrollHandler);
+    }
+    body._lbScrollHandler = function() {
+        const pages = body.querySelectorAll('.lb-pdf-canvas-page');
+        if (!pages.length) return;
+        const bodyTop = body.getBoundingClientRect().top;
+        let currentPage = self._lbCurrentPage;
+        for (let i = 0; i < pages.length; i++) {
+            const rect = pages[i].getBoundingClientRect();
+            // صفحه‌ای که در نیمه بالایی ناحیه دید است را به‌عنوان صفحه جاری در نظر بگیر
+            if (rect.top - bodyTop <= body.clientHeight * 0.4 && rect.bottom - bodyTop >= 0) {
+                currentPage = parseInt(pages[i].dataset.page, 10) || (i + 1);
+                break;
+            }
+        }
+        if (currentPage !== self._lbCurrentPage) {
+            self._lbCurrentPage = currentPage;
+            const pageInput = document.getElementById('lb-page-input');
+            if (pageInput) pageInput.value = currentPage;
+            const footerInfo = document.getElementById('lb-footer-info');
+            if (footerInfo) footerInfo.textContent = `صفحه ${self._lbFaNum(currentPage)} از ${self._lbFaNum(self._lbTotalPages)}`;
+            const progressFill = document.getElementById('lb-progress-fill');
+            if (progressFill && self._lbTotalPages > 0) {
+                progressFill.style.width = (currentPage / self._lbTotalPages) * 100 + '%';
+            }
+            const prevBtn = document.getElementById('lb-prev-page');
+            const nextBtn = document.getElementById('lb-next-page');
+            const firstBtn = document.getElementById('lb-first-page');
+            const lastBtn = document.getElementById('lb-last-page');
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (firstBtn) firstBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= self._lbTotalPages;
+            if (lastBtn) lastBtn.disabled = currentPage >= self._lbTotalPages;
+        }
+    };
+    body.addEventListener('scroll', body._lbScrollHandler);
+};
+
+/* ============================================================
+   رندر یک صفحه PDF — در حالت «همه صفحات»، فقط به آن صفحه اسکرول می‌کند
    ============================================================ */
 GermanDictionary.prototype._renderPDFPage = async function(pageNum) {
     if (!this._lbPdfDoc) return;
+
+    // حالت نمایش همه صفحات: اسکرول به صفحه مورد نظر
+    if (this._lbRenderMode === 'all') {
+        const target = document.getElementById('lb-pdf-page-' + pageNum);
+        const body = document.getElementById('lb-reader-body');
+        if (target && body) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        this._lbCurrentPage = pageNum;
+        const pageInput = document.getElementById('lb-page-input');
+        if (pageInput) pageInput.value = pageNum;
+        const footerInfo = document.getElementById('lb-footer-info');
+        if (footerInfo) footerInfo.textContent = `صفحه ${this._lbFaNum(pageNum)} از ${this._lbFaNum(this._lbTotalPages)}`;
+        const progressFill = document.getElementById('lb-progress-fill');
+        if (progressFill && this._lbTotalPages > 0) {
+            progressFill.style.width = (pageNum / this._lbTotalPages) * 100 + '%';
+        }
+        const prevBtn = document.getElementById('lb-prev-page');
+        const nextBtn = document.getElementById('lb-next-page');
+        const firstBtn = document.getElementById('lb-first-page');
+        const lastBtn = document.getElementById('lb-last-page');
+        if (prevBtn) prevBtn.disabled = pageNum <= 1;
+        if (firstBtn) firstBtn.disabled = pageNum <= 1;
+        if (nextBtn) nextBtn.disabled = pageNum >= this._lbTotalPages;
+        if (lastBtn) lastBtn.disabled = pageNum >= this._lbTotalPages;
+        return;
+    }
 
     const canvas = document.getElementById('lb-pdf-canvas');
     if (!canvas) return;
@@ -1367,15 +1573,17 @@ GermanDictionary.prototype._setupPDFReaderEvents = function() {
         });
     }
 
-    // زوم
+    // زوم — در حالت همه صفحات، همه canvasها با زوم جدید دوباره رندر می‌شوند
     document.getElementById('lb-zoom-in')?.addEventListener('click', () => {
         self._lbZoom = Math.min(self._lbZoom + 0.25, 4);
-        self._renderPDFPage(self._lbCurrentPage);
+        if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+        else self._renderPDFPage(self._lbCurrentPage);
     });
 
     document.getElementById('lb-zoom-out')?.addEventListener('click', () => {
         self._lbZoom = Math.max(self._lbZoom - 0.25, 0.4);
-        self._renderPDFPage(self._lbCurrentPage);
+        if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+        else self._renderPDFPage(self._lbCurrentPage);
     });
 
     document.getElementById('lb-zoom-fit')?.addEventListener('click', async () => {
@@ -1386,18 +1594,21 @@ GermanDictionary.prototype._setupPDFReaderEvents = function() {
         const availableWidth = body.clientWidth - 40;
         const viewport = page.getViewport({ scale: 1, rotation: self._lbRotation });
         self._lbZoom = availableWidth / viewport.width;
-        self._renderPDFPage(self._lbCurrentPage);
+        if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+        else self._renderPDFPage(self._lbCurrentPage);
     });
 
-    // چرخش
+    // چرخش — اعمال روی همه صفحات
     document.getElementById('lb-rotate-left')?.addEventListener('click', () => {
         self._lbRotation = (self._lbRotation - 90 + 360) % 360;
-        self._renderPDFPage(self._lbCurrentPage);
+        if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+        else self._renderPDFPage(self._lbCurrentPage);
     });
 
     document.getElementById('lb-rotate-right')?.addEventListener('click', () => {
         self._lbRotation = (self._lbRotation + 90) % 360;
-        self._renderPDFPage(self._lbCurrentPage);
+        if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+        else self._renderPDFPage(self._lbCurrentPage);
     });
 
     // دانلود
@@ -1422,7 +1633,10 @@ GermanDictionary.prototype._setupPDFReaderEvents = function() {
             }
             // رندر مجدد برای تطبیق اندازه
             setTimeout(() => {
-                if (self._lbPdfDoc) self._renderPDFPage(self._lbCurrentPage);
+                if (self._lbPdfDoc) {
+                    if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+                    else self._renderPDFPage(self._lbCurrentPage);
+                }
             }, 300);
         };
     }
@@ -1447,11 +1661,13 @@ GermanDictionary.prototype._setupPDFReaderEvents = function() {
         } else if (e.key === '+' || e.key === '=') {
             e.preventDefault();
             self._lbZoom = Math.min(self._lbZoom + 0.25, 4);
-            self._renderPDFPage(self._lbCurrentPage);
+            if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+            else self._renderPDFPage(self._lbCurrentPage);
         } else if (e.key === '-') {
             e.preventDefault();
             self._lbZoom = Math.max(self._lbZoom - 0.25, 0.4);
-            self._renderPDFPage(self._lbCurrentPage);
+            if (self._lbRenderMode === 'all') self._renderAllPDFPages();
+            else self._renderPDFPage(self._lbCurrentPage);
         } else if (e.key === 'Home') {
             e.preventDefault();
             if (self._lbCurrentPage > 1) self._renderPDFPage(1);
@@ -1486,8 +1702,18 @@ GermanDictionary.prototype._closePDFReader = function() {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
+        // پاکسازی همه canvasهای صفحات
+        const wrap = document.querySelector('.lb-canvas-wrap');
+        if (wrap) wrap.innerHTML = '';
+        // حذف شنونده اسکرول
+        const body = document.getElementById('lb-reader-body');
+        if (body && body._lbScrollHandler) {
+            body.removeEventListener('scroll', body._lbScrollHandler);
+            body._lbScrollHandler = null;
+        }
         this._lbPdfDoc = null;
         this._lbCurrentBook = null;
+        this._lbRenderMode = null;
     }, 300);
 };
 
@@ -1530,6 +1756,242 @@ GermanDictionary.prototype.dataURLToBlob = function(dataURL) {
 /* ============================================================
    پاک کردن فرم کتاب
    ============================================================ */
+/* ============================================================
+   ✔️ NEW: تولید مفهوم بصری هوشمند برای جلد کتاب
+   ----------------------------------------------------------------
+   با استفاده از _puterChat (LLM) عنوان و نویسنده کتاب را تحلیل
+   می‌کند و یک cover concept مرتبط با موضوع تولید می‌کند.
+   خروجی: یک عبارت انگلیسی کوتاه برای استفاده در پرامپت تصویر.
+   ============================================================ */
+GermanDictionary.prototype._generateBookCoverConcept = async function(title, author) {
+    // اگر _puterChat موجود نبود، fallback هوشمند بر اساس کلمات کلیدی
+    if (typeof this._puterChat !== 'function') {
+        console.log('[book-cover] _puterChat در دسترس نیست — استفاده از fallback');
+        return this._fallbackBookCoverConcept(title, author);
+    }
+
+    var systemPrompt =
+        'You are a book cover designer for a 3D clay illustration style (Pixar/Duolingo inspired). ' +
+        'Given a book title and optionally an author, design a SINGLE short visual concept for the book cover artwork. ' +
+        'The concept must be directly RELATED to the book\'s subject matter (NOT a generic book). ' +
+        'For example: "Deutsch für Anfänger" → clay ABC blocks + German flag colors + cute student character. ' +
+        'Return ONLY a single English sentence (max 30 words) describing the visual scene/objects on the cover. ' +
+        'Do NOT include the book title as text. Do NOT use markdown or code fences.';
+
+    var userPrompt =
+        'Book title: "' + title + '"\n' +
+        (author ? ('Author: "' + author + '"\n') : '') +
+        '\nGenerate a single visual concept sentence for the cover artwork:';
+
+    try {
+        var result = await this._puterChat([
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ], { temperature: 0.7, max_tokens: 120 });
+
+        // استخراج متن از پاسخ _puterChat
+        var text = '';
+        if (result && typeof result === 'string') {
+            text = result;
+        } else if (result && result.message && Array.isArray(result.message.content) &&
+                   result.message.content[0] && typeof result.message.content[0].text === 'string') {
+            text = result.message.content[0].text;
+        } else if (result && Array.isArray(result.content) &&
+                   result.content[0] && typeof result.content[0].text === 'string') {
+            text = result.content[0].text;
+        } else if (result && result.message && typeof result.message.content === 'string') {
+            text = result.message.content;
+        }
+
+        if (text) {
+            // پاکسازی: حذف کوتیشن‌ها، مارک‌داون، خطوط جدید اضافی
+            text = text.replace(/```[\s\S]*?```/g, '').trim();
+            text = text.replace(/^["'\s]+|["'\s]+$/g, '').trim();
+            // اگر چند خط بود، فقط اولین خط معنی‌دار را بردار
+            var lines = text.split(/\n/).map(function(s){return s.trim();}).filter(Boolean);
+            if (lines.length) text = lines[0];
+            // محدود کردن طول
+            if (text.length > 300) text = text.substring(0, 300);
+            if (text.length > 10) {
+                console.log('[book-cover] 🎯 مفهوم بصری LLM:', text);
+                return text;
+            }
+        }
+        console.log('[book-cover] پاسخ LLM خالی بود — fallback');
+        return this._fallbackBookCoverConcept(title, author);
+    } catch (err) {
+        console.warn('[book-cover] خطای _puterChat، استفاده از fallback:', err.message);
+        return this._fallbackBookCoverConcept(title, author);
+    }
+};
+
+// مفهوم بصری پیش‌فرض — تحلیل هوشمند کلمات کلیدی در عنوان
+GermanDictionary.prototype._fallbackBookCoverConcept = function(title, author) {
+    var t = (title || '').toLowerCase();
+    var concepts = [];
+
+    // تشخیص موضوع بر اساس کلمات کلیدی
+    if (/deutsch|german|grammatik|wortschatz|sprache|lernen|kurs|lehrbuch|a1|a2|b1|b2|c1|c2|anfänger|fortgeschritten/.test(t)) {
+        concepts.push('cute clay alphabet blocks spelling "ABC"');
+        concepts.push('a friendly clay student character holding a pencil');
+        concepts.push('small German flag colors (black, red, gold) as decorative ribbons');
+        concepts.push('open clay notebook with colorful grammar symbols');
+    }
+    if (/koch|kochen|rezept|küche|essen|backen|brot|kuchen/.test(t)) {
+        concepts.push('a cute clay kitchen scene with a small pot, wooden spoon, and fresh bread');
+        concepts.push('clay fruits and vegetables arranged on a tiny wooden table');
+    }
+    if (/geschicht|history|krieg|revolution/.test(t)) {
+        concepts.push('a tiny clay ancient scroll and a quill pen');
+        concepts.push('small clay castle or historical monument');
+    }
+    if (/mathe|mathematik|algebra|geometrie/.test(t)) {
+        concepts.push('cute clay math symbols: plus, minus, pi, and a small abacus');
+    }
+    if (/physik|chemie|biologie|natur|wissenschaft/.test(t)) {
+        concepts.push('a tiny clay microscope, atom model, and green leaf');
+    }
+    if (/musik|klavier|gitarre|geige/.test(t)) {
+        concepts.push('a cute clay musical instrument (piano keys or small guitar)');
+    }
+    if (/reisen|reise|travel|stadt|land/.test(t)) {
+        concepts.push('a small clay suitcase with a tiny map and compass');
+    }
+    if (/kind|kinder|spiel|märchen/.test(t)) {
+        concepts.push('a friendly clay teddy bear and colorful building blocks');
+    }
+    if (/liebe|romantik|herz/.test(t)) {
+        concepts.push('a soft clay heart with a small ribbon, warm pastel tones');
+    }
+    if (/business|wirtschaft|geld|finanz|markt/.test(t)) {
+        concepts.push('a tiny clay briefcase with gold coins stacked beside it');
+    }
+    if (/medizin|gesundheit|arzt|krankheit/.test(t)) {
+        concepts.push('a cute clay stethoscope and a small medical cross in soft red');
+    }
+    if (/recht|gesetz|jurist/.test(t)) {
+        concepts.push('a small clay scales of justice and a wooden gavel');
+    }
+    if (/religion|bibel|koran|geistlich/.test(t)) {
+        concepts.push('a tiny clay open holy book with a soft golden glow');
+    }
+    if (/sport|fußball|fussball|laufen/.test(t)) {
+        concepts.push('a cute clay soccer ball and a small whistle');
+    }
+    if (/computer|informatik|programmieren|code|software/.test(t)) {
+        concepts.push('a small clay laptop with colorful code symbols floating around');
+    }
+
+    // اگر هیچ کلمه کلیدی شناخته نشد، یک مفهوم عمومی اما مرتبط با عنوان
+    if (!concepts.length) {
+        concepts.push('a friendly clay book character with big eyes, holding a tiny glowing star');
+        concepts.push('small clay decorative elements representing the theme of "' + title + '"');
+    }
+
+    // انتخاب ۲-۳ مفهوم و ترکیب آنها
+    var selected = concepts.slice(0, 3).join(', ');
+    var concept = selected + ' — all arranged as a cohesive cover illustration';
+    console.log('[book-cover] 🎯 مفهوم fallback:', concept.substring(0, 150));
+    return concept;
+};
+
+
+GermanDictionary.prototype._generateBookCover = async function(bookId, title, author) {
+    try {
+        // ✔️ FIX: IMAGE_WORKERS یک متغیر closure-scoped داخل installImageGenModule
+        // در dict-image-gen.js است و از بیرون قابل دسترسی نیست (typeof هم undefined برمی‌گرداند).
+        // به‌جای تکرار منطق Worker ها، از this._generateImageAPI استفاده می‌کنیم
+        // که Failover، Rate-Limit و Timeout را به‌صورت خودکار مدیریت می‌کند.
+        if (typeof this._generateImageAPI !== 'function') {
+            console.warn('[book-cover] ماژول تولید تصویر (dict-image-gen.js) لود نشده است.');
+            this.showToast('⚠️ ماژول هوش مصنوعی تصویر بارگذاری نشده', 'warning');
+            return;
+        }
+
+        // مقداردهی state ماژول تصویر در صورت نیاز
+        if (!this._igState) {
+            if (typeof this._initImageSystem === 'function') {
+                try { this._initImageSystem(); } catch (e) { /* ignore */ }
+            }
+            if (!this._igState) {
+                this._igState = { lastRequestAt: 0 };
+            }
+        }
+
+        console.log('[book-cover] شروع ساخت جلد برای:', title, '| نویسنده:', author);
+        this.showToast('🎨 در حال ساخت جلد کتاب با هوش مصنوعی...', 'info');
+
+        // ✔️ NEW: ساخت پرامپت هوشمند مبتنی بر موضوع کتاب
+        // با استفاده از _puterChat (LLM) عنوان و نویسنده کتاب را تحلیل می‌کنیم
+        // و یک cover concept مرتبط با موضوع کتاب می‌سازیم. مثال:
+        //   "Deutsch für Anfänger" → جلد با رنگ پرچم آلمان + بلوک‌های ABC + کاراکتر بچه
+        //   "Kochbuch"              → جلد با غذاهای آلمانی، قاشق‌چنگال، سبد میوه
+        //   "Grammatik A2"          → جلد با نمادهای گرامری، بلوک‌های کلمات، مداد
+        var safeTitle = (title || 'Deutsch Buch').replace(/"/g, '').trim();
+        var safeAuthor = (author || '').replace(/"/g, '').trim();
+        var coverConcept = await this._generateBookCoverConcept(safeTitle, safeAuthor);
+
+        var prompt = [
+            'Premium 3D book cover illustration',
+            'closed hardcover book standing upright, slight 3/4 angle, front cover clearly visible',
+            'soft clay material, matte finish, Pixar-inspired, Duolingo mascot style',
+            'soft pastel colors, friendly and educational mood',
+            'clean white background, minimal, soft studio lighting',
+            'ambient occlusion, subsurface scattering',
+            'center composition, high detail, isometric view',
+            'no readable text, no watermark, no signature, no logo, no letters',
+            // ✔️ مفهوم بصری مرتبط با موضوع کتاب (تولید شده توسط LLM)
+            'cover artwork concept: ' + coverConcept,
+            'book title context (do NOT render text, just inspire the imagery): "' + safeTitle + '"',
+            safeAuthor ? ('author context: "' + safeAuthor + '"') : ''
+        ].filter(Boolean).join(', ');
+
+        console.log('[book-cover] پرامپت نهایی:', prompt.substring(0, 200) + '...');
+
+        // ✔️ استفاده از API یکپارچه ماژول image-gen (Failover بین ۸ Worker)
+        var blob = await this._generateImageAPI(prompt);
+
+        if (!blob || blob.size < 100) {
+            console.warn('[book-cover] blob خالی برگشت');
+            this.showToast('⚠️ ساخت جلد کتاب ناموفق بود', 'warning');
+            return;
+        }
+
+        // تبدیل blob به dataURL
+        var dataURL = await new Promise(function(resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function() { resolve(reader.result); };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+
+        // ذخیره dataURL در رکورد کتاب
+        var books = await this.getAllBooksFromIndexedDB();
+        var book = null;
+        for (var i = 0; i < books.length; i++) {
+            if (books[i].id === bookId) { book = books[i]; break; }
+        }
+        if (book) {
+            book.coverData = dataURL;
+            var tx = this.db.transaction(['books'], 'readwrite');
+            tx.objectStore('books').put(book);
+            await new Promise(function(resolve, reject) {
+                tx.oncomplete = resolve;
+                tx.onerror = function() { reject(tx.error); };
+            });
+            console.log('[book-cover] ✅ جلد کتاب با موفقیت ذخیره شد.');
+            this.showToast('🎨 جلد کتاب با موفقیت ساخته شد!', 'success');
+            await this.renderBooksListFromIndexedDB();
+        } else {
+            console.warn('[book-cover] کتاب با id پیدا نشد:', bookId);
+            this.showToast('⚠️ کتاب پیدا نشد تا جلد ذخیره شود', 'warning');
+        }
+    } catch (err) {
+        console.error('[book-cover] خطا در ساخت جلد کتاب:', err);
+        this.showToast('⚠️ ساخت جلد کتاب ناموفق بود: ' + (err && err.message ? err.message : 'خطای ناشناخته'), 'warning');
+    }
+};
+
 GermanDictionary.prototype.clearBookForm = function() {
     const titleInput = document.getElementById('book-title');
     const authorInput = document.getElementById('book-author');
