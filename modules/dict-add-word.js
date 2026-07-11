@@ -826,6 +826,7 @@ GermanDictionary.prototype.updateFieldCount = function() {
    ثبت لغت (addWord)
    ============================================================ */
 GermanDictionary.prototype.addWord = async function(wordData) {
+    this._invalidateAllWordsCache && this._invalidateAllWordsCache();
     return new Promise((resolve, reject) => {
         if (!this.db) {
             reject(new Error('دیتابیس آماده نیست'));

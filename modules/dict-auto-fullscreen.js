@@ -140,7 +140,7 @@
             '#dict-fs-toggle:active { transform: scale(.95); }',
             '#dict-fs-toggle.is-fullscreen { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 6px 20px rgba(16,185,129,.35); }',
             '@media (max-width: 640px) {',
-            '  #dict-fs-toggle { width: 56px; height: 56px; font-size: 20px; bottom: 20px; right: 20px; border-radius: 18px; }',
+            '  #dict-fs-toggle { width: 40px; height: 40px; font-size: 14px; bottom: 28px; right: 28px; border-radius: 12px; }',
             '}',
             '/* در حالت تمام‌صفحه دکمه نیمه‌شفاف می‌شود */',
             ':fullscreen #dict-fs-toggle, :-webkit-full-screen #dict-fs-toggle { opacity: .55; }',

@@ -1,5 +1,5 @@
 // sw.js - نسخه 2.0 با مدیریت کش پویا
-const CACHE_VERSION = 'v13';  // تغییر نسخه = پاک شدن کش قبلی
+const CACHE_VERSION = 'v14';  // تغییر نسخه = پاک شدن کش قبلی
 const CACHE_NAME = `elias-dict-${CACHE_VERSION}`;
 const urlsToCache = [
     './',

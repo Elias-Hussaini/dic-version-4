@@ -316,7 +316,7 @@
 
             /* ===== ایندیکاتور «در حال فکر کردن» ===== */
             .ac-thinking{display:flex; align-items:center; gap:8px; padding:2px 2px; font-size:13.5px; font-weight:600; color:var(--ac-muted); line-height:1.6;}
-            .ac-thinking-emoji{font-size:16px; flex-shrink:0;}
+            .ac-thinking-emoji{font-size:16px; flex-shrink:0;} .ac-thinking-ic{width:20px;height:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ac-primary);font-size:14px;}
             .ac-thinking-dots{display:inline-flex; gap:3px; align-items:center;}
             .ac-thinking-dots span{width:5px; height:5px; border-radius:50%; background:var(--ac-primary); animation:ac-thinking-pulse 1.2s ease-in-out infinite;}
             .ac-thinking-dots span:nth-child(2){animation-delay:.18s;}
@@ -495,7 +495,7 @@
                 '<div class="ac-wrap">' +
                     '<div class="ac-topbar">' +
                         '<div class="ac-topbar-left">' +
-                            '<div class="ac-avatar"><i class="fas fa-robot"></i></div>' +
+                            '<div class="ac-avatar"><i class="fas fa-wand-magic-sparkles"></i></div>' +
                             '<div class="ac-topbar-info">' +
                                 '<div class="ac-topbar-title">دستیار هوش مصنوعی</div>' +
                                 '<div class="ac-topbar-sub"><span class="ac-status-dot"></span> آنلاین • آماده پاسخگویی</div>' +
@@ -548,7 +548,7 @@
             }).join('');
 
             return '<div class="ac-welcome">' +
-                '<div class="ac-welcome-ic"><i class="fas fa-robot"></i></div>' +
+                '<div class="ac-welcome-ic"><i class="fas fa-wand-magic-sparkles"></i></div>' +
                 '<h3>🤖 سلام! خوش آمدید</h3>' +
                 '<p>من دستیار تو هستم میخواهی لغاتی که اضافه کردی رو با هم تمرین کنیم؟</p>' +
                 
@@ -819,18 +819,39 @@
             var typing = document.createElement('div');
             typing.className = 'ac-msg ai';
             typing.id = 'typing-indicator';
+            // ✔️ NEW: نشانگر تفکر پویا — متن‌های مختلف چرخشی
             typing.innerHTML =
-                '<div class="ac-msg-avatar"><i class="fas fa-robot"></i></div>' +
+                '<div class="ac-msg-avatar"><i class="fas fa-wand-magic-sparkles"></i></div>' +
                 '<div class="ac-msg-body"><div class="ac-msg-bubble"><div class="ac-thinking">' +
-                    '<span class="ac-thinking-emoji">🤖</span>' +
-                    '<span>در حال فکر کردن</span>' +
+                    '<span class="ac-thinking-ic"><i class="fas fa-brain"></i></span>' +
+                    '<span id="ac-thinking-text">در حال تفکر...</span>' +
                     '<span class="ac-thinking-dots"><span></span><span></span><span></span></span>' +
                 '</div></div></div>';
             ch.appendChild(typing);
             this._acScrollToBottom();
+            // ✔️ NEW: چرخش متن‌های تفکر برای تجربه‌ی کاربری بهتر
+            this._acThinkingTexts = [
+                'در حال تفکر...',
+                'Analyzing your question...',
+                'در حال بررسی دیکشنری...',
+                'Searching vocabulary...',
+                'در حال ساخت پاسخ...',
+                'Composing response...',
+                'Checking grammar rules...',
+                'مرور لغات شما...'
+            ];
+            this._acThinkingIdx = 0;
+            var self = this;
+            this._acThinkingInterval = setInterval(function () {
+                var el = document.getElementById('ac-thinking-text');
+                if (!el) { clearInterval(self._acThinkingInterval); return; }
+                self._acThinkingIdx = (self._acThinkingIdx + 1) % self._acThinkingTexts.length;
+                el.textContent = self._acThinkingTexts[self._acThinkingIdx];
+            }, 1800);
         };
 
         GermanDictionary.prototype.removeTypingIndicator = function () {
+            if (this._acThinkingInterval) { clearInterval(this._acThinkingInterval); this._acThinkingInterval = null; }
             var t = document.getElementById('typing-indicator');
             if (t) t.remove();
         };
@@ -850,7 +871,7 @@
             msg.className = 'ac-msg ai';
             msg.id = 'ac-streaming-msg';
             msg.innerHTML =
-                '<div class="ac-msg-avatar"><i class="fas fa-robot"></i></div>' +
+                '<div class="ac-msg-avatar"><i class="fas fa-wand-magic-sparkles"></i></div>' +
                 '<div class="ac-msg-body">' +
                     '<div class="ac-msg-bubble" id="ac-streaming-bubble"></div>' +
                     '<div class="ac-msg-time">' + time + '</div>' +
@@ -874,7 +895,7 @@
         /* ============================================================
            نهایی‌سازی پیام استریم‌شده (افزودن دکمه‌های کپی/بازتولید)
            ============================================================ */
-        GermanDictionary.prototype._acFinalizeStreamingMessage = function (fullText) {
+        GermanDictionary.prototype._acFinalizeStreamingMessage = async function (fullText) {
             var msg = document.getElementById('ac-streaming-msg');
             if (!msg) {
                 // اگر حباب استریم وجود نداشت، پیام را به‌صورت عادی اضافه کن
@@ -886,7 +907,15 @@
             var bubble = msg.querySelector('.ac-msg-bubble');
             if (bubble) {
                 bubble.removeAttribute('id');
-                bubble.innerHTML = this._formatAIMessage(fullText);
+                // ✔️ FIX: ابتدا دستورات را پردازش کن (روی متن خام، قبل از escape)
+                var processedText = fullText;
+                if (typeof this._acProcessCommands === 'function') {
+                    try {
+                        processedText = await this._acProcessCommands(fullText);
+                    } catch (e) { console.warn('[ai-chat] command processing failed:', e); }
+                }
+                // سپس Markdown formatting را اعمال کن
+                bubble.innerHTML = processedText;
             }
             // افزودن دکمه‌های کپی/بازتولید
             var body = msg.querySelector('.ac-msg-body');
@@ -956,7 +985,7 @@
             if (welcome) welcome.remove();
 
             var isUser = sender === 'user';
-            var avatar = isUser ? 'fa-user' : 'fa-robot';
+            var avatar = isUser ? 'fa-user' : 'fa-wand-magic-sparkles';
             var formatted = isUser
                 ? this._acEscape(message).replace(/\n/g, '<br>')
                 : this._formatAIMessage(message);
@@ -1033,7 +1062,7 @@
             var welcome = ch.querySelector('.ac-welcome');
             if (welcome) welcome.remove();
             var isUser = sender === 'user';
-            var avatar = isUser ? 'fa-user' : 'fa-robot';
+            var avatar = isUser ? 'fa-user' : 'fa-wand-magic-sparkles';
             var time = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
 
             var content = '';
@@ -1127,7 +1156,7 @@
                     dictContext = await this._getDictionaryContext();
                 }
 
-                var systemContent = 'تو یک دستیار هوشمند و صمیمی به نام "الیاس" هستی برای آموزش زبان آلمانی به فارسی‌زبانان. همیشه فارسی روان و دوستانه پاسخ بده و از ایموجی مناسب استفاده کن. برای خوانایی بهتر از Markdown (سرتیتر، **پررنگ**، *کج*، فهرست، جدول، > نقل‌قول، `کد`) استفاده کن. پاسخ‌هایت ساختاریافته، دقیق و آموزشی باشند.\n\nتو به تمام اطلاعات دیکشنری کاربر دسترسی داری: تمام لغات، تعداد اسم/فعل/صفت، سطح SRS هر لغت، علاقه‌مندی‌ها، و ۵ لغت اخیر. از این اطلاعات برای پاسخ‌های شخصی‌سازی‌شده استفاده کن. مثلاً اگر کاربر می‌پرسد چه لغاتی یاد بگیرد، بر اساس لغات فعلی‌اش پیشنهاد بده.\n\n' + dictContext + '\n\nاگر کاربر پرسید سازنده‌ات کیست، فقط بگو: «من توسط **الیاس حسینی** ساخته شده‌ام.»';
+                var systemContent = 'تو دستیار دیکشنری آلمانی-فارسی هستی. فارسی روان و دوستانه پاسخ بده.\n\nقوانین پاسخ‌گویی:\n1. **مرتبط پاسخ بده** — فقط جواب همان چیزی را بده که پرسیده شده. چیز اضافه ننویس.\n2. **اندازه مناسب** — سلام را با سلام جواب بده (کوتاه). اما سوالات آموزشی را کامل و ساختاریافته جواب بده.\n3. **از Markdown استفاده کن** — سرتیتر (##)، **پررنگ**، *کج*، فهرست‌ها (- یا 1.)، جداول، > نقل‌قول برای خوانایی بهتر.\n4. **هرگز نشانگرهای دستوری [[...]] را به کاربر نشان نده** — این نشانگرها مخفی‌اند. هرگز در متن قابل دیدن کاربر قرارشان نده و هرگز به کاربر نگو چطور از آن‌ها استفاده کند.\n\nدستورات مخفی (هرگز به کاربر نشان نده):\n- وقتی کاربر لغتی را می‌خواهد ببیند: [[SHOW_WORD:لغت]] را در پاسخت بگذار\n- وقتی کاربر می‌خواهد لغت اضافه کند: [[SAVE_WORD:{"german":"...","persian":"...","type":"noun","gender":"...","plural":"...","example":"...","exampleTranslation":"..."}]]\n- وقتی کاربر آمار می‌خواهد: [[STATS]]\n- وقتی کاربر آزمون می‌خواهد: [[QUIZ]]\n- وقتی کاربر علاقه‌مندی می‌خواهد: [[FAVORITES]]\n- وقتی کاربر مرور می‌خواهد: [[REVIEW_NEEDED]]\n- وقتی کاربر تصویر می‌خواهد: [[GENERATE_IMAGE:ID]]\n\nمثال:\n- کاربر: "سلام" → تو: "سلام! 😊 چطور می‌تونم کمکت کنم؟"\n- کاربر: "Hund رو نشون بده" → تو: "بفرما! 📚\\n[[SHOW_WORD:Hund]]"\n- کاربر: "لغت Haus رو اضافه کن" → تو: "اضافه شد! ✅\\n[[SAVE_WORD:{"german":"Haus","persian":"خانه","type":"noun","gender":"خنثی","plural":"Häuser","example":"Ich wohne in einem Haus.","exampleTranslation":"من در یک خانه زندگی می‌کنم."}]]"\n- کاربر: "آمار" → تو: "📊 آمار شما:\\n[[STATS]]"\n- کاربر: "تفاوت der و die و das رو بگو" → تو: توضیح کامل و ساختاریافته با مثال و Markdown\n\n' + dictContext + '\n\nاگر کاربر پرسید سازنده‌ات کیست، فقط بگو: «من توسط **الیاس حسینی** ساخته شده‌ام.»';
 
                 var systemMsg = {
                     role: 'system',
@@ -1321,24 +1350,38 @@
             }
         };
 
-        GermanDictionary.prototype._getDictionaryContext = async function () {
+                GermanDictionary.prototype._getDictionaryContext = async function () {
             try {
                 if (typeof this.getAllWords !== 'function') return '';
                 var words = await this.getAllWords();
                 var total = words.length;
                 var nouns = words.filter(function(w){return w.type==='noun';}).length;
                 var verbs = words.filter(function(w){return w.type==='verb';}).length;
-                var adjs = words.filter(function(w){return w.type==='adjective';}).length;
+                var adjs  = words.filter(function(w){return w.type==='adjective';}).length;
                 var srsKeys = Object.keys(this.srsData || {});
                 var learned = srsKeys.filter(function(k){return (this.srsData[k]?.level||0)>=3;}, this).length;
-                var recent = words.slice(-5).map(function(w){return w.german+' ('+w.persian+')';}).join('، ');
                 var favCount = this.favorites ? this.favorites.size : 0;
-                return 'اطلاعات دیکشنری کاربر:\n' +
+                // ✔️ NEW: دسترسی به همه‌ی لغات (نه فقط ۵ تای اخیر)
+                var wordList = words.map(function(w) {
+                    var srs = (this.srsData && this.srsData[w.id] && this.srsData[w.id].level) ? this.srsData[w.id].level : 0;
+                    return w.german + ' (' + w.persian + ', ' + (w.type||'?') + ', SRS:' + srs + ')';
+                }.bind(this)).join('، ');
+                if (wordList.length > 6000) {
+                    wordList = words.slice(0, 150).map(function(w) {
+                        return w.german + ' (' + w.persian + ', ' + (w.type||'?') + ')';
+                    }).join('، ') + ' ... و ' + (total - 150) + ' لغت دیگر';
+                }
+                var reviewNeeded = words.filter(function(w) {
+                    var srs = (this.srsData && this.srsData[w.id] && this.srsData[w.id].level) ? this.srsData[w.id].level : 0;
+                    return srs < 2;
+                }.bind(this)).slice(0, 20).map(function(w){return w.german;}).join('، ');
+                return 'اطلاعات کامل دیکشنری کاربر:\n' +
                     '- تعداد کل لغات: ' + total + '\n' +
                     '- اسم: ' + nouns + ' | فعل: ' + verbs + ' | صفت: ' + adjs + '\n' +
                     '- لغات تسلط‌یافته (SRS≥3): ' + learned + '\n' +
                     '- علاقه‌مندی‌ها: ' + favCount + '\n' +
-                    '- ۵ لغت اخیر: ' + recent;
+                    '- لغات نیاز به مرور (SRS<2): ' + (reviewNeeded || 'هیچ') + '\n' +
+                    '- لیست کامل لغات: ' + wordList;
             } catch (e) {
                 return '';
             }

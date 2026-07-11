@@ -59,88 +59,305 @@
     { url: 'https://image-gen-api.image-gen-api-sz3qkb.workers.dev', key: 'sk-lO0272becIVIQfBpSjzLvN8dhkK0uMio' },
     { url: 'https://image12.image12-a4f6io.workers.dev', key: 'sk-982GTd5u2inR41JjS8MBD8gL52iEZTh9' },
     { url: 'https://image786.image786-t92w4k.workers.dev', key: 'sk-LGONLhipEWRV8OulH7ITBytEXUhZsFgC' },
-    { url: 'https://image-gen-api.image-gen-api-hrhte5.workers.dev', key: 'sk-K8yr2hf92rOSiOW7i3hwvgYBXLwYBrRk' },
-    { url: 'https://image1324.image1324-0on168.workers.dev', key: 'sk-KhJBSvsdripnqXHlwEI0crnJpSWbDDTM' }
+    { url: 'https://hassancreate.hassancreate-bekp9i.workers.dev', key: 'sk-ISqjzZ6g5zW33tytBN3MymrB1dkphhFl' },
+    
 ];
 
-    // حداکثر تعداد تولید تصویر همزمان (Rate Limiting)
-    const MAX_CONCURRENT = 10; // حداکثر ۲ تصویر همزمان (برای جلوگیری از محدودیت)
+    // ✔️ FIX: حداکثر تعداد تولید تصویر همزمان — از ۱۰ به ۳۰ افزایش یافت
+    const MAX_CONCURRENT = 15;
 
     // تایم‌اوت هر درخواست به Worker (میلی‌ثانیه) — ۶۰ ثانیه
     const WORKER_TIMEOUT_MS = 60000;
 
-    // تاخیر کوتاه بین درخواست‌ها به یک Worker یکسان (جلوگیری از Rate-Limit)
-    const INTER_REQUEST_DELAY_MS = 400;
+    // ✔️ FIX: تاخیر بین درخواست‌ها از ۴۰۰ms به ۱۰۰ms کاهش یافت.
+    // با ۸ Worker و ۳۰ کار همزمان، throughput از ~۲.۵ به ~۱۰ req/s افزایش می‌یابد.
+    const INTER_REQUEST_DELAY_MS = 100;
 
-    /* ----- مرحله ۱: راهنمای سبک "Neo Clay 3D Learning" ----- */
-    // تمام تصاویر باید این سبک یکپارچه را داشته باشند.
+    // ✔️ NEW: حداقل اندازه blob معتبر (۲KB) — رد تصاویر سیاه/خالی کوچک
+    const MIN_VALID_BLOB_SIZE = 2048;
+
+    /* ----- مرحله ۱: راهنمای سبک (نسخه ۶.۰ — Character 3D Cartoon) ----- */
+    // ✔️ NEW STYLE: هر کلمه با یک کاراکتر سه‌بعدی کارتونی نمایش داده می‌شود
+    // الهام‌گرفته از سبک Pixar-early character design / modern educational 3D
+    // هر کلمه = یک شخصیت که مفهوم آن را نمایش می‌دهد
     const STYLE_GUIDE = {
-        name: 'Neo Clay 3D Learning',
-        keywords: [
-            '3D Clay illustration',
-            'Pixar inspired',
-            'Duolingo style mascot',
-            'soft pastel colors',
-            'soft studio lighting',
-            'ambient occlusion',
-            'rounded shapes',
-            'cute and friendly',
-            'minimal',
-            'isometric view',
-            'floating object',
-            'clean white background',
-            'high detail',
-            'subsurface scattering',
-            'smooth matte clay material'
+        name: 'Character 3D Cartoon',
+        // سبک کاراکتر — برای همه‌ی کلمات
+        character: [
+            'cheerful 3D cartoon character',
+            'stylized 3D animation style',
+            'smooth rounded organic shapes',
+            'soft matte material',
+            'big expressive eyes',
+            'friendly warm smile',
+            'character holding or interacting with the subject',
+            'soft diffused studio lighting',
+            'vibrant but soft pastel color palette',
+            'clean neutral background',
+            'centered composition',
+            'Pixar-early character design aesthetic',
+            'approachable and educational',
+            'no text on image',
+            'no watermark'
         ],
-        background: 'clean white background, minimal, no shadow on ground',
-        // مواردی که باید حذف شوند (Negative)
+        // حالت خاص: حیوانات (خود حیوان کاراکتر است)
+        animal: [
+            'cheerful 3D cartoon animal character',
+            'stylized 3D animation style',
+            'smooth rounded organic shapes',
+            'cute and friendly anthropomorphic animal',
+            'big expressive eyes',
+            'soft diffused studio lighting',
+            'vibrant but soft pastel colors',
+            'clean neutral background',
+            'centered composition',
+            'Pixar character design',
+            'no text on image',
+            'no watermark'
+        ],
+        background: 'clean neutral background, soft gradient',
         negative: [
             'text', 'watermark', 'signature', 'logo',
             'realistic photo', 'photographic', 'dark', 'scary',
-            'cluttered', 'busy background', 'multiple unrelated objects',
-            'low quality', 'blurry', 'distorted', 'cropped'
+            'cluttered', 'busy background', 'multiple characters',
+            'low quality', 'blurry', 'distorted', 'cropped',
+            '2D anime', 'cel-shaded', 'flat illustration'
         ]
     };
 
-    /* ----- مرحله ۵: سیستم دسته‌بندی و راهنمای رنگ ----- */
+    function getStyleForWord(type, category) {
+        // حیوانات: خود حیوان کاراکتر است
+        if (category === 'Animal') return STYLE_GUIDE.animal;
+        // بقیه: کاراکتر انسانی که مفهوم را نمایش می‌دهد
+        return STYLE_GUIDE.character;
+    }
+    /* ----- مرحله ۱.۵: Visual DNA — قوانین غیرقابل‌نقض همه‌ی پرامپت‌ها ----- */
+    // ✔️ NEW: این قوانین در هر پرامپتی باید رعایت شوند — هیچ پرامپتی حق شکستن آن‌ها را ندارد
+    const VISUAL_DNA = {
+        name: 'Neo Clay 3D Learning Visual DNA',
+        rules: [
+            'premium educational icon',
+            'soft clay material',
+            'rounded geometry',
+            'centered composition',
+            'transparent or clean white background',
+            'studio lighting',
+            'high contrast',
+            'vibrant pastel colors',
+            'icon friendly',
+            'high memorability',
+            'single main subject',
+            'consistent scale',
+            'clean silhouette',
+            'no text',
+            'no watermark'
+        ],
+        composition: [
+            'centered composition',
+            'single object focus',
+            'no cropping',
+            'no background clutter',
+            'balanced composition',
+            'icon friendly framing'
+        ]
+    };
+
+    /* ----- مرحله ۱.۶: سیستم سختی (Difficulty) — A1 ساده، C1 مفهومی ----- */
+    const DIFFICULTY_STYLES = {
+        A1: { style: 'very simple and iconic, minimal details, bold clear silhouette, almost like a toddler-friendly toy', scene: 'single static object, no complex scene' },
+        A2: { style: 'simple and clear, a few decorative details, friendly and approachable', scene: 'single object with 1 small accent element' },
+        B1: { style: 'moderate detail, small contextual scene, slightly more narrative', scene: 'object in a mini-scene with 1-2 supporting elements' },
+        B2: { style: 'richer detail, metaphorical elements, more story-driven', scene: 'symbolic scene with multiple supportive elements' },
+        C1: { style: 'conceptual and metaphorical, abstract visual storytelling, thought-provoking', scene: 'symbolic narrative scene' },
+        C2: { style: 'highly conceptual, layered symbolism, sophisticated visual metaphor', scene: 'multi-layered metaphorical scene with deep meaning' }
+    };
+
+    /* ----- مرحله ۱.۷: سیستم احساس (Emotion) ----- */
+    const EMOTION_STYLES = {
+        happy:        'bright cheerful colors, warm golden light, joyful and uplifting mood, tiny sparkles',
+        sad:          'soft muted blue-gray tones, gentle melancholic mood, soft rain-like accents',
+        danger:       'subtle warm red accents, alert and tense mood, sharp but still clay-soft edges',
+        romantic:     'soft pink and rose-gold tones, warm intimate glow, floating heart-like particles',
+        cute:         'extra round and chubby shapes, big eyes if character, pastel candy colors, adorable',
+        professional: 'clean neutral tones, minimal and refined, business-like composure, soft graphite accents',
+        calm:         'soft green and aqua tones, peaceful and serene, gentle floating elements',
+        energetic:    'vibrant contrasting colors, dynamic motion lines, lively and active',
+        mysterious:   'deep purple and midnight blue tones, subtle glow, enigmatic atmosphere',
+        neutral:      'balanced soft pastel tones, no strong emotional bias'
+    };
+
+    /* ----- مرحله ۱.۸: سیستم زاویه دوربین (Camera Angle) ----- */
+    const CAMERA_ANGLES = {
+        default:        'isometric 45-degree view, slightly elevated',
+        Food:           'macro close-up view, shallow depth of field',
+        Fruit:          'macro close-up view, shallow depth of field',
+        Drink:          'macro close-up view, shallow depth of field',
+        Jewelry:        'macro close-up view, shallow depth of field',
+        Building:       'front view, straight on, architectural',
+        House:          'front view, slightly elevated 15-degree',
+        City:           'wide front view, urban perspective',
+        Nature:         'front view, slightly elevated 20-degree',
+        Weather:        'wide front view, sky-dominant perspective',
+        Geography:      'wide landscape view, aerial perspective',
+        Vehicle:        '3/4 front view, dynamic angle',
+        Transportation: '3/4 front view, dynamic angle',
+        Abstract:       'top-down view, flat lay',
+        Emotion:        'top-down view with floating elements',
+        Time:           'top-down view, flat lay',
+        Color:          'top-down view, flat lay',
+        Shape:          'top-down view, flat lay',
+        Number:         'top-down view, flat lay',
+        Religion:       'slightly elevated front view, reverent angle',
+        Finance:        'isometric 45-degree view',
+        Action:         'isometric 45-degree view, dynamic',
+        Sports:         'isometric 45-degree view, dynamic',
+        Music:          'isometric 45-degree view',
+        Art:            'isometric 45-degree view',
+        Cooking:        'isometric 45-degree view',
+        Games:          'isometric 45-degree view',
+        Animal:         'front view, eye-level',
+        'Body Parts':   'front view, anatomical',
+        Family:         'front view, warm eye-level',
+        Education:      'isometric 45-degree view',
+        Science:        'isometric 45-degree view',
+        Medical:        'front view, clinical',
+        Clothing:       'front view, flat lay',
+        Furniture:      'isometric 45-degree view',
+        Electronics:    'isometric 45-degree view',
+        Technology:     'isometric 45-degree view',
+        Tools:          'isometric 45-degree view',
+        Kitchen:        'isometric 45-degree view',
+        School:         'isometric 45-degree view',
+        Travel:         'isometric 45-degree view',
+        Job:            'isometric 45-degree view',
+        Other:          'isometric 45-degree view'
+    };
+
+    /* ----- مرحله ۱.۹: سیستم هارمونی رنگ (Color Harmony) ----- */
+    const COLOR_HARMONY = {
+        warm:      ['Animal', 'Food', 'Fruit', 'Cooking', 'Family', 'Jewelry', 'Religion'],
+        cool:      ['Technology', 'Electronics', 'Science', 'Medical', 'Weather', 'Education', 'Music', 'Abstract'],
+        natural:   ['Nature', 'Geography', 'Body Parts', 'Furniture', 'House'],
+        energetic: ['Action', 'Sports', 'Games', 'Vehicle', 'Transportation'],
+        soft:      ['Emotion', 'Clothing', 'Art', 'Travel', 'Time', 'Shape', 'Color', 'Number', 'Job', 'Other']
+    };
+
+    function getColorHarmony(category) {
+        for (var key in COLOR_HARMONY) {
+            if (COLOR_HARMONY[key].indexOf(category) !== -1) {
+                if (key === 'warm')      return 'warm color harmony: red, orange, yellow, gold — cozy and inviting';
+                if (key === 'cool')      return 'cool color harmony: blue, cyan, teal, violet — calm and technical';
+                if (key === 'natural')   return 'natural color harmony: green, brown, cream, earth — organic and grounded';
+                if (key === 'energetic') return 'energetic color harmony: bright red, yellow, white — dynamic and bold';
+                if (key === 'soft')      return 'soft pastel color harmony: muted lavender, dusty rose, powder blue — gentle and friendly';
+            }
+        }
+        return 'balanced soft pastel color harmony';
+    }
+
+    function getCameraAngle(category) {
+        return CAMERA_ANGLES[category] || CAMERA_ANGLES.default;
+    }
+
+    function guessDifficulty(word, meaning, type) {
+        var w = (word || '').toLowerCase();
+        var a1 = ['hund','katze','haus','buch','wasser','brot','apfel','milch','tag','nacht','gut','gross','klein','kommen','gehen','essen','trinken','sein','haben'];
+        if (a1.indexOf(w) !== -1) return 'A1';
+        var c1 = ['freiheit','liebe','hoffnung','angst','sehnsucht','verantwortung','gesellschaft','philosophie','bewusstsein','erkenntnis'];
+        if (c1.indexOf(w) !== -1) return 'C1';
+        if (w.length <= 5) return 'A2';
+        if (w.length <= 8) return 'B1';
+        if (w.length <= 12) return 'B2';
+        return 'C1';
+    }
+
+    /* ----- مرحله ۵: سیستم دسته‌بندی و راهنمای رنگ (نسخه ۲.۰ — ۴۰ دسته) ----- */
+    // ✔️ IMPROVED: از ۱۷ به ۴۰ دسته افزایش یافت — هرچه دسته‌بندی دقیق‌تر، تصویر بهتر
     const CATEGORIES = [
-        'Animal', 'Food', 'Vehicle', 'Emotion', 'Nature', 'Action',
-        'Job', 'Building', 'Electronics', 'Sports', 'Music', 'Travel',
-        'Medical', 'House', 'Education', 'Abstract', 'Other'
+        // موجودات زنده
+        'Animal', 'Body Parts', 'Family',
+        // غذا و نوشیدنی
+        'Food', 'Kitchen', 'Fruit', 'Drink',
+        // اشیاء و وسایل
+        'Clothing', 'Furniture', 'Electronics', 'Technology', 'Tools', 'Jewelry',
+        // مکان‌ها و ساختمان‌ها
+        'Building', 'House', 'School', 'City', 'Nature',
+        // حرکت و حمل‌ونقل
+        'Vehicle', 'Transportation', 'Travel',
+        // مفاهیم انتزاعی
+        'Emotion', 'Abstract', 'Time', 'Color', 'Shape', 'Number', 'Religion', 'Finance',
+        // فعالیت‌ها
+        'Action', 'Sports', 'Music', 'Art', 'Cooking', 'Games',
+        // علم و دانش
+        'Education', 'Science', 'Medical', 'Weather', 'Geography',
+        // سایر
+        'Job', 'Other'
     ];
 
     // هر دسته یک هینت رنگی ملایم دارد تا تصاویر هماهنگ‌تر شوند.
     const CATEGORY_COLORS = {
-        Animal:      'warm beige and soft brown tones',
-        Food:        'warm orange and cream tones',
-        Vehicle:     'soft blue and silver tones',
-        Emotion:     'soft pink and lavender tones',
-        Nature:      'soft green and sky blue tones',
-        Action:      'vibrant teal and yellow tones',
-        Job:         'soft navy and gold tones',
-        Building:    'soft gray and terracotta tones',
-        Electronics: 'soft cyan and graphite tones',
-        Sports:      'energetic red and white tones',
-        Music:       'soft purple and gold tones',
-        Travel:      'soft turquoise and sand tones',
-        Medical:     'soft mint and white tones',
-        House:       'warm terracotta and cream tones',
-        Education:   'soft indigo and amber tones',
-        Abstract:    'soft gradient pastel rainbow tones',
-        Other:       'neutral soft pastel tones'
+        // موجودات زنده
+        Animal:         'warm beige and soft brown tones',
+        'Body Parts':   'soft coral and blush tones',
+        Family:         'warm peach and rose tones',
+        // غذا و نوشیدنی
+        Food:           'warm orange and cream tones',
+        Kitchen:        'warm copper and butter tones',
+        Fruit:          'vibrant red and green pastel tones',
+        Drink:          'soft amber and aqua tones',
+        // اشیاء و وسایل
+        Clothing:       'soft lavender and dusty rose tones',
+        Furniture:      'warm walnut and cream tones',
+        Electronics:    'soft cyan and graphite tones',
+        Technology:     'soft blue and silver tones',
+        Tools:          'warm steel and amber tones',
+        Jewelry:        'soft gold and pearl tones',
+        // مکان‌ها و ساختمان‌ها
+        Building:       'soft gray and terracotta tones',
+        House:          'warm terracotta and cream tones',
+        School:         'soft blue and chalk white tones',
+        City:           'soft slate and neon accent tones',
+        Nature:         'soft green and sky blue tones',
+        // حرکت و حمل‌ونقل
+        Vehicle:        'soft blue and silver tones',
+        Transportation: 'soft teal and steel tones',
+        Travel:         'soft turquoise and sand tones',
+        // مفاهیم انتزاعی
+        Emotion:        'soft pink and lavender tones',
+        Abstract:       'soft gradient pastel rainbow tones',
+        Time:           'soft golden and twilight blue tones',
+        Color:          'vibrant but soft pastel spectrum tones',
+        Shape:          'soft geometric primary pastel tones',
+        Number:         'soft mint and chalk white tones',
+        Religion:       'soft ivory and heavenly gold tones',
+        Finance:        'soft emerald and gold tones',
+        // فعالیت‌ها
+        Action:         'vibrant teal and yellow tones',
+        Sports:         'energetic red and white tones',
+        Music:          'soft purple and gold tones',
+        Art:            'soft magenta and apricot tones',
+        Cooking:        'warm paprika and butter tones',
+        Games:          'playful candy pastel tones',
+        // علم و دانش
+        Education:      'soft indigo and amber tones',
+        Science:        'soft lab blue and flask green tones',
+        Medical:        'soft mint and white tones',
+        Weather:        'soft sky and cloud gray tones',
+        Geography:      'soft earth and ocean tones',
+        // سایر
+        Job:            'soft navy and gold tones',
+        Other:          'neutral soft pastel tones'
     };
 
-    /* ----- مرحله ۲: قالب پرامپت با متغیرها ----- */
-    // متغیرها: {{WORD}} {{MEANING}} {{TYPE}} {{VISUAL}} {{CATEGORY}} {{CATEGORY_HINT}} {{NEGATIVE}}
+    /* ----- مرحله ۲: قالب پرامپت (نسخه ۴.۰ — خلاصه‌شده با Alias) ----- */
+    // ✔️ ARCHITECTURE: پرامپت از ~۱۸۰۰ کاراکتر به ~۶۰۰ کاهش یافت
+    // سبک "Neo Clay Premium" یک Alias است که همه‌ی قوانین Visual DNA را در بر می‌گیرد
     const PROMPT_TEMPLATE =
-        '{{VISUAL}}. ' +
-        STYLE_GUIDE.keywords.join(', ') + '. ' +
-        '{{CATEGORY_HINT}}. ' +
-        'The image represents the German {{TYPE}} "{{WORD}}" which means "{{MEANING}}" in Persian. ' +
-        'Centered composition, single main subject, ' + STYLE_GUIDE.background + '. ' +
-        'Square 1:1 aspect ratio, highly polished render. ' +
-        'Avoid: {{NEGATIVE}}.';
+        '{{VISUAL_STORY}}. ' +
+        'Style: {{STYLE}}. ' +
+        'Camera: {{CAMERA_ANGLE}}. {{COLOR_HARMONY}}. ' +
+        'German {{TYPE}} "{{WORD}}" ({{MEANING}}). ' +
+        '1:1, white bg, 8K. Avoid: {{NEGATIVE}}.';
 
     /* ============================================================
        ۳) توابع کمکی داخلی (Helpers)
@@ -423,11 +640,14 @@
             // اضافه کردن دکمه شناور + پنل تولید انبوه
             this._injectFab();
 
-            // بروزرسانی نشان دکمه شناور
             var self = this;
+            // ✔️ PERF: نشان FAB را فقط یک‌بار بعد از لود بروز کن (نه هر ۵ ثانیه)
             setTimeout(function () { self._refreshFabBadge(); }, 800);
-            // و هر ۵ ثانیه (برای کلمات جدید اضافه‌شده)
-            setInterval(function () { self._refreshFabBadge(); }, 5000);
+            // ✔️ PERF: هر ۳۰ ثانیه (به‌جای ۵) — فقط برای بروزرسانی نشان
+            setInterval(function () { self._refreshFabBadge(); }, 30000);
+            // ✔️ NEW: Background sweeper — هر ۱۵ ثانیه، ۳۰ کلمه بدون تصویر را به صف اضافه کن
+            // این کار باعث می‌شود تولید تصویر مستقل از صفحه‌ی فعلی کاربر پیش برود
+            setTimeout(function () { self._startBackgroundSweeper(); }, 5000);
         };
 
         /* ---------- ۴-۳) هوک کردن توابع رندر موجود ---------- */
@@ -461,6 +681,54 @@
         };
 
         /* ============================================================
+           ✔️ ARCHITECTURE v2: تشخیص محلی دسته از داده‌ی کلمه (۰ms — بدون LLM)
+           ============================================================ */
+        GermanDictionary.prototype._guessCategoryFromWord = function (word) {
+            if (!word) return 'Other';
+            var type = (word.type || '').toLowerCase();
+            var german = (word.german || '').toLowerCase();
+            var persian = (word.persian || '').toLowerCase();
+            // اگر کلمه category داشت، همان را برگردان
+            if (word.category && CATEGORIES.indexOf(word.category) !== -1) return word.category;
+            // حدس بر اساس type
+            if (type === 'verb') return 'Action';
+            if (type === 'adjective') return 'Abstract';
+            if (type === 'adverb') return 'Abstract';
+            // حدس بر اساس کلمات کلیدی رایج
+            var hints = [
+                { cat: 'Animal', words: ['hund','katze','vogel','fisch','pferd','kuh','schwein','maus','bär','tier'] },
+                { cat: 'Food', words: ['brot','käse','fleisch','suppe','kuchen','pizza','nudel','reis'] },
+                { cat: 'Fruit', words: ['apfel','banane','orange','traube','erdbeere','zitrone'] },
+                { cat: 'Drink', words: ['wasser','milch','kaffee','tee','saft','bier','wein'] },
+                { cat: 'Body Parts', words: ['kopf','hand','fuß','auge','ohr','nase','mund','herz'] },
+                { cat: 'Family', words: ['mutter','vater','bruder','schwester','kind','sohn','tochter'] },
+                { cat: 'Clothing', words: ['hemd','hose','kleid','schuhe','jacke','mantel'] },
+                { cat: 'House', words: ['haus','wohnung','zimmer','küche','bad','tisch','stuhl'] },
+                { cat: 'Furniture', words: ['tisch','stuhl','bett','schrank','sofa','regal'] },
+                { cat: 'Nature', words: ['baum','blume','berg','fluss','meer','wald','sonne','mond'] },
+                { cat: 'Weather', words: ['regen','schnee','wind','wolke','sturm','nebel'] },
+                { cat: 'Vehicle', words: ['auto','zug','fahrrad','bus','flugzeug','schiff'] },
+                { cat: 'Education', words: ['buch','stift','schule','lernen','lehrer','student'] },
+                { cat: 'Music', words: ['musik','lied','gitarre','klavier','geige','trommel'] },
+                { cat: 'Emotion', words: ['liebe','freude','trauer','angst','wut','hoffnung'] },
+                { cat: 'Time', words: ['uhr','minute','stunde','tag','nacht','woche','monat','jahr'] },
+                { cat: 'Color', words: ['rot','blau','grün','gelb','schwarz','weiß'] },
+                { cat: 'Medical', words: ['arzt','krankenhaus','medizin','krankheit','gesundheit'] },
+                { cat: 'Technology', words: ['computer','handy','internet','bildschirm','tastatur'] },
+                { cat: 'Finance', words: ['geld','bank','preis','kaufen','verkaufen'] },
+                { cat: 'Sports', words: ['fußball','tennis','schwimmen','laufen','spiel'] },
+                { cat: 'Travel', words: ['reise','urlaub','hotel','ticket','koffer'] },
+                { cat: 'Job', words: ['beruf','arbeit','büro','firma','chef'] }
+            ];
+            for (var i = 0; i < hints.length; i++) {
+                for (var j = 0; j < hints[i].words.length; j++) {
+                    if (german.indexOf(hints[i].words[j]) !== -1) return hints[i].cat;
+                }
+            }
+            return 'Other';
+        };
+
+        /* ============================================================
            مرحله ۳ و ۱۰: آهنگساز پرامپت هوش مصنوعی
            با استفاده از _puterChat یک مفهوم بصری برای کلمه تولید می‌کند.
            خروجی: { category, visual_concept, negative_prompt }
@@ -475,29 +743,18 @@
                 return this._fallbackVisualConcept(word, meaning, type);
             }
 
+            // ✔️ STYLE v6: Character 3D Cartoon — هر کلمه با یک کاراکتر نمایش داده می‌شود
             var systemPrompt =
-                'You are a visual concept designer for a German-Persian language learning app called "Neo Clay 3D Learning". ' +
-                'Given a German word, its Persian meaning, and grammatical type, you must design a single, iconic, cute 3D clay visual. ' +
-                'Respond with ONLY a JSON object — no markdown, no explanation, no code fences.';
+                'You are a character designer for a 3D cartoon educational app. Given a German word and its meaning, describe a CHEERFUL 3D CARTOON CHARACTER that represents this word. The character should be holding or interacting with an object related to the word. Write ONE vivid English sentence (15-30 words). Respond with ONLY a JSON object.';
 
+            // ✔️ ARCHITECTURE v2: فقط Visual Story خواسته می‌شود — نه Category، نه Emotion، نه Difficulty
             var userPrompt =
-                'German word: "' + word + '"\n' +
-                'Persian meaning: "' + meaning + '"\n' +
-                'Grammatical type: "' + type + '"\n\n' +
-                'Choose the best category from this list: ' + CATEGORIES.join(', ') + '.\n\n' +
-                'Design a visual concept following these rules:\n' +
-                '1) For CONCRETE nouns (animals, food, objects): show the actual object in a cute clay style.\n' +
-                '2) For ABSTRACT words (Liebe=love, Freiheit=freedom, Hoffnung=hope, etc.): create a CREATIVE visual metaphor — NOT just a heart or a smiley face. Think of a small scene/object that symbolizes the concept (e.g. a floating open cage with a glowing bird for freedom).\n' +
-                '3) For VERBS: show a cute character performing the action, mid-motion.\n' +
-                '4) For ADJECTIVES: show an object that clearly demonstrates the quality (e.g. a tall thin clay tower for "tall").\n' +
-                '5) The visual_concept must be a SHORT English phrase (max 20 words) describing ONE clear subject.\n' +
-                '6) Keep it simple, iconic, friendly — this is for a learning app.\n\n' +
-                'Return ONLY this JSON (no extra text):\n' +
-                '{\n' +
-                '  "category": "<one of the categories>",\n' +
-                '  "visual_concept": "<short English description of the single subject/scene>",\n' +
-                '  "negative_prompt": "<comma-separated things to avoid, e.g. text, watermark, realistic, scary, multiple objects>"\n' +
-                '}';
+                'Word: ' + word + ' (' + meaning + ', ' + type + ')\n' +
+                'Design a 3D cartoon character for this word. Examples:\n' +
+                '"renovieren" → "A cheerful worker character holding painting brushes and wearing a hard hat"\n' +
+                '"Archäologin" → "A smiling female archaeologist character holding a pickaxe and wearing a beige hat"\n' +
+                '"Stipendium" → "A proud graduate character in cap and gown standing on a stack of books"\n' +
+                'Return ONLY: {"visual_story": "<character description>"}';
 
             try {
                 var result = await this._puterChat([
@@ -525,11 +782,11 @@
                 }
 
                 var parsed = extractJSON(text);
-                if (parsed && parsed.visual_concept) {
+                var vs = parsed && (parsed.visual_story || parsed.visual_concept);
+                if (parsed && vs) {
                     return {
-                        category: CATEGORIES.indexOf(parsed.category) !== -1 ? parsed.category : 'Other',
-                        visual_concept: safeStr(parsed.visual_concept, 200),
-                        negative_prompt: safeStr(parsed.negative_prompt, 200) || STYLE_GUIDE.negative.join(', ')
+                        visual_concept: safeStr(vs, 300),
+                        negative_prompt: safeStr(parsed.negative_prompt, 200) || ''
                     };
                 }
                 // اگر JSON معتبر نبود، fallback
@@ -540,22 +797,22 @@
             }
         };
 
-        // مفهوم بصری پیش‌فرض (در صورت در دسترس نبودن/خطای AI)
+        // ✔️ STYLE v6: fallback — کاراکتر کارتونی
         GermanDictionary.prototype._fallbackVisualConcept = function (word, meaning, type) {
-            var category = 'Other';
-            var visual = 'a cute clay object representing "' + word + '"';
-            // حدس ساده دسته بر اساس نوع کلمه
+            var visual = 'A cheerful 3D cartoon character representing "' + word + '" (' + meaning + '), holding an object related to the word, big expressive eyes, friendly smile';
+            // حدس ساده دسته بر اساس نوع کلمه + visual story غنی‌تر
             if (type === 'verb') {
                 category = 'Action';
-                visual = 'a cute clay character performing the action of "' + word + '"';
+                visual = 'A cute clay character actively performing the action of "' + word + '" (' + meaning + '), mid-motion with visible movement lines and tiny floating particles showing the energy of the action';
             } else if (type === 'adjective') {
                 category = 'Other';
-                visual = 'a cute clay object clearly demonstrating the quality of "' + word + '"';
+                visual = 'A cute clay object dramatically demonstrating the quality of "' + word + '" (' + meaning + '), with exaggerated proportions and soft glowing accents highlighting the characteristic';
+            } else if (type === 'noun') {
+                visual = 'A delightful clay sculpture of "' + word + '" (' + meaning + ') with soft studio lighting, a tiny water droplet or leaf accent, and gentle sparkles floating around it';
             }
             return {
-                category: category,
                 visual_concept: visual,
-                negative_prompt: STYLE_GUIDE.negative.join(', ')
+                negative_prompt: ''
             };
         };
 
@@ -566,19 +823,25 @@
             word = safeStr(word, 80);
             meaning = safeStr(meaning, 120);
             type = safeStr(type, 30) || 'word';
-            var visual = safeStr(concept, 240) || ('a cute clay object representing ' + word);
+            var conceptObj = (typeof concept === 'object' && concept !== null) ? concept : { visual_concept: concept };
+            var visual = safeStr(conceptObj.visual_concept, 300) || ('A cute clay "' + word + '"');
             category = safeStr(category, 30) || 'Other';
-            var catHint = CATEGORY_COLORS[category] || CATEGORY_COLORS['Other'];
-            var negative = (STYLE_GUIDE.negative.join(', ')) +
-                           (concept && concept.negative_prompt ? (', ' + concept.negative_prompt) : '');
+            // ✔️ Negative prompt — فقط موارد ضروری
+            var negative = 'text, watermark, blurry, dark, scary, multiple objects';
+            // ✔️ Camera + Color از دسته‌ی محلی گرفته می‌شود (۰ms — بدون LLM)
+            var cameraAngle = getCameraAngle(category);
+            var colorHarmony = getColorHarmony(category);
+            // ✔️ FIX: انتخاب سبک پویا بر اساس نوع کلمه (object/action/animal/abstract)
+            var styleKeywords = getStyleForWord(type, category).join(', ');
 
             return PROMPT_TEMPLATE
                 .replace(/\{\{WORD\}\}/g, word)
                 .replace(/\{\{MEANING\}\}/g, meaning)
                 .replace(/\{\{TYPE\}\}/g, type)
-                .replace(/\{\{VISUAL\}\}/g, visual)
-                .replace(/\{\{CATEGORY\}\}/g, category)
-                .replace(/\{\{CATEGORY_HINT\}\}/g, 'color palette: ' + catHint)
+                .replace(/\{\{VISUAL_STORY\}\}/g, visual)
+                .replace(/\{\{STYLE\}\}/g, styleKeywords)
+                .replace(/\{\{CAMERA_ANGLE\}\}/g, cameraAngle)
+                .replace(/\{\{COLOR_HARMONY\}\}/g, colorHarmony)
                 .replace(/\{\{NEGATIVE\}\}/g, negative);
         };
 
@@ -679,8 +942,13 @@
                         return;
                     }
                     response.blob().then(function (blob) {
+                        // ✔️ FIX: رد کردن blob های خیلی کوچک (تصاویر سیاه/خالی)
                         if (!blob || blob.size === 0) {
                             reject(new Error('Blob خالی از Worker دریافت شد'));
+                            return;
+                        }
+                        if (blob.size < MIN_VALID_BLOB_SIZE) {
+                            reject(new Error('تصویر دریافتی خیلی کوچک است (' + blob.size + ' bytes) — احتمالاً سیاه/خراب'));
                             return;
                         }
                         resolve(blob);
@@ -753,6 +1021,36 @@
         };
 
         /* ============================================================
+           ✔️ ARCHITECTURE v2: Visual Story Cache — کش داستان بصری
+           اگر کلمه قبلاً visual story ساخته، دوباره LLM صدا زده نمی‌شود
+           ============================================================ */
+        GermanDictionary.prototype._getCachedVisualStory = async function (wordId) {
+            if (!this.db) return null;
+            try {
+                var word = await this.getWord(wordId);
+                if (word && word.visualStory && typeof word.visualStory === 'string' && word.visualStory.length > 10) {
+                    return word.visualStory;
+                }
+                return null;
+            } catch (e) { return null; }
+        };
+
+        GermanDictionary.prototype._cacheVisualStory = async function (wordId, story) {
+            if (!this.db || !story) return;
+            try {
+                var tx = this.db.transaction(['words'], 'readwrite');
+                var store = tx.objectStore('words');
+                var getReq = store.get(wordId);
+                getReq.onsuccess = function () {
+                    var word = getReq.result;
+                    if (!word) return;
+                    word.visualStory = story;
+                    store.put(word);
+                };
+            } catch (e) {}
+        };
+
+        /* ============================================================
            Rate Limiting + صف (Queue)
            ============================================================ */
 
@@ -766,7 +1064,7 @@
             if (!state.dailyCount[today]) state.dailyCount[today] = 0;
             if (state.dailyCount[today] >= 500) {
                 console.log('[img-gen] محدودیت روزانه (۵۰۰) رسید، تولید متوقف شد');
-                return;
+                return Promise.reject(new Error('محدودیت روزانه (۵۰۰ تصویر) رسید'));
             }
             var self = this;
 
@@ -779,7 +1077,8 @@
 
             var promise = new Promise(function (resolve, reject) {
                 state.queue.push({ wordId: wordId, resolve: resolve, reject: reject });
-                setTimeout(function(){ self._processImageQueue(); }, 1500);
+                // ✔️ FIX: تاخیر ۱۵۰۰ms را به ۵۰ms کاهش دادیم — صف سریع‌تر پردازش می‌شود
+                setTimeout(function(){ self._processImageQueue(); }, 50);
             });
 
             state.promises.set(wordId, promise);
@@ -830,17 +1129,33 @@
 
                 // ۳) نمایش حالت loading در کارت
                 this._setCardLoading(wordId);
-                if (this.currentWord && this.currentWord.id === wordId) {
-                    this._setDetailsLoading(wordId);
+                // ✔️ DISABLED: تصویر در صفحه جزئیات نمایش داده نمی‌شود
+                // if (this.currentWord && this.currentWord.id === wordId) {
+                //     this._setDetailsLoading(wordId);
+                // }
+
+                // ✔️ ARCHITECTURE v2:
+                // مرحله ۱ (Local): category از word.type حدس زده می‌شود (۰ms)
+                // مرحله ۲ (Cache): visual story از کش گرفته می‌شود اگر وجود دارد (۰ms)
+                // مرحله ۳ (LLM): فقط اگر visual story در کش نبود، LLM صدا زده می‌شود
+                var localCategory = word.category || this._guessCategoryFromWord(word) || 'Other';
+                var visualStory = await this._getCachedVisualStory(wordId);
+                var concept;
+                if (visualStory) {
+                    concept = { visual_concept: visualStory };
+                    console.log('[img-gen] ✅ Visual story از کش استفاده شد برای wordId=' + wordId);
+                } else {
+                    concept = await this._getVisualConcept(word.german, word.persian, word.type);
+                    // کش کردن visual story برای دفعه‌ی بعد
+                    if (concept && concept.visual_concept) {
+                        this._cacheVisualStory(wordId, concept.visual_concept);
+                    }
                 }
 
-                // ۴) مرحله ۳/۱۰: دریافت مفهوم بصری از AI
-                var concept = await this._getVisualConcept(word.german, word.persian, word.type);
-
-                // ۵) مرحله ۶: ساخت پرامپت نهایی
+                // ساخت پرامپت نهایی با category محلی
                 var prompt = this._buildImagePrompt(
                     word.german, word.persian, word.type,
-                    concept.visual_concept, concept.category
+                    concept, localCategory
                 );
 
                 // ۶) مرحله ۴ API: فراخوانی با Failover
@@ -852,9 +1167,9 @@
                 // ۸) مرحله ۷: کش در IndexedDB
                 await this._cacheImage(wordId, dataURL);
 
-                // ۹) نمایش در کارت و جزئیات
+                // ۹) نمایش در کارت (جزئیات غیرفعال است)
                 this._hydrateWordCardImage(wordId, dataURL);
-                this._showImageInDetails(dataURL, wordId);
+                // ✔️ DISABLED: this._showImageInDetails(dataURL, wordId);
 
                 return dataURL;
             } catch (err) {
@@ -862,9 +1177,10 @@
                 // نمایش حالت خطا در کارت
                 var msg = (err && err.message) ? err.message : 'خطای ناشناخته';
                 this._setCardError(wordId, msg);
-                if (word && this.currentWord && this.currentWord.id === wordId) {
-                    this._setDetailsError(msg, wordId);
-                }
+                // ✔️ DISABLED: تصویر در صفحه جزئیات نمایش داده نمی‌شود
+                // if (word && this.currentWord && this.currentWord.id === wordId) {
+                //     this._setDetailsError(msg, wordId);
+                // }
                 throw err;
             } finally {
                 // پاک‌سازی از running / busy / promises
@@ -883,9 +1199,13 @@
         /* ============================================================
            نقطه ورود عمومی: تولید تصویر یک کلمه
            ============================================================ */
-        GermanDictionary.prototype._generateWordImage = async function (wordId) {
+        GermanDictionary.prototype._generateWordImage = async function (wordId, force) {
             if (wordId === undefined || wordId === null) {
                 throw new Error('wordId الزامی است');
+            }
+            // ✔️ FIX: اگر force=true بود (دکمه retry)، ابتدا کش را پاک کن
+            if (force) {
+                await this._cacheImage(wordId, null);
             }
             // ابتدا کش را چک کن — اگر هست، فقط UI را بروز کن
             var cached = await this._getCachedImage(wordId);
@@ -906,18 +1226,24 @@
             var cards = document.querySelectorAll('.wl-card[data-id]');
             if (!cards || cards.length === 0) return;
 
-            // برای کارایی بالا، همه کلمات را یک‌بار از DB می‌خوانیم و یک map از
-            // wordId → imageData می‌سازیم (به‌جای N بار getWord).
-            var allWords = [];
-            try { allWords = await this.getAllWords(); } catch (e) { allWords = []; }
-            var imgMap = {};
-            for (var k = 0; k < allWords.length; k++) {
-                var w = allWords[k];
-                if (w && w.imageData && typeof w.imageData === 'string' &&
-                    w.imageData.indexOf('data:') === 0) {
-                    imgMap[w.id] = w.imageData;
+            // ✔️ PERF: کش imgMap برای جلوگیری از اسکن مکرر DB
+            // اگر در ۵ ثانیه اخیر allWords خوانده شده، از کش استفاده کن
+            var now = Date.now();
+            if (!this._igImgMapCache || (now - (this._igImgMapCacheAt || 0)) > 5000) {
+                var allWords = [];
+                try { allWords = await this.getAllWords(); } catch (e) { allWords = []; }
+                var imgMap = {};
+                for (var k = 0; k < allWords.length; k++) {
+                    var w = allWords[k];
+                    if (w && w.imageData && typeof w.imageData === 'string' &&
+                        w.imageData.indexOf('data:') === 0) {
+                        imgMap[w.id] = w.imageData;
+                    }
                 }
+                this._igImgMapCache = imgMap;
+                this._igImgMapCacheAt = now;
             }
+            var imgMap = this._igImgMapCache;
 
             var state = this._igState;
             var list = Array.prototype.slice.call(cards);
@@ -1034,14 +1360,37 @@
                 '<img class="wl-image-thumb" src="' + dataURL + '" alt="تصویر کلمه" loading="lazy" />';
             var img = sec.querySelector('img');
             if (img) {
-                // در صورت خرابی dataURL، دکمه تولید را نشان بده
                 var self = this;
                 var wordId = parseInt(cardEl.getAttribute('data-id'), 10);
                 img.addEventListener('error', function () {
-                    // در صورت خطا در بارگذاری تصویر، حالت خطا را نشان بده
                     self._setCardError(wordId, 'تصویر بارگذاری نشد');
                 });
+                // ✔️ NEW: تشخیص تصاویر سیاه — بعد از لود، پیکسل‌ها را چک کن
+                img.addEventListener('load', function () {
+                    self._validateImageContent(img, wordId);
+                });
             }
+        };
+
+        // ✔️ NEW: اعتبارسنجی محتوای تصویر — تشخیص تصاویر سیاه/خالی
+        GermanDictionary.prototype._validateImageContent = function (img, wordId) {
+            try {
+                var canvas = document.createElement('canvas');
+                canvas.width = 16; canvas.height = 16;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 16, 16);
+                var pixels = ctx.getImageData(0, 0, 16, 16).data;
+                var sum = 0;
+                for (var i = 0; i < pixels.length; i += 4) {
+                    sum += (pixels[i] + pixels[i+1] + pixels[i+2]) / 3;
+                }
+                var avg = sum / (pixels.length / 4);
+                // اگر میانگین روشنایی زیر ۱۰ باشد (تقریباً سیاه) → تصویر خراب است
+                if (avg < 10) {
+                    console.warn('[img-gen] تصویر سیاه تشخیص داده شد wordId=' + wordId + ' (avg=' + avg.toFixed(1) + ')');
+                    this._setCardError(wordId, 'تصویر سیاه/خالی تشخیص داده شد');
+                }
+            } catch (e) { /* canvas CORS — ignore */ }
         };
 
         // حالت خطا
@@ -1065,7 +1414,8 @@
                 retryBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    self._onGenerateButtonClick(wordId);
+                    // ✔️ FIX: retry با force=true → کش پاک و دوباره ساخته می‌شود
+                    self._onGenerateButtonClick(wordId, true);
                 });
             }
         };
@@ -1077,12 +1427,12 @@
         };
 
         // کلیک روی دکمه تولید (در کارت یا retry)
-        GermanDictionary.prototype._onGenerateButtonClick = function (wordId) {
+        GermanDictionary.prototype._onGenerateButtonClick = function (wordId, force) {
             var self = this;
             // بلافاصله UI را روی loading بگذار
             this._setCardLoading(wordId);
-            // شروع تولید (غیرمسدود)
-            this._generateWordImage(wordId).then(function () {
+            // ✔️ FIX: اگر force=true بود، کش پاک و دوباره ساخته می‌شود
+            this._generateWordImage(wordId, force).then(function () {
                 // موفقیت — UI توسط runImageGeneration بروز شده
             }).catch(function (err) {
                 // خطا — _setCardError قبلاً صدا زده شده
@@ -1122,9 +1472,9 @@
         };
 
         // تضمین وجود بلوک تصویر در صفحه جزئیات
+        // ✔️ DISABLED: تصویر در صفحه جزئیات لغت نمایش داده نمی‌شود (درخواست کاربر)
         GermanDictionary.prototype._ensureDetailsImageBlock = function (wordId) {
-            var container = document.querySelector('.wd-card, .detail-word-card');
-            if (!container) return null;
+            return null; // no-op — همه متدهای details-image به‌خاطر این null خروج می‌شوند
             var block = container.querySelector('.wd-image-block');
             if (!block) {
                 block = document.createElement('div');
@@ -1376,6 +1726,55 @@
                     { desc: 'موفق: ' + ok + ' | ناموفق: ' + fail }
                 );
             }
+        };
+
+        /* ============================================================
+           ✔️ NEW: Background Sweeper — تولید تصویر در پس‌زمینه
+           ----------------------------------------------------------------
+           هر ۱۵ ثانیه، تا ۳۰ کلمه بدون تصویر را به صف اضافه می‌کند.
+           این کار مستقل از صفحه‌ی فعلی کاربر انجام می‌شود — نیازی نیست
+           کاربر در صفحه‌ی لیست لغات باشد تا تصاویر ساخته شوند.
+           ============================================================ */
+        GermanDictionary.prototype._startBackgroundSweeper = function () {
+            var self = this;
+            var SWEEP_INTERVAL = 15000; // هر ۱۵ ثانیه
+            var SWEEP_BATCH = 30; // هر بار ۳۰ کلمه
+
+            function sweep() {
+                try {
+                    var state = self._igState;
+                    if (!state) return;
+                    // اگر تولید انبوه در حال اجراست، کاری نکن
+                    if (state.bulk && state.bulk.running) return;
+                    // اگر صف پر است یا کار در حال اجراست، صبر کن
+                    if (state.queue.length > 0 || state.running.size > 0) return;
+
+                    // پیدا کردن کلمات بدون تصویر
+                    self.getAllWords().then(function (allWords) {
+                        if (!allWords || allWords.length === 0) return;
+                        var missing = [];
+                        for (var i = 0; i < allWords.length && missing.length < SWEEP_BATCH; i++) {
+                            var w = allWords[i];
+                            if (!w.imageData || typeof w.imageData !== 'string' || w.imageData.indexOf('data:') !== 0) {
+                                if (!state.busy.has(w.id)) {
+                                    missing.push(w.id);
+                                }
+                            }
+                        }
+                        if (missing.length > 0) {
+                            console.log('[img-gen] Background sweeper: enqueueing ' + missing.length + ' words');
+                            for (var j = 0; j < missing.length; j++) {
+                                try { self._enqueueImageGeneration(missing[j]); } catch (e) {}
+                            }
+                        }
+                    }).catch(function (e) { /* ignore */ });
+                } catch (e) { /* ignore */ }
+            }
+
+            setInterval(sweep, SWEEP_INTERVAL);
+            // یک بار هم بلافاصله اجرا کن
+            setTimeout(sweep, 2000);
+            console.log('[img-gen] ✅ Background sweeper فعال شد (هر ۱۵ ثانیه، ۳۰ کلمه)');
         };
 
         // تیک پیشرفت انبوه — بعد از هر تولید صدا زده می‌شود

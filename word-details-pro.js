@@ -89,13 +89,19 @@
             try {
 
             this.currentWord = word;
-            const examples = await this.getExamplesForWord(word.id);
-            const practiceHistory = await this.getPracticeHistory(word.id);
+            // ✔️ PERF: 3 DB calls را به‌جای سریال، موازی (parallel) اجرا کن
+            const [examples, practiceHistory] = await Promise.all([
+                this.getExamplesForWord(word.id).catch(() => []),
+                this.getPracticeHistory(word.id).catch(() => [])
+            ]);
             const successRate = practiceHistory.length > 0
                 ? Math.round((practiceHistory.filter(h => h.correct).length / practiceHistory.length) * 100) : 0;
 
-            // ناوبری
-            await this.getCurrentWordList();
+            // ✔️ PERF: getCurrentWordList فقط اگر currentWordList خالی است یا word در آن نیست
+            if (!this.currentWordList || this.currentWordList.length === 0 ||
+                !this.currentWordList.some(w => w.id === word.id)) {
+                await this.getCurrentWordList();
+            }
             const currentIndex = this.currentWordList.findIndex(w => w.id === word.id);
             const totalInList = this.currentWordList.length;
             const positionText = (currentIndex !== -1 && totalInList > 0) ? `${currentIndex + 1}/${totalInList}` : '';

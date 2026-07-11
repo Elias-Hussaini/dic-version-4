@@ -160,6 +160,34 @@
             .lc-empty .lc-empty-ic{width:80px;height:80px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(135deg,var(--lc-card-2),var(--lc-line-2));color:var(--lc-primary);font-size:32px;}
             .lc-empty h3{margin:0 0 8px;font-size:18px;font-weight:800;}
             .lc-empty p{margin:0;font-size:13px;color:var(--lc-muted);}
+
+            /* ===== ریسپانسیو موبایل (نسخه ۲.۰ — فشرده) ===== */
+            @media (max-width: 640px) {
+                .lc-header { padding: 12px 12px; border-radius: 14px; margin-bottom: 10px; }
+                .lc-header::before { width: 120px; height: 120px; top: -50px; right: -40px; }
+                .lc-header::after { width: 100px; height: 100px; bottom: -50px; left: -30px; }
+                .lc-header h2 { font-size: 13px; gap: 6px; }
+                .lc-header h2 .lc-h-ic { width: 26px; height: 26px; font-size: 12px; border-radius: 7px; }
+                .lc-header .lc-sub { font-size: 10px; line-height: 1.4; }
+                /* جعبه جستجو: ردیفی فشرده — input + دکمه آیکنی */
+                .lc-search-row { flex-direction: row !important; gap: 4px; margin-top: 8px; align-items: stretch; }
+                .lc-search-input { padding: 7px 10px; font-size: 12px; border-radius: 8px; flex: 1; min-width: 0; }
+                .lc-search-input::placeholder { font-size: 11px; }
+                /* دکمه جستجو: فقط آیکن، مربع کوچک */
+                .lc-search-btn { width: 32px !important; height: 32px; min-width: 32px; padding: 0 !important; font-size: 0; border-radius: 8px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+                .lc-search-btn i { font-size: 13px; }
+                .lc-search-btn span { display: none; }
+                .lc-style-bar { gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+                .lc-style-btn { padding: 5px 10px; font-size: 10px; }
+                .lc-card-flip { width: 100%; }
+            }
+            @media (max-width: 380px) {
+                .lc-header { padding: 10px 10px; }
+                .lc-header h2 { font-size: 12px; }
+                .lc-search-input { font-size: 11px; padding: 6px 8px; }
+                .lc-search-btn { width: 30px; height: 30px; min-width: 30px; }
+                .lc-search-btn i { font-size: 12px; }
+            }
         `;
         document.head.appendChild(style);
     }

@@ -400,6 +400,12 @@ GermanDictionary.prototype.initDB = function() {
 };
 
 GermanDictionary.prototype.getAllWords = async function() {
+        // ✔️ PERF: کش ۳ ثانیه‌ای — جلوگیری از اسکن مکرر DB
+        var CACHE_TTL = 3000;
+        if (this._allWordsCache && (Date.now() - (this._allWordsCacheAt || 0)) < CACHE_TTL) {
+            return this._allWordsCache;
+        }
+
         return new Promise((resolve, reject) => {
             if (!this.db) {
                 resolve([]);
@@ -411,7 +417,12 @@ GermanDictionary.prototype.getAllWords = async function() {
                 const store = transaction.objectStore('words');
                 const request = store.getAll();
                 
-                request.onsuccess = () => resolve(request.result || []);
+                request.onsuccess = () => {
+                    var result = request.result || [];
+                    this._allWordsCache = result;
+                    this._allWordsCacheAt = Date.now();
+                    resolve(result);
+                };
                 request.onerror = (event) => {
                     console.error('خطا در getAllWords:', event.target.error);
                     resolve([]);
@@ -423,7 +434,14 @@ GermanDictionary.prototype.getAllWords = async function() {
         });
 };
 
+// ✔️ NEW: پاک کردن کش getAllWords (وقتی کلمه‌ای اضافه/حذف/ویرایش می‌شود)
+GermanDictionary.prototype._invalidateAllWordsCache = function() {
+    this._allWordsCache = null;
+    this._allWordsCacheAt = 0;
+};
+
 GermanDictionary.prototype.updateWord = async function(wordData) {
+    this._invalidateAllWordsCache && this._invalidateAllWordsCache();
     return new Promise((resolve, reject) => {
         if (!this.db) {
             reject(new Error('دیتابیس در دسترس نیست'));
@@ -461,6 +479,7 @@ GermanDictionary.prototype.updateWord = async function(wordData) {
 };
 
 GermanDictionary.prototype.deleteWord = async function(wordId) {
+    this._invalidateAllWordsCache && this._invalidateAllWordsCache();
     return new Promise((resolve, reject) => {
         if (!this.db) {
             reject(new Error('دیتابیس در دسترس نیست'));
