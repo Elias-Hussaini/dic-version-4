@@ -929,6 +929,15 @@ GermanDictionary.prototype.addWord = async function(wordData) {
             request.onsuccess = () => {
                 console.log('✅ لغت ذخیره شد:', finalWord.german);
 
+                // 🐛 FIX: کش getAllWords را دوباره پاک کن!
+                // چرا؟ چون در ابتدای addWord، getAllWords() برای بررسی تکراری صدا
+                // زده شد و کش را با داده‌ی قدیمی (بدون این لغت) دوباره پر کرد.
+                // حالا که لغت در IndexedDB ذخیره شد، باید کش پاک شود تا
+                // renderWordList داده‌ی تازه را از IndexedDB بخواند.
+                if (typeof this._invalidateAllWordsCache === 'function') {
+                    this._invalidateAllWordsCache();
+                }
+
                 // ⚡️ ZILLIZ: همگام‌سازی در پس‌زمینه (کاملاً غیرمسدودکننده)
                 // لغت قبلاً در IndexedDB ذخیره شده و کاربر نتیجه را فوراً می‌بیند.
                 // این عملیات‌ها در پس‌زمینه اجرا می‌شوند و اگر خطا بدهند، اثری روی
@@ -1102,4 +1111,3 @@ GermanDictionary.prototype.saveWord = async function() {
 };
 
 console.log('✅ فرم افزودن لغت مدرن + addWord + AI fill فعال شد.');
- 
