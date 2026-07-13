@@ -927,7 +927,36 @@ GermanDictionary.prototype.addWord = async function(wordData) {
             const request = store.add(finalWord);
 
             request.onsuccess = () => {
-                console.log('✅ لغت ذخیره شد:', finalWord.german);
+                // آیدی تولید شده توسط IndexedDB (autoIncrement)
+                var newWordId = request.result;
+                if (newWordId && !finalWord.id) {
+                    finalWord.id = newWordId;
+                }
+                console.log('✅ لغت ذخیره شد:', finalWord.german, '(id:', finalWord.id + ')');
+
+                // 🐛 FIX: مثال‌ها را در ObjectStore جداگانه‌ی examples ذخیره کن!
+                // چرا؟ چون getExamplesForWord(wordId) از examples store می‌خواند
+                // (نه از فیلد examples داخل word). قبلاً مثال‌ها فقط داخل word
+                // ذخیره می‌شدند و در صفحه‌ی جزئیات لغت نمایش داده نمی‌شدند.
+                if ((wordData.example || wordData.exampleTranslation) && finalWord.id) {
+                    try {
+                        var exTx = this.db.transaction(['examples'], 'readwrite');
+                        var exStore = exTx.objectStore('examples');
+                        exStore.add({
+                            wordId: finalWord.id,
+                            german: wordData.example || '',
+                            persian: wordData.exampleTranslation || ''
+                        });
+                        exTx.oncomplete = function() {
+                            console.log('✅ مثال در examples store ذخیره شد (wordId:', finalWord.id + ')');
+                        };
+                        exTx.onerror = function(ev) {
+                            console.warn('⚠️ خطا در ذخیره مثال:', ev.target.error);
+                        };
+                    } catch (exErr) {
+                        console.warn('⚠️ خطا در transaction مثال:', exErr);
+                    }
+                }
 
                 // 🐛 FIX: کش getAllWords را دوباره پاک کن!
                 // چرا؟ چون در ابتدای addWord، getAllWords() برای بررسی تکراری صدا

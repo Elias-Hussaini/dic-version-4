@@ -23,7 +23,7 @@
     { section:'advanced', id:'fill-blanks', icon:'fa-puzzle-piece', title:'جای خالی', desc:'جمله را کامل کنید', color:'orange', btnId:'start-fill-blanks-btn', method:'startFillBlanksPractice' },
     { section:'advanced', id:'word-order', icon:'fa-sort-amount-down', title:'مرتب‌سازی کلمات', desc:'کلمات را درست بچینید', color:'teal', btnId:'start-word-order-btn', method:'startWordOrderPractice' },
     { section:'advanced', id:'matching', icon:'fa-hand-peace', title:'تطابق لغات', desc:'آلمانی را به فارسی وصل کنید', color:'red', btnId:'start-matching-btn', method:'startMatchingPractice' },
-    { section:'advanced', id:'prepositions', icon:'fa-location-dot', title:'حروف اضافه', desc:'تمرین حروف اضافه', color:'purple', btnId:'start-prepositions-btn', method:'startPrepositionsPractice' },
+    { section:'advanced', id:'prepositions', icon:'fa-location-dot', title:'حروف اضافه', desc:'تمرین حروف اضافه (غیرفعال)', color:'purple', btnId:'start-prepositions-btn', method:'startPrepositionsPractice', disabled: true, disabledNote: 'در حال تکمیل دیتابیس' },
     { section:'advanced', id:'conjugation', icon:'fa-table-list', title:'صرف افعال', desc:'صرف در زمان‌های مختلف', color:'indigo', btnId:'start-conjugation-btn', method:'startConjugationPractice' },
     { section:'advanced', id:'sentence-completion', icon:'fa-file-lines', title:'تکمیل جمله', desc:'جملات را کامل کنید', color:'slate', btnId:'start-sentence-completion-btn', method:'startSentenceCompletionPractice' },
     { section:'advanced', id:'study-mode', icon:'fa-eye', title:'حالت مطالعه', desc:'مرور خودکار با تایمر', color:'pink', btnId:'start-study-mode-btn', method:'startStudyMode' },
@@ -254,6 +254,15 @@
     var badge = '';
     if (card.id === 'wrong-words' && wrongCount > 0) {
       badge = '<span class="pr-card-wrong-badge show">' + wrongCount + '</span>';
+    }
+    // 🚫 کارت غیرفعال (مثل prepositions)
+    if (card.disabled) {
+      return '<div class="pr-card pr-card-disabled">' + badge +
+        '<div class="pr-card-ic ic-' + card.color + '" style="opacity:.45;"><i class="fas ' + card.icon + '"></i></div>' +
+        '<h3 class="pr-card-title" style="opacity:.55;">' + card.title + '</h3>' +
+        '<p class="pr-card-desc" style="opacity:.6;">' + card.desc + '</p>' +
+        '<button class="pr-card-btn btn-' + card.color + '" disabled style="opacity:.5;cursor:not-allowed;background:#94a3b8;">' +
+          '<i class="fas fa-ban"></i> ' + (card.disabledNote || 'غیرفعال') + '</button></div>';
     }
     return '<div class="pr-card">' + badge +
       '<div class="pr-card-ic ic-' + card.color + '"><i class="fas ' + card.icon + '"></i></div>' +

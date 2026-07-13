@@ -903,6 +903,14 @@ GermanDictionary.prototype.showGenderFinalResult = function() {
    تمرین حروف اضافه (Prepositions)
    ============================================================ */
 GermanDictionary.prototype.startPrepositionsPractice = async function() {
+    // 🚫 موقتاً غیرفعال — تمرین حروف اضافه تا تکمیل دیتابیس غیرفعال است
+    this.showToast('🚧 تمرین حروف اضافه موقتاً غیرفعال است (در حال تکمیل دیتابیس)', 'warning');
+    console.log('[practice] تمرین حروف اضافه غیرفعال است');
+    return;
+};
+
+// 🚫 موقتاً غیرفعال — تابع اصلی (فعلاً اجرا نمی‌شود)
+GermanDictionary.prototype._startPrepositionsPracticeOriginal = async function() {
     const allWords = await this.getFilteredWordsForPractice();
     const prepWords = allWords.filter(w => w.type === 'preposition' || (w.examples && w.examples.length > 0));
 
