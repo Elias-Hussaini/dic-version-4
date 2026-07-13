@@ -853,6 +853,7 @@ GermanDictionary.prototype.addWord = async function(wordData) {
             const normalizedGerman = (wordData.german || '').trim().replace(/\s+/g, ' ');
 
             // ✔️ FIX: بررسی تکراری بودن (case-insensitive) قبل از ذخیره
+            // این بررسی محلی (IndexedDB) است و سریع انجام می‌شود (<۵۰ms).
             try {
                 const allWords = await this.getAllWords();
                 const existing = allWords.find(function(w) {
@@ -864,17 +865,11 @@ GermanDictionary.prototype.addWord = async function(wordData) {
                 }
             } catch (e) { /* اگر getAllWords خطا داد، ادامه بده */ }
 
-            // ✔️ ZILLIZ: بررسی تکراری معنایی (semantic duplicate)
-            if (typeof this._zillizCheckDuplicate === 'function') {
-                try {
-                    var semDup = await this._zillizCheckDuplicate(normalizedGerman, wordData.persian || '');
-                    if (semDup && semDup.isDuplicate) {
-                        console.log('[zilliz] لغت تکراری معنایی پیدا شد:', semDup.german, 'شباهت:', semDup.similarity);
-                        reject(new Error('semantic_duplicate:' + (semDup.german || '') + ':' + (semDup.similarity || 0).toFixed(2)));
-                        return;
-                    }
-                } catch (e) { /* اگر Zilliz در دسترس نبود، ادامه بده */ }
-            }
+            // ⚡️ ZILLIZ: بررسی تکراری معنایی دیگر مسدودکننده نیست!
+            // قبلاً اینجا await می‌شد و ۱-۳ ثانیه صبر می‌کرد (تولید embedding +
+            // جستجوی Zilliz). حالا لغت فوراً در IndexedDB ذخیره می‌شود و بررسی
+            // تکراری معنایی در پس‌زمینه انجام می‌شود — فقط هشدار نرم نشان می‌دهد.
+            // (این کار در request.onsuccess زیر انجام می‌شود)
 
             const transaction = this.db.transaction(['words'], 'readwrite');
             const store = transaction.objectStore('words');
@@ -933,12 +928,42 @@ GermanDictionary.prototype.addWord = async function(wordData) {
 
             request.onsuccess = () => {
                 console.log('✅ لغت ذخیره شد:', finalWord.german);
-                // ✔️ ZILLIZ: بعد از ذخیره موفق در IndexedDB، در Zilliz هم ذخیره کن
+
+                // ⚡️ ZILLIZ: همگام‌سازی در پس‌زمینه (کاملاً غیرمسدودکننده)
+                // لغت قبلاً در IndexedDB ذخیره شده و کاربر نتیجه را فوراً می‌بیند.
+                // این عملیات‌ها در پس‌زمینه اجرا می‌شوند و اگر خطا بدهند، اثری روی
+                // تجربه‌ی کاربر ندارند (فقط در console لاگ می‌شوند).
+                var self = this;
+
+                // ۱) درج لغت در Zilliz (برای جستجوی معنایی آینده)
                 if (typeof this._zillizInsertWord === 'function') {
                     this._zillizInsertWord(finalWord).then(function() {
-                        console.log('[zilliz] لغت در Zilliz ذخیره شد:', finalWord.german);
-                    }).catch(function(e) { console.warn('[zilliz] insert error:', e.message); });
+                        console.log('[zilliz] ✅ لغت در پس‌زمینه همگام شد:', finalWord.german);
+                    }).catch(function(e) {
+                        console.warn('[zilliz] insert error (پس‌زمینه):', e.message);
+                    });
                 }
+
+                // ۲) بررسی تکراری معنایی در پس‌زمینه (غیرمسدودکننده)
+                //    اگر لغت مشابهی پیدا شد، فقط یک هشدار نرم نشان می‌دهیم.
+                //    لغت قبلاً ذخیره شده — این فقط یک اطلاع‌رسانی است.
+                if (typeof this._zillizCheckDuplicate === 'function') {
+                    this._zillizCheckDuplicate(normalizedGerman, wordData.persian || '').then(function(semDup) {
+                        if (semDup && semDup.isDuplicate && semDup.match) {
+                            var pct = Math.round((semDup.similarity || 0) * 100);
+                            console.log('[zilliz] ⚠️ لغت مشابه پیدا شد (پس‌زمینه):', semDup.match.german, 'شباهت:', pct + '%');
+                            if (typeof self.showToast === 'function') {
+                                self.showToast(
+                                    '💡 لغت مشابهی دارید: «' + (semDup.match.german || '') + '» (شباهت ' + pct + '%)',
+                                    'warning'
+                                );
+                            }
+                        }
+                    }).catch(function(e) {
+                        /* خطای پس‌زمینه — بی‌اهمیت، Zilliz شاید در دسترس نباشد */
+                    });
+                }
+
                 resolve(finalWord);
             };
 
@@ -1077,3 +1102,4 @@ GermanDictionary.prototype.saveWord = async function() {
 };
 
 console.log('✅ فرم افزودن لغت مدرن + addWord + AI fill فعال شد.');
+ 

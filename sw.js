@@ -1,5 +1,5 @@
 // sw.js - نسخه 2.0 با مدیریت کش پویا
-const CACHE_VERSION = 'v15';  // تغییر نسخه = پاک شدن کش قبلی
+const CACHE_VERSION = 'v16';  // تغییر نسخه = پاک شدن کش قبلی
 const CACHE_NAME = `lingo-dict-${CACHE_VERSION}`;
 const urlsToCache = [
     './',
