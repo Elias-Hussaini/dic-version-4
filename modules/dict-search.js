@@ -1008,10 +1008,12 @@
         this._spShowSkeleton();
 
         try {
-            // اطمینان از بارگذاری همه لغات
-            if (state.allWords.length === 0) {
-                await this._spLoadAllWords();
-            }
+            // 🐛 FIX: همیشه لغات را تازه بارگذاری کن!
+            // قبلاً فقط وقتی allWords خالی بود لود می‌شد (length === 0)،
+            // که باعث می‌شد بعد از افزودن لغت جدید، جستجو روی داده‌ی قدیمی
+            // اجرا شود و لغت جدید پیدا نشود. حالا همیشه sync می‌کنیم —
+            // getAllWords خودش کش ۳ ثانیه‌ای دارد پس سریع است.
+            await this._spLoadAllWords();
 
             // جستجو + فیلتر
             let results = this._spSearchAndFilter(state.query, state.allWords);
