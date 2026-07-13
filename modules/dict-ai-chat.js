@@ -289,6 +289,36 @@
             .ac-msg-bubble em{font-style:italic;}
             .ac-msg-bubble a{color:inherit; text-decoration:underline; opacity:.9;}
             .ac-msg-bubble code{background:rgba(108,92,231,.12); color:var(--ac-primary); padding:2px 7px; border-radius:6px; font-family:'Fira Code',monospace; font-size:12.5px; font-weight:600;}
+            /* Code blocks */
+            .ac-msg-bubble pre.ac-code-block{background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px 14px; margin:8px 0; overflow-x:auto; position:relative; font-size:12.5px; line-height:1.6;}
+            .ac-msg-bubble pre.ac-code-block code{background:none; color:inherit; padding:0; font-size:inherit; font-weight:400;}
+            .ac-msg-bubble .ac-code-lang{position:absolute; top:4px; left:8px; font-size:10px; color:#64748b; font-weight:600;}
+            body.dark-mode .ac-msg-bubble pre.ac-code-block{background:#000;}
+            /* Callouts */
+            .ac-msg-bubble .ac-callout{border-radius:10px; padding:10px 14px; margin:8px 0; border:1px solid; font-size:13px; line-height:1.7;}
+            .ac-msg-bubble .ac-callout-title{font-weight:800; margin-bottom:4px;}
+            .ac-msg-bubble .ac-callout-note{background:#e0f2fe; border-color:#0284c7; color:#0c4a6e;}
+            .ac-msg-bubble .ac-callout-warning{background:#fef3c7; border-color:#d97706; color:#78350f;}
+            .ac-msg-bubble .ac-callout-tip{background:#d1fae5; border-color:#059669; color:#064e3b;}
+            .ac-msg-bubble .ac-callout-important{background:#fce7f3; border-color:#db2777; color:#831843;}
+            .ac-msg-bubble .ac-callout-info{background:#eef2ff; border-color:#4361ee; color:#312e81;}
+            .ac-msg-bubble .ac-callout-caution{background:#fee2e2; border-color:#dc2626; color:#7f1d1d;}
+            body.dark-mode .ac-msg-bubble .ac-callout-note{background:rgba(2,132,199,.15); color:#7dd3fc;}
+            body.dark-mode .ac-msg-bubble .ac-callout-warning{background:rgba(217,119,6,.15); color:#fcd34d;}
+            body.dark-mode .ac-msg-bubble .ac-callout-tip{background:rgba(5,150,105,.15); color:#6ee7b7;}
+            body.dark-mode .ac-msg-bubble .ac-callout-important{background:rgba(219,39,119,.15); color:#f9a8d4;}
+            body.dark-mode .ac-msg-bubble .ac-callout-info{background:rgba(67,97,238,.15); color:#a5b4fc;}
+            body.dark-mode .ac-msg-bubble .ac-callout-caution{background:rgba(220,38,38,.15); color:#fca5a5;}
+            /* Divider */
+            .ac-msg-bubble hr.ac-divider{border:none; border-top:1px solid var(--ac-border); margin:12px 0;}
+            /* Task lists */
+            .ac-msg-bubble ul.ac-task-list{list-style:none; padding-inline-start:0; margin:8px 0;}
+            .ac-msg-bubble li.ac-task{margin:4px 0; font-size:13px;}
+            .ac-msg-bubble li.ac-task-done{text-decoration:line-through; opacity:.6;}
+            /* Table wrap */
+            .ac-msg-bubble .ac-table-wrap{margin:10px 0; border-radius:10px; overflow:hidden;}
+            /* Keyboard keys */
+            .ac-msg-bubble kbd{background:var(--ac-card-3); border:1px solid var(--ac-border); border-bottom-width:2px; border-radius:5px; padding:2px 7px; font-family:monospace; font-size:11px; font-weight:700; color:var(--ac-text);}
             .ac-msg.user .ac-msg-bubble code{background:rgba(255,255,255,.22); color:#fff;}
             .ac-msg-bubble blockquote{border-inline-start:3px solid var(--ac-primary); padding:4px 14px; margin:8px 0; background:var(--ac-primary-l); border-radius:8px; color:var(--ac-text-2); font-style:italic;}
             .ac-msg-bubble table{border-collapse:collapse; width:100%; margin:10px 0; font-size:12.5px; border-radius:10px; overflow:hidden;}
@@ -349,6 +379,7 @@
                 flex-direction:row-reverse;
             }
             .ac-input-actions-left{display:flex; gap:6px; flex-shrink:0;}
+            .ac-wrap.ac-drag-over{outline:3px dashed #4361ee; outline-offset:-8px; background:rgba(67,97,238,.05);}
             .ac-input-action{
                 width:38px; height:38px; flex-shrink:0;
                 display:flex; align-items:center; justify-content:center;
@@ -476,15 +507,16 @@
             }
 
             var models = [
-                { id: 'llama-4-scout-17b-16e-instruct', name: '🦙 Llama 4 Scout 17B', desc: 'پیشرفته‌ترین + تصویر' },
-                { id: 'groq/compound', name: '⚡ Groq Compound', desc: 'ترکیبی هوشمند' },
-                { id: 'gpt-oss-120b', name: '🤖 GPT OSS 120B', desc: 'فوق سنگین + تصویر' },
-                { id: 'llama-3.1-8b', name: '🦙 Llama 3.1 8B', desc: 'سریع' }
+                { id: 'llama-4-scout', name: '🦙 Llama 4 Scout 17B', desc: 'پیشرفته + تصویر', vision: true },
+                { id: 'gpt-oss-20b', name: '🤖 GPT OSS 20B', desc: 'فوق سنگین + Reasoning', vision: false },
+                { id: 'glm-4.7-flash', name: '⚡ GLM 4.7 Flash', desc: 'سریع + Thinking', vision: false },
+                { id: 'gemma-4-26b', name: '💎 Gemma 4 26B', desc: 'قوی + تصویر', vision: true },
+                { id: 'gemma-sea-lion', name: '🦁 Gemma SEA-LION', desc: 'چندزبانه', vision: false }
             ];
-            this._acModels = models; // ذخیره برای استفاده در _acSetupEvents
+            this._acModels = models;
 
-            var savedModel = 'llama-4-scout-17b-16e-instruct';
-            try { savedModel = localStorage.getItem('aiModel') || 'llama-4-scout-17b-16e-instruct'; } catch (e) {}
+            var savedModel = 'llama-4-scout';
+            try { savedModel = localStorage.getItem('aiModel') || 'llama-4-scout'; } catch (e) {}
             this.aiModel = savedModel;
 
             var modelOptions = models.map(function (m) {
@@ -516,8 +548,7 @@
                     '<div class="ac-messages" id="chat-history">' + this._acWelcomeHTML() + '</div>' +
                     '<div class="ac-input-bar">' +
                         '<div class="ac-input-actions-left">' +
-                            '<button class="ac-input-action" id="upload-image-btn" title="آپلود تصویر" aria-label="آپلود تصویر"><i class="fas fa-image"></i></button>' +
-                            '<button class="ac-input-action" id="voice-input-toggle" title="ورودی صوتی" aria-label="ورودی صوتی"><i class="fas fa-microphone"></i></button>' +
+                            '<button class="ac-input-action" id="upload-image-btn" title="افزودن تصویر" aria-label="افزودن تصویر"><i class="fas fa-paperclip"></i></button>' +
                         '</div>' +
                         '<textarea id="ai-chat-input" class="ac-textarea" placeholder="سوال خود را بپرسید..." rows="1" aria-label="متن پیام"></textarea>' +
                         '<button class="ac-send-btn" id="send-ai-message" title="ارسال" aria-label="ارسال پیام"><i class="fas fa-paper-plane"></i></button>' +
@@ -630,98 +661,42 @@
            ============================================================ */
         GermanDictionary.prototype._acSetupEvents = function () {
             var self = this;
-            var input = document.getElementById('ai-chat-input');
             var sendBtn = document.getElementById('send-ai-message');
-            var modelSelect = document.getElementById('ai-model-select');
+            var input = document.getElementById('ai-chat-input');
             var modelBtn = document.getElementById('ai-model-btn');
 
             if (sendBtn) {
-                sendBtn.addEventListener('click', function () { self.sendAIMessage(); });
+                sendBtn.onclick = function () { self.sendAIMessage(); };
             }
-
             if (input) {
-                input.addEventListener('keypress', function (e) {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        self.sendAIMessage();
-                    }
-                });
-                input.addEventListener('input', function () {
+                input.onkeypress = function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); self.sendAIMessage(); }
+                };
+                input.oninput = function () {
                     this.style.height = 'auto';
                     this.style.height = Math.min(this.scrollHeight, 128) + 'px';
-                });
-                input.addEventListener('paste', function (e) {
-                    var items = e.clipboardData && e.clipboardData.items;
-                    if (!items) return;
-                    for (var i = 0; i < items.length; i++) {
-                        if (items[i].type && items[i].type.indexOf('image/') === 0) {
-                            e.preventDefault();
-                            var file = items[i].getAsFile();
-                            var reader = new FileReader();
-                            reader.onload = function (ev) {
-                                self.uploadedImage = file;
-                                self.uploadedImageUrl = ev.target.result;
-                                self._acShowImagePreview(ev.target.result, file.name);
-                            };
-                            reader.readAsDataURL(file);
-                            return;
-                        }
-                    }
-                });
-            }
-
-            if (modelSelect) {
-                modelSelect.addEventListener('change', function (e) {
-                    self.aiModel = e.target.value;
-                    try { localStorage.setItem('aiModel', self.aiModel); } catch (err) {}
-                    // به‌روزرسانی نام مدل در هدر
-                    var nameEl = document.getElementById('ai-model-name');
-                    if (nameEl && self._acModels) {
-                        var found = self._acModels.find(function(m) { return m.id === self.aiModel; });
-                        if (found) nameEl.textContent = found.name;
-                    }
-                });
-            }
-
-            // دکمه انتخاب مدل (custom button + popup)
-            // به‌روزرسانی نام مدل در دکمه هدر
-            var modelNameEl = document.getElementById('ai-model-name');
-            if (modelNameEl && this._acModels) {
-                var found = this._acModels.find(function(m) { return m.id === this.aiModel; }.bind(this));
-                if (found) modelNameEl.textContent = found.name;
+                };
             }
             if (modelBtn) {
-                modelBtn.addEventListener('click', function() {
-                    self._acShowModelPopup(self._acModels || []);
-                });
-            }
-
-            document.querySelectorAll('.ac-quick-btn').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var q = btn.dataset.question;
-                    if (q && input) {
-                        input.value = q;
-                        self.sendAIMessage();
+                modelBtn.onclick = function () {
+                    if (typeof self._acShowModelPopup === 'function') {
+                        self._acShowModelPopup(self._acModels || []);
+                    } else {
+                        var popup = document.getElementById('ac-model-popup');
+                        if (popup) popup.classList.toggle('open');
                     }
-                });
-            });
+                };
+            }
 
             var newChatBtn = document.getElementById('new-chat-btn');
             if (newChatBtn) {
-                newChatBtn.addEventListener('click', function () {
+                newChatBtn.onclick = function () {
                     if (typeof self.newChat === 'function') self.newChat();
-                    else {
-                        var ch = document.getElementById('chat-history');
-                        if (ch) ch.innerHTML = self._acWelcomeHTML();
-                        self.chatMemory = [];
-                        self._acSetupEvents();
-                    }
-                });
+                };
             }
-
             var clearBtn = document.getElementById('clear-chat-history');
             if (clearBtn) {
-                clearBtn.addEventListener('click', function () {
+                clearBtn.onclick = function () {
                     if (confirm('آیا از پاک کردن کل چت مطمئن هستید؟')) {
                         var ch = document.getElementById('chat-history');
                         if (ch) ch.innerHTML = self._acWelcomeHTML();
@@ -730,57 +705,63 @@
                         self._acSetupEvents();
                         if (typeof self.showToast === 'function') self.showToast('چت پاک شد', 'info');
                     }
-                });
+                };
             }
-
             var historyBtn = document.getElementById('chat-history-btn');
             if (historyBtn) {
-                historyBtn.addEventListener('click', function () {
+                historyBtn.onclick = function () {
                     if (typeof self.showChatHistoryModal === 'function') self.showChatHistoryModal();
-                    else if (typeof self.showToast === 'function') self.showToast('تاریخچه در دسترس نیست', 'info');
-                });
+                };
             }
-
-            var voiceBtn = document.getElementById('voice-input-toggle');
-            if (voiceBtn) {
-                voiceBtn.addEventListener('click', function () {
-                    if (typeof self.toggleVoiceInput === 'function') self.toggleVoiceInput();
-                    else if (typeof self.showToast === 'function') self.showToast('ورودی صوتی در دسترس نیست', 'info');
-                });
-            }
-
-            // دکمه آپلود تصویر
-            var imageBtn = document.getElementById('upload-image-btn');
+            var uploadBtn = document.getElementById('upload-image-btn');
             var imageInput = document.getElementById('image-upload-input');
-            if (imageBtn && imageInput) {
-                imageBtn.addEventListener('click', function () {
-                    imageInput.click();
-                });
-                imageInput.addEventListener('change', function () {
+            if (uploadBtn && imageInput) {
+                uploadBtn.onclick = function () { imageInput.click(); };
+                imageInput.onchange = function () {
                     if (this.files && this.files[0]) {
-                        var file = this.files[0];
-                        if (!file.type.startsWith('image/')) {
-                            if (typeof self.showToast === 'function') self.showToast('فقط فایل تصویری', 'warning');
-                            return;
-                        }
-                        if (file.size > 5 * 1024 * 1024) {
-                            if (typeof self.showToast === 'function') self.showToast('حداکثر حجم تصویر ۵ مگابایت', 'warning');
-                            return;
-                        }
-                        var reader = new FileReader();
-                        reader.onload = function (ev) {
-                            self.uploadedImage = file;
-                            self.uploadedImageUrl = ev.target.result;
-                            self._acShowImagePreview(ev.target.result, file.name);
-                            if (typeof self.showToast === 'function') self.showToast('📷 تصویر بارگذاری شد', 'success');
-                        };
-                        reader.readAsDataURL(file);
-                        this.value = ''; // reset
+                        self._acHandleImageFile(this.files[0]);
+                        this.value = '';
                     }
-                });
+                };
             }
+            var chatWrap = document.querySelector('#ai-chat-section .ac-wrap') || document.querySelector('.ac-wrap');
+            if (chatWrap) {
+                chatWrap.ondragover = function (e) { e.preventDefault(); e.stopPropagation(); chatWrap.classList.add('ac-drag-over'); };
+                chatWrap.ondragleave = function (e) { e.preventDefault(); e.stopPropagation(); chatWrap.classList.remove('ac-drag-over'); };
+                chatWrap.ondrop = function (e) {
+                    e.preventDefault(); e.stopPropagation(); chatWrap.classList.remove('ac-drag-over');
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        var file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) self._acHandleImageFile(file);
+                    }
+                };
+            }
+            document.onpaste = function (e) {
+                var chatSection = document.getElementById('ai-chat-section');
+                if (!chatSection || !chatSection.classList.contains('active')) return;
+                if (e.clipboardData && e.clipboardData.items) {
+                    for (var i = 0; i < e.clipboardData.items.length; i++) {
+                        var item = e.clipboardData.items[i];
+                        if (item.type && item.type.startsWith('image/')) {
+                            var pastedFile = item.getAsFile();
+                            if (pastedFile) { self._acHandleImageFile(pastedFile); e.preventDefault(); break; }
+                        }
+                    }
+                }
+            };
         };
-
+        GermanDictionary.prototype._acHandleImageFile = function (file) {
+            var self = this;
+            if (!file.type.startsWith('image/')) { this.showToast && this.showToast('فقط تصویر', 'warning'); return; }
+            if (file.size > 5 * 1024 * 1024) { this.showToast && this.showToast('حداکثر ۵MB', 'warning'); return; }
+            var reader = new FileReader();
+            reader.onload = function (ev) {
+                self.uploadedImage = file; self.uploadedImageUrl = ev.target.result;
+                self._acShowImagePreview(ev.target.result, file.name);
+                self.showToast && self.showToast('📷 تصویر بارگذاری شد', 'success');
+            };
+            reader.readAsDataURL(file);
+        };
         GermanDictionary.prototype._acShowImagePreview = function (url, name) {
             var existing = document.querySelector('.ac-img-preview');
             if (existing) existing.remove();
@@ -829,17 +810,25 @@
                 '</div></div></div>';
             ch.appendChild(typing);
             this._acScrollToBottom();
-            // ✔️ NEW: چرخش متن‌های تفکر برای تجربه‌ی کاربری بهتر
-            this._acThinkingTexts = [
-                'در حال تفکر...',
-                'Analyzing your question...',
-                'در حال بررسی دیکشنری...',
-                'Searching vocabulary...',
-                'در حال ساخت پاسخ...',
-                'Composing response...',
-                'Checking grammar rules...',
-                'مرور لغات شما...'
-            ];
+            // ✔️ FIX: متن‌های تفکر واقعی بر اساس پیام کاربر
+            var userMsg = (this.chatMemory && this.chatMemory.length > 0) ? this.chatMemory[this.chatMemory.length - 1].content : '';
+            var lowerMsg = (userMsg || '').toLowerCase();
+            this._acThinkingTexts = ['در حال تفکر...'];
+            if (lowerMsg.indexOf('سلام') !== -1 || lowerMsg.indexOf('hi') !== -1 || lowerMsg.indexOf('hello') !== -1) {
+                this._acThinkingTexts = ['در حال پاسخ به سلام...', 'Greeting back...'];
+            } else if (lowerMsg.indexOf('لغت') !== -1 || lowerMsg.indexOf('کلمه') !== -1 || lowerMsg.indexOf('word') !== -1) {
+                this._acThinkingTexts = ['در حال جستجوی لغات...', 'Searching vocabulary...', 'بررسی دیکشنری شما...'];
+            } else if (lowerMsg.indexOf('آمار') !== -1 || lowerMsg.indexOf('stats') !== -1 || lowerMsg.indexOf('پیشرفت') !== -1) {
+                this._acThinkingTexts = ['در حال محاسبه آمار...', 'Analyzing your progress...'];
+            } else if (lowerMsg.indexOf('گرامر') !== -1 || lowerMsg.indexOf('grammar') !== -1 || lowerMsg.indexOf('der') !== -1 || lowerMsg.indexOf('die') !== -1 || lowerMsg.indexOf('das') !== -1) {
+                this._acThinkingTexts = ['در حال بررسی قوانین گرامر...', 'Checking grammar rules...'];
+            } else if (lowerMsg.indexOf('اضافه') !== -1 || lowerMsg.indexOf('add') !== -1 || lowerMsg.indexOf('ساخت') !== -1) {
+                this._acThinkingTexts = ['در حال آماده‌سازی لغت...', 'Preparing word data...'];
+            } else if (lowerMsg.indexOf('تمرین') !== -1 || lowerMsg.indexOf('آزمون') !== -1 || lowerMsg.indexOf('quiz') !== -1) {
+                this._acThinkingTexts = ['در حال ساخت آزمون...', 'Building quiz...'];
+            } else {
+                this._acThinkingTexts = ['در حال تفکر...', 'Analyzing your question...', 'در حال ساخت پاسخ...', 'Composing response...'];
+            }
             this._acThinkingIdx = 0;
             var self = this;
             this._acThinkingInterval = setInterval(function () {
@@ -1151,18 +1140,59 @@
             this.showTypingIndicator();
 
             try {
+                // 1: Dictionary context (short — RAG)
                 var dictContext = '';
                 if (typeof this._getDictionaryContext === 'function') {
-                    dictContext = await this._getDictionaryContext();
+                    try { dictContext = await this._getDictionaryContext(); } catch(e) {}
                 }
 
-                var systemContent = 'تو دستیار دیکشنری آلمانی-فارسی هستی. فارسی روان و دوستانه پاسخ بده.\n\nقوانین پاسخ‌گویی:\n1. **مرتبط پاسخ بده** — فقط جواب همان چیزی را بده که پرسیده شده. چیز اضافه ننویس.\n2. **اندازه مناسب** — سلام را با سلام جواب بده (کوتاه). اما سوالات آموزشی را کامل و ساختاریافته جواب بده.\n3. **از Markdown استفاده کن** — سرتیتر (##)، **پررنگ**، *کج*، فهرست‌ها (- یا 1.)، جداول، > نقل‌قول برای خوانایی بهتر.\n4. **هرگز نشانگرهای دستوری [[...]] را به کاربر نشان نده** — این نشانگرها مخفی‌اند. هرگز در متن قابل دیدن کاربر قرارشان نده و هرگز به کاربر نگو چطور از آن‌ها استفاده کند.\n\nدستورات مخفی (هرگز به کاربر نشان نده):\n- وقتی کاربر لغتی را می‌خواهد ببیند: [[SHOW_WORD:لغت]] را در پاسخت بگذار\n- وقتی کاربر می‌خواهد لغت اضافه کند: [[SAVE_WORD:{"german":"...","persian":"...","type":"noun","gender":"...","plural":"...","example":"...","exampleTranslation":"..."}]]\n- وقتی کاربر آمار می‌خواهد: [[STATS]]\n- وقتی کاربر آزمون می‌خواهد: [[QUIZ]]\n- وقتی کاربر علاقه‌مندی می‌خواهد: [[FAVORITES]]\n- وقتی کاربر مرور می‌خواهد: [[REVIEW_NEEDED]]\n- وقتی کاربر تصویر می‌خواهد: [[GENERATE_IMAGE:ID]]\n\nمثال:\n- کاربر: "سلام" → تو: "سلام! 😊 چطور می‌تونم کمکت کنم؟"\n- کاربر: "Hund رو نشون بده" → تو: "بفرما! 📚\\n[[SHOW_WORD:Hund]]"\n- کاربر: "لغت Haus رو اضافه کن" → تو: "اضافه شد! ✅\\n[[SAVE_WORD:{"german":"Haus","persian":"خانه","type":"noun","gender":"خنثی","plural":"Häuser","example":"Ich wohne in einem Haus.","exampleTranslation":"من در یک خانه زندگی می‌کنم."}]]"\n- کاربر: "آمار" → تو: "📊 آمار شما:\\n[[STATS]]"\n- کاربر: "تفاوت der و die و das رو بگو" → تو: توضیح کامل و ساختاریافته با مثال و Markdown\n\n' + dictContext + '\n\nاگر کاربر پرسید سازنده‌ات کیست، فقط بگو: «من توسط **الیاس حسینی** ساخته شده‌ام.»';
+                // 2: Long-term memory from Zilliz
+                var memoryContext = '';
+                if (typeof this._zillizRecallMemory === 'function') {
+                    try {
+                        var mems = await this._zillizRecallMemory(message, 5);
+                        var prefs = await this._zillizRecallMemory('نام کاربر preference settings سطح', 3);
+                        var all = (mems || []).concat(prefs || []);
+                        var seen = {};
+                        var unique = [];
+                        for (var i = 0; i < all.length; i++) {
+                            var c = all[i].content;
+                            if (c && !seen[c]) { seen[c] = true; unique.push(all[i]); }
+                        }
+                        if (unique.length > 0) {
+                            memoryContext = '\n\n🧠 حافظه بلندمدت کاربر:\n';
+                            for (var j = 0; j < unique.length; j++) {
+                                memoryContext += '- ' + unique[j].content + '\n';
+                            }
+                        }
+                    } catch(e) { console.warn('[memory] recall error:', e.message); }
+                }
 
-                var systemMsg = {
-                    role: 'system',
-                    content: systemContent
-                };
+                // 3: Build system prompt
+                var systemContent = 'تو دستیار دیکشنری آلمانی-فارسی هستی. توسط الیاس حسینی ساخته شده‌ای.\n\n'
+                    + '## Markdown — از قالب‌بندی حرفه‌ای استفاده کن:\n'
+                    + '- **سرتیتر**: ## برای بخش‌ها، ### برای زیربخش‌ها\n'
+                    + '- **پررنگ**: **متن** برای کلمات کلیدی\n'
+                    + '- *کج*: *متن* برای تأکید\n'
+                    + '- **جداول**: |ستون۱|ستون۲|\n|---|---|\n|مقدار|مقدار|\n'
+                    + '- **فهرست**: - برای نامرتب، 1. برای مرتب\n'
+                    + '- **بلاک‌کد**: ``` برای مثال‌های آلمانی\n'
+                    + '- **نقل‌قول**: > برای نکات مهم\n'
+                    + '- **کال‌اوت**: > [!NOTE] یا > [!WARNING] یا > [!TIP]\n'
+                    + '- **خط جداکننده**: --- بین بخش‌ها\n\n'
+                    + '## قوانین:\n'
+                    + '1. مرتبط و کوتاه پاسخ بده\n'
+                    + '2. هرگز [[...]] را در پاسخ ننویس — این دستورات مخفی‌اند\n'
+                    + '3. برای نمایش لغت: [[SHOW_WORDS:لغت1,لغت2]]\n'
+                    + '4. برای ذخیره لغت: [[SAVE_WORD:{"german":"...","persian":"...","type":"noun","gender":"...","plural":"...","example":"...","exampleTranslation":"..."}]]\n'
+                    + '5. برای آمار: [[STATS]]\n'
+                    + '6. برای آزمون: [[QUIZ]]\n'
+                    + '7. برای جستجوی معنایی: [[SEMANTIC_SEARCH:query]]\n'
+                    + '8. اگر نام کاربر در حافظه هست، با نامش خطابش کن\n\n'
+                    + dictContext + memoryContext + '\n\n'
+                    + 'اگر کاربر پرسید سازنده‌ات کیست: «من توسط **الیاس حسینی** ساخته شده‌ام.»';
 
+                var systemMsg = { role: 'system', content: systemContent };
                 var historyMsgs = this.getMemoryForAI();
                 var msgsWithoutLast = historyMsgs.slice(0, -1);
 
@@ -1179,21 +1209,16 @@
                     fullMessages = [systemMsg].concat(msgsWithoutLast, [{ role: 'user', content: message }]);
                 }
 
-                // خواندن مدل انتخاب‌شده از localStorage (تضمین پایداری انتخاب کاربر)
-                var currentModel = this.aiModel;
+                var currentModel = this.aiModel || 'llama-4-scout';
                 try { currentModel = localStorage.getItem('aiModel') || currentModel; } catch (e) {}
-                if (currentModel) this.aiModel = currentModel;
 
-                // ایندیکاتور «در حال فکر کردن» هم‌اکنون نمایش داده شده (قبل از try)
                 var self = this;
                 var streamingStarted = false;
                 var fullResponse = '';
 
-                // فراخوانی استریمی: تکه‌ها به‌محض دریافت به حباب اضافه می‌شوند (بدون تأخیر)
                 var response = await this._puterChat(fullMessages, {
                     model: currentModel,
                     onChunk: function (chunk, accumulated) {
-                        // اولین تکه: ایندیکاتور تایپ را با حباب پیام جایگزین کن
                         if (!streamingStarted) {
                             streamingStarted = true;
                             self._acCreateStreamingAIMessage();
@@ -1203,7 +1228,6 @@
                     }
                 });
 
-                // اگر استریمی شروع نشد (مثلاً fallback غیراستریم)، از پاسخ کامل استفاده کن
                 if (!streamingStarted) {
                     this.removeTypingIndicator();
                     if (response && response.message && response.message.content) {
@@ -1212,21 +1236,43 @@
                             fullResponse = c.map(function (x) { return x.text || ''; }).join('');
                         } else if (typeof c === 'string') {
                             fullResponse = c;
-                        } else if (c[0] && c[0].text) {
-                            fullResponse = c[0].text;
                         }
-                    } else if (typeof response === 'string') {
-                        fullResponse = response;
                     }
-                    if (!fullResponse) fullResponse = '⚠️ پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید.';
+                    if (!fullResponse) throw new Error('پاسخی دریافت نشد');
                     this.addMessageToHistory('ai', fullResponse);
                 } else {
-                    // نهایی‌سازی پیام استریم‌شده: افزودن دکمه‌های کپی/بازتولید
                     if (!fullResponse) fullResponse = '';
-                    this._acFinalizeStreamingMessage(fullResponse);
+                    await this._acFinalizeStreamingMessage(fullResponse);
                 }
 
                 this.addToMemory('assistant', fullResponse);
+
+                // 4: Save to long-term memory
+                if (typeof this._zillizSaveMemory === 'function' && fullResponse) {
+                    try {
+                        var lastUser = this.chatMemory.filter(function(m){return m.role==='user';}).slice(-1)[0];
+                        if (lastUser) {
+                            this._zillizSaveMemory('conversation', lastUser.content.substring(0, 300) + ' → ' + fullResponse.substring(0, 300), {
+                                timestamp: new Date().toISOString(),
+                                chatId: this.currentChatId
+                            }).catch(function(){});
+                        }
+                    } catch(e) {}
+
+                    // Name detection
+                    if (message) {
+                        var nameMatch = message.match(/(?:نامم|اسمم|نام من|اسم من)\s+(?:هست|است|،)?\s*([\u0600-\u06FF\w]{2,20})/i);
+                        var excludeNames = ['است','هست','چیست','چیه','کیست','کسی','یکی','هیچ','خوب','بد','این','آن','چه','کی','کجا','چرا','کدام','ولا','البته','شاید','بله','خیر','ممنون','متشکرم','سلام','درود','خداحافظ','خدانگهدار','بله','آره','نه','باشه',' ok ','okay','yes','no'];
+                        if (nameMatch && nameMatch[1] && excludeNames.indexOf(nameMatch[1]) === -1) {
+                            this._zillizSaveMemory('preference', 'نام کاربر: ' + nameMatch[1], {type: 'name'}).catch(function(){});
+                        }
+                        var levelMatch = message.match(/(?:سطحم|سطح من)\s+(?:هست|است|،)?\s*(A1|A2|B1|B2|C1|C2)/i);
+                        if (levelMatch && levelMatch[1]) {
+                            this._zillizSaveMemory('preference', 'سطح زبان کاربر: ' + levelMatch[1].toUpperCase(), {type: 'level'}).catch(function(){});
+                        }
+                    }
+                }
+
                 if (typeof this.saveCompleteChat === 'function') this.saveCompleteChat();
                 this.uploadedImage = null;
                 this.uploadedImageUrl = null;
@@ -1234,10 +1280,9 @@
             } catch (error) {
                 console.error('خطا در ارسال پیام AI:', error);
                 this.removeTypingIndicator();
-                // حذف حباب استریم ناقص در صورت خطا
                 var streamMsg = document.getElementById('ac-streaming-msg');
                 if (streamMsg) streamMsg.remove();
-                this.addMessageToHistory('ai', '⚠️ خطا در ارتباط با سرور. لطفاً اتصال اینترنت را بررسی کرده و دوباره تلاش کنید.\n\n' + (error && error.message ? error.message : ''));
+                this.addMessageToHistory('ai', '⚠️ خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.\n\n' + (error && error.message ? error.message : ''));
             } finally {
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
@@ -1249,9 +1294,17 @@
            ============================================================ */
         GermanDictionary.prototype._formatAIMessage = function (text) {
             if (!text) return '';
+            // ✔️ FIX: strip any unprocessed [[...]] commands from display
+            text = text.replace(/\[\[[A-Z_]+(?::[^\]]+)?\]\]/g, '');
             var t = this._acEscape(text);
 
-            // جدول‌ها (ابتدا پردازش شوند)
+            // ✔️ Code blocks با زبان (```lang ... ```)
+            t = t.replace(/```(\w*)\n([\s\S]*?)```/g, function(m, lang, code) {
+                var langLabel = lang ? '<span class="ac-code-lang">' + lang + '</span>' : '';
+                return '<pre class="ac-code-block">' + langLabel + '<code>' + code.trim() + '</code></pre>';
+            });
+
+            // جدول‌ها
             t = t.replace(/((?:^\|[^\n]*\|\s*\n?)+)/gm, function (block) {
                 var lines = block.trim().split('\n');
                 var rows = [];
@@ -1264,7 +1317,7 @@
                 if (rows.length < 2) return block;
                 var startIdx = 1;
                 if (rows[1] && rows[1].every(function (c) { return /^[\s\-:]+$/.test(c); })) startIdx = 2;
-                var html = '<table><thead><tr>';
+                var html = '<div class="ac-table-wrap"><table><thead><tr>';
                 rows[0].forEach(function (h) { html += '<th>' + h + '</th>'; });
                 html += '</tr></thead><tbody>';
                 for (var j = startIdx; j < rows.length; j++) {
@@ -1272,24 +1325,45 @@
                     rows[j].forEach(function (c) { html += '<td>' + c + '</td>'; });
                     html += '</tr>';
                 }
-                html += '</tbody></table>';
+                html += '</tbody></table></div>';
                 return html;
             });
 
             // سرتیترها
+            t = t.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
             t = t.replace(/^### (.+)$/gm, '<h3>$1</h3>');
             t = t.replace(/^## (.+)$/gm, '<h2>$1</h2>');
             t = t.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-            // نقل‌قول
+            // خط جداکننده
+            t = t.replace(/^---$/gm, '<hr class="ac-divider">');
+
+            // ✔️ Callouts: > [!NOTE], > [!WARNING], > [!TIP], > [!IMPORTANT]
+            t = t.replace(/^&gt; \[!(NOTE|WARNING|TIP|IMPORTANT|INFO|CAUTION)\]\s*\n((?:^&gt; .*\n?)+)/gm, function(m, type, content) {
+                var icons = {NOTE: 'ℹ️', WARNING: '⚠️', TIP: '💡', IMPORTANT: '❗', INFO: '📌', CAUTION: '⚡'};
+                var titles = {NOTE: 'توجه', WARNING: 'هشدار', TIP: 'نکته', IMPORTANT: 'مهم', INFO: 'اطلاعات', CAUTION: 'احتیاط'};
+                var icon = icons[type] || '📌';
+                var title = titles[type] || type;
+                var cleanContent = content.replace(/^&gt; /gm, '').trim();
+                return '<div class="ac-callout ac-callout-' + type.toLowerCase() + '"><div class="ac-callout-title">' + icon + ' ' + title + '</div><div class="ac-callout-body">' + cleanContent + '</div></div>';
+            });
+
+            // نقل‌قول معمولی
             t = t.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // ✔️ Task lists: - [x] و - [ ]
+            t = t.replace(/^- \[x\] (.+)$/gm, '<li class="ac-task ac-task-done">☑ $1</li>');
+            t = t.replace(/^- \[ \] (.+)$/gm, '<li class="ac-task">☐ $1</li>');
 
             // پررنگ و کج
             t = t.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
             t = t.replace(/(^|[^*])\*([^*]+?)\*(?!\*)/g, '$1<em>$2</em>');
 
-            // کد اینلاین
-            t = t.replace(/`([^`]+?)`/g, '<code>$1</code>');
+            // ✔️ Inline code (بعد از code blocks)
+            t = t.replace(/`([^`]+?)`/g, '<code class="ac-inline-code">$1</code>');
+
+            // ✔️ Keyboard keys: <kbd>Ctrl</kbd>
+            t = t.replace(/&lt;kbd&gt;([^&]+?)&lt;\/kbd&gt;/g, '<kbd>$1</kbd>');
 
             // فهرست‌های مرتب
             t = t.replace(/(?:^\d+\. .+\n?)+/gm, function (block) {
@@ -1298,20 +1372,28 @@
                 }).join('');
                 return '<ol>' + items + '</ol>';
             });
-            // فهرست‌های نامرتب
-            t = t.replace(/(?:^- .+\n?)+/gm, function (block) {
+            // فهرست‌های نامرتب (بدون task list)
+            t = t.replace(/(?:^- (?!\[)(?!☑ )(?!☐ ).+\n?)+/gm, function (block) {
                 var items = block.trim().split('\n').map(function (l) {
                     return '<li>' + l.replace(/^- /, '') + '</li>';
                 }).join('');
                 return '<ul>' + items + '</ul>';
             });
 
+            // task list items را در ul بگذار
+            t = t.replace(/((?:<li class="ac-task[^"]*">[^<]*<\/li>\n?)+)/g, function(block) {
+                return '<ul class="ac-task-list">' + block + '</ul>';
+            });
+
             // خطوط جدید
             t = t.replace(/\n/g, '<br>');
             // پاکسازی <br> اضافی دور عناصر بلاکی
-            t = t.replace(/<\/(h1|h2|h3|ul|ol|blockquote|table|thead|tbody|tr)><br>/g, '</$1>');
-            t = t.replace(/<br><(h1|h2|h3|ul|ol|blockquote|table)>/g, '<$1>');
-            t = t.replace(/<br>(<\/?(?:ul|ol|li|table|thead|tbody|tr|td|th|blockquote|h[1-3])[ >])/g, '$1');
+            t = t.replace(/<\/(h1|h2|h3|h4|ul|ol|blockquote|table|thead|tbody|tr|pre|hr|div)><br>/g, '</$1>');
+            t = t.replace(/<br><(h1|h2|h3|h4|ul|ol|blockquote|table|pre|hr|div class="ac-callout)/g, '<$1');
+            t = t.replace(/<br>(<\/??(?:ul|ol|li|table|thead|tbody|tr|td|th|blockquote|h[1-4]|pre|hr)[ >])/g, '$1');
+            // پاکسازی <br> داخل callout
+            t = t.replace(/(<div class="ac-callout-body">)<br>/g, '$1');
+            t = t.replace(/<br>(<\/div>)/g, '$1');
 
             return t;
         };
@@ -1322,12 +1404,13 @@
         GermanDictionary.prototype.addToMemory = function (role, content) {
             if (!this.chatMemory) this.chatMemory = [];
             this.chatMemory.push({ role: role === 'user' ? 'user' : 'assistant', content: content });
-            if (this.chatMemory.length > 30) this.chatMemory = this.chatMemory.slice(-30);
+            if (this.chatMemory.length > 50) this.chatMemory = this.chatMemory.slice(-50);
         };
 
         GermanDictionary.prototype.getMemoryForAI = function () {
             if (!this.chatMemory) return [];
-            return this.chatMemory.slice(-10).map(function (m) {
+            // ✔️ FIX: افزایش از ۱۰ به ۲۰ پیام برای حافظه بهتر
+            return this.chatMemory.slice(-20).map(function (m) {
                 return { role: m.role, content: m.content };
             });
         };
@@ -1354,37 +1437,17 @@
             try {
                 if (typeof this.getAllWords !== 'function') return '';
                 var words = await this.getAllWords();
+                if (!words || !Array.isArray(words)) words = [];
                 var total = words.length;
                 var nouns = words.filter(function(w){return w.type==='noun';}).length;
                 var verbs = words.filter(function(w){return w.type==='verb';}).length;
-                var adjs  = words.filter(function(w){return w.type==='adjective';}).length;
+                var adjs = words.filter(function(w){return w.type==='adjective';}).length;
                 var srsKeys = Object.keys(this.srsData || {});
-                var learned = srsKeys.filter(function(k){return (this.srsData[k]?.level||0)>=3;}, this).length;
+                var learned = srsKeys.filter(function(k){return (this.srsData[k]&&this.srsData[k].level||0)>=3;}, this).length;
+                var reviewNeeded = srsKeys.filter(function(k){return (this.srsData[k]&&this.srsData[k].level||0)<2;}, this).length;
                 var favCount = this.favorites ? this.favorites.size : 0;
-                // ✔️ NEW: دسترسی به همه‌ی لغات (نه فقط ۵ تای اخیر)
-                var wordList = words.map(function(w) {
-                    var srs = (this.srsData && this.srsData[w.id] && this.srsData[w.id].level) ? this.srsData[w.id].level : 0;
-                    return w.german + ' (' + w.persian + ', ' + (w.type||'?') + ', SRS:' + srs + ')';
-                }.bind(this)).join('، ');
-                if (wordList.length > 6000) {
-                    wordList = words.slice(0, 150).map(function(w) {
-                        return w.german + ' (' + w.persian + ', ' + (w.type||'?') + ')';
-                    }).join('، ') + ' ... و ' + (total - 150) + ' لغت دیگر';
-                }
-                var reviewNeeded = words.filter(function(w) {
-                    var srs = (this.srsData && this.srsData[w.id] && this.srsData[w.id].level) ? this.srsData[w.id].level : 0;
-                    return srs < 2;
-                }.bind(this)).slice(0, 20).map(function(w){return w.german;}).join('، ');
-                return 'اطلاعات کامل دیکشنری کاربر:\n' +
-                    '- تعداد کل لغات: ' + total + '\n' +
-                    '- اسم: ' + nouns + ' | فعل: ' + verbs + ' | صفت: ' + adjs + '\n' +
-                    '- لغات تسلط‌یافته (SRS≥3): ' + learned + '\n' +
-                    '- علاقه‌مندی‌ها: ' + favCount + '\n' +
-                    '- لغات نیاز به مرور (SRS<2): ' + (reviewNeeded || 'هیچ') + '\n' +
-                    '- لیست کامل لغات: ' + wordList;
-            } catch (e) {
-                return '';
-            }
+                return 'اطلاعات دیکشنری:\n- لغات: ' + total + ' (اسم:' + nouns + ' فعل:' + verbs + ' صفت:' + adjs + ')\n- تسلط: ' + learned + ' | نیاز مرور: ' + reviewNeeded + '\n- علاقه‌مندی: ' + favCount + '\nبرای دیدن لغات از [[SHOW_WORDS:لغت1,لغت2]] یا [[SEMANTIC_SEARCH:query]] استفاده کن.';
+            } catch (e) { return ''; }
         };
 
         /* ============================================================

@@ -603,7 +603,7 @@ GermanDictionary.prototype._awAISmartFillAll = async function() {
 ⚠️ فقط JSON برگردان، بدون متن اضافه. اگر اطلاعاتی نامشخص است، null بگذار.`;
 
         // صدا زدن Worker
-        const result = await chatFn.call(this, prompt, { model: 'llama-4-scout-17b-16e-instruct', temperature: 0.3, max_tokens: 1000 });
+        const result = await chatFn.call(this, prompt, { model: 'llama-4-scout', taskType: 'formFill', temperature: 0.3, max_tokens: 2000 });
 
         // استخراج متن از نتیجه
         let responseText = '';
@@ -622,20 +622,36 @@ GermanDictionary.prototype._awAISmartFillAll = async function() {
             return;
         }
 
-        // استخراج JSON از پاسخ
+        // استخراج JSON از پاسخ — چند روش مقاوم
         let info = null;
         try {
-            // تلاش برای پیدا کردن JSON در متن
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            // پاکسازی متن: حذف markdown code fences
+            var cleanText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            // تلاش ۱: پیدا کردن JSON با regex
+            const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 info = JSON.parse(jsonMatch[0]);
             } else {
-                info = JSON.parse(responseText);
+                info = JSON.parse(cleanText);
             }
         } catch (e) {
-            console.error('خطا در parse JSON:', e, responseText);
-            this.showToast('خطا در پردازش پاسخ AI', 'error');
-            return;
+            console.error('خطا در parse JSON:', e, responseText.substring(0, 200));
+            // تلاش نهایی: استخراج دستی فیلدها
+            try {
+                var germanMatch = responseText.match(/"german"\s*:\s*"([^"]+)"/);
+                var persianMatch = responseText.match(/"persian"\s*:\s*"([^"]+)"/);
+                if (germanMatch || persianMatch) {
+                    info = {
+                        german: germanMatch ? germanMatch[1] : word,
+                        persian: persianMatch ? persianMatch[1] : '',
+                        type: 'noun'
+                    };
+                }
+            } catch(e2) {}
+            if (!info) {
+                this.showToast('خطا در پردازش پاسخ AI', 'error');
+                return;
+            }
         }
 
         if (!info) {
@@ -827,7 +843,7 @@ GermanDictionary.prototype.updateFieldCount = function() {
    ============================================================ */
 GermanDictionary.prototype.addWord = async function(wordData) {
     this._invalidateAllWordsCache && this._invalidateAllWordsCache();
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         if (!this.db) {
             reject(new Error('دیتابیس آماده نیست'));
             return;
@@ -835,6 +851,30 @@ GermanDictionary.prototype.addWord = async function(wordData) {
         try {
             // نرمال‌سازی لغت آلمانی
             const normalizedGerman = (wordData.german || '').trim().replace(/\s+/g, ' ');
+
+            // ✔️ FIX: بررسی تکراری بودن (case-insensitive) قبل از ذخیره
+            try {
+                const allWords = await this.getAllWords();
+                const existing = allWords.find(function(w) {
+                    return (w.german || '').toLowerCase().trim() === normalizedGerman.toLowerCase();
+                });
+                if (existing) {
+                    reject(new Error('duplicate'));
+                    return;
+                }
+            } catch (e) { /* اگر getAllWords خطا داد، ادامه بده */ }
+
+            // ✔️ ZILLIZ: بررسی تکراری معنایی (semantic duplicate)
+            if (typeof this._zillizCheckDuplicate === 'function') {
+                try {
+                    var semDup = await this._zillizCheckDuplicate(normalizedGerman, wordData.persian || '');
+                    if (semDup && semDup.isDuplicate) {
+                        console.log('[zilliz] لغت تکراری معنایی پیدا شد:', semDup.german, 'شباهت:', semDup.similarity);
+                        reject(new Error('semantic_duplicate:' + (semDup.german || '') + ':' + (semDup.similarity || 0).toFixed(2)));
+                        return;
+                    }
+                } catch (e) { /* اگر Zilliz در دسترس نبود، ادامه بده */ }
+            }
 
             const transaction = this.db.transaction(['words'], 'readwrite');
             const store = transaction.objectStore('words');
@@ -847,6 +887,7 @@ GermanDictionary.prototype.addWord = async function(wordData) {
                 updatedAt: new Date().toISOString()
             };
 
+            if (wordData.id) finalWord.id = wordData.id;
             if (wordData.notes) finalWord.notes = wordData.notes;
             if (wordData.tags) finalWord.tags = wordData.tags;
             if (wordData.pronunciation) finalWord.pronunciation = wordData.pronunciation;
@@ -892,15 +933,19 @@ GermanDictionary.prototype.addWord = async function(wordData) {
 
             request.onsuccess = () => {
                 console.log('✅ لغت ذخیره شد:', finalWord.german);
+                // ✔️ ZILLIZ: بعد از ذخیره موفق در IndexedDB، در Zilliz هم ذخیره کن
+                if (typeof this._zillizInsertWord === 'function') {
+                    this._zillizInsertWord(finalWord).then(function() {
+                        console.log('[zilliz] لغت در Zilliz ذخیره شد:', finalWord.german);
+                    }).catch(function(e) { console.warn('[zilliz] insert error:', e.message); });
+                }
                 resolve(finalWord);
             };
 
             request.onerror = (event) => {
                 const error = event.target.error;
                 console.error('❌ خطا در ذخیره لغت:', error);
-                // جلوگیری از propagate خطای پیش‌فرض
                 event.preventDefault();
-                // خطای unique constraint → لغت تکراری
                 if (error && (error.name === 'ConstraintError' || error.message.includes('uniqueness'))) {
                     reject(new Error('duplicate'));
                 } else {

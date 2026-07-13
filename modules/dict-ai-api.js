@@ -1,80 +1,231 @@
-/* dict-ai-api.js — AI Client, API Key, Suggestions, Save Form (lines 12266-12939) */
+/* dict-ai-api.js — AI Client (Cloudflare Workers AI + Failover System) */
 
+/* ✔️ NEW: لیست ورکرهای هوش مصنوعی — با قابلیت Failover خودکار */
+const AI_WORKERS = [
+    { url: 'https://ai-7wegga.ai-multi-model-4zgxvo.workers.dev', key: 'sk-63C3hGQVXXXA3yGcG3wp3Ay21A79wO2A' },
+    { url: 'https://ai-0y6z2u.ai-0y6z2u-ho67pc.workers.dev', key: 'sk-WC9cMgYvCaESvWPhqtt89UmCUmhHwWFe' },
+    { url: 'https://ai-u0blil.ai-u0blil-24d298.workers.dev', key: 'sk-SXxAlOgktXjY9xBPaXswgAP1um17OmBZ' },
+    // ورکرهای بیشتر بعداً اضافه می‌شوند
+];
+
+/* ✔️ مدل‌های موجود برای چت */
+const CHAT_MODELS = {
+    'llama-4-scout':    { id: '@cf/meta/llama-4-scout-17b-16e-instruct', name: '🦙 Llama 4 Scout 17B', vision: true,  thinking: false },
+    'gpt-oss-20b':      { id: '@cf/openai/gpt-oss-20b',                   name: '🤖 GPT OSS 20B',        vision: false, thinking: true  },
+    'glm-4.7-flash':    { id: '@cf/zai-org/glm-4.7-flash',               name: '⚡ GLM 4.7 Flash',       vision: false, thinking: true  },
+    'gemma-4-26b':      { id: '@cf/google/gemma-4-26b-a4b-it',           name: '💎 Gemma 4 26B',        vision: true,  thinking: true  },
+    'gemma-sea-lion':   { id: '@cf/aisingapore/gemma-sea-lion-v4-27b-it', name: '🦁 Gemma SEA-LION',    vision: false, thinking: true  }
+};
+
+/* مدل‌های تخصصی */
+const SPECIALIZED_MODELS = {
+    translation:    '@cf/meta/llama-4-scout-17b-16e-instruct',
+    conjugation:    '@cf/meta/llama-4-scout-17b-16e-instruct',
+    formFill:       '@cf/meta/llama-4-scout-17b-16e-instruct',
+    imagePrompt:    '@cf/meta/llama-3.1-8b-instruct-fast',
+    visualConcept:  '@cf/meta/llama-3.1-8b-instruct-fast'
+};
+
+/* ✔️ تابع کمکی: تأخیر */
+function aiDelay(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+/* تابع کمکی: تجزیه یک رویداد SSE */
+GermanDictionary.prototype._parseSSEChunk = function(eventStr) {
+    if (!eventStr) return '';
+    const lines = eventStr.split('\n');
+    let dataStr = '';
+    for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (!trimmed) continue;
+        if (trimmed.startsWith('data:')) {
+            dataStr += trimmed.slice(5).trim();
+        }
+    }
+    if (!dataStr) return '';
+    if (dataStr === '[DONE]') return '';
+    try {
+        const json = JSON.parse(dataStr);
+        // فرمت Cloudflare Workers AI: result.response یا choices[0].delta.content
+        if (json && json.result && json.result.response) {
+            // ✔️ FIX: response ممکن است string یا object باشد
+            if (typeof json.result.response === 'string') return json.result.response;
+            return JSON.stringify(json.result.response);
+        }
+        if (json && json.choices && json.choices[0]) {
+            const delta = json.choices[0].delta || json.choices[0].message || {};
+            if (typeof delta.content === 'string') return delta.content;
+        }
+        if (json && typeof json.response === 'string') return json.response;
+        if (json && typeof json.text === 'string') return json.text;
+        return '';
+    } catch (e) {
+        return '';
+    }
+};
+
+/* ✔️ NEW: فراخوانی ورکر هوش مصنوعی با Failover */
+GermanDictionary.prototype._cfChatAPI = async function(payload, onChunk) {
+    if (!AI_WORKERS || AI_WORKERS.length === 0) {
+        throw new Error('هیچ ورکر هوش مصنوعی پیکربندی نشده است.');
+    }
+    var lastError = null;
+    for (var i = 0; i < AI_WORKERS.length; i++) {
+        var worker = AI_WORKERS[i];
+        try {
+            var controller = new AbortController();
+            var timer = setTimeout(function(){ controller.abort(); }, 60000);
+            var response = await fetch(worker.url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + worker.key,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+            clearTimeout(timer);
+            if (!response.ok) {
+                var errTxt = 'HTTP ' + response.status;
+                try {
+                    var ed = await response.json();
+                    if (ed && ed.error) errTxt = ed.error;
+                } catch(e){}
+                throw new Error(errTxt);
+            }
+            // بررسی نوع پاسخ
+            var ct = response.headers.get('content-type') || '';
+            var isStream = response.body && (
+                ct.includes('text/event-stream') ||
+                ct.includes('application/x-ndjson') ||
+                ct.includes('stream')
+            );
+            if (isStream && onChunk) {
+                var fullText = '';
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder('utf-8');
+                var buffer = '';
+                while (true) {
+                    var result = await reader.read();
+                    if (result.done) break;
+                    buffer += decoder.decode(result.value, { stream: true });
+                    var sepIdx;
+                    while ((sepIdx = buffer.indexOf('\n\n')) !== -1) {
+                        var eventStr = buffer.slice(0, sepIdx);
+                        buffer = buffer.slice(sepIdx + 2);
+                        var chunk = this._parseSSEChunk(eventStr);
+                        if (chunk) {
+                            fullText += chunk;
+                            onChunk(chunk, fullText);
+                        }
+                    }
+                }
+                if (buffer.trim()) {
+                    var finalChunk = this._parseSSEChunk(buffer);
+                    if (finalChunk) {
+                        fullText += finalChunk;
+                        onChunk(finalChunk, fullText);
+                    }
+                }
+                if (!fullText) throw new Error('پاسخ خالی از ورکر');
+                return { message: { content: [{ text: fullText }] } };
+            }
+            // حالت غیراستریم
+            var data = await response.json();
+            // فرمت Cloudflare: { result: { response: "..." یا {...} } }
+            var text = '';
+            if (data && data.result) {
+                if (data.result.response) {
+                    // ✔️ FIX: response ممکن است string یا object باشد
+                    if (typeof data.result.response === 'string') {
+                        text = data.result.response;
+                    } else {
+                        text = JSON.stringify(data.result.response);
+                    }
+                } else if (data.result.choices && data.result.choices[0]) {
+                    var msg = data.result.choices[0].message || data.result.choices[0].delta || {};
+                    text = msg.content || '';
+                }
+            } else if (data && data.choices && data.choices[0]) {
+                var msg2 = data.choices[0].message || data.choices[0].delta || {};
+                text = msg2.content || '';
+            } else if (data && data.response) {
+                if (typeof data.response === 'string') text = data.response;
+                else text = JSON.stringify(data.response);
+            }
+            if (!text) throw new Error('پاسخ خالی از ورکر');
+            // ✔️ FIX: onChunk را با کل متن صدا بزن تا streaming bubble آپدیت شود
+            if (onChunk) onChunk(text, text);
+            return { message: { content: [{ text: text }] } };
+        } catch (err) {
+            console.warn('[ai-api] Worker ' + (i+1) + ' ناموفق:', err.message);
+            lastError = err;
+            if (err && err.status === 429) await aiDelay(800);
+        }
+    }
+    throw lastError || new Error('تمام ورکرهای هوش مصنوعی ناموفق بودند.');
+};
+
+/* ✔️ NEW: _puterChat بازنویسی شده با Cloudflare Workers AI */
 GermanDictionary.prototype._puterChat = async function(messages, options = {}) {
-    const WORKER_URL = 'https://groq.ysadat180.workers.dev';
-    
-    // مدل پیش‌فرض برای بخش‌های غیر از چت
-    const defaultModel = options.model || 'llama-4-scout-17b-16e-instruct';
-    
-    // تبدیل messages به فرمت ساده
-    let simpleMessages = [];
-    
+    // تعیین مدل: اگر model داده شد و در CHAT_MODELS بود، آن را استفاده کن
+    // در غیر این صورت از مدل تخصصی بر اساس نوع کار استفاده کن
+    var modelId = SPECIALIZED_MODELS.formFill; // پیش‌فرض
+    if (options.model) {
+        // بررسی اینکه آیا model یک کلید در CHAT_MODELS است یا یک ID کامل
+        if (CHAT_MODELS[options.model]) {
+            modelId = CHAT_MODELS[options.model].id;
+        } else if (options.model.indexOf('@cf/') === 0) {
+            modelId = options.model;
+        } else if (options.model.indexOf('@') === 0) {
+            modelId = options.model;
+        }
+    }
+    if (options.taskType && SPECIALIZED_MODELS[options.taskType]) {
+        modelId = SPECIALIZED_MODELS[options.taskType];
+    }
+
+    // تبدیل messages به فرمت Cloudflare
+    var cfMessages = [];
     if (typeof messages === 'string') {
-        simpleMessages = [{ role: 'user', content: messages }];
+        cfMessages = [{ role: 'user', content: messages }];
     } else if (Array.isArray(messages)) {
-        simpleMessages = messages.map(m => {
+        cfMessages = messages.map(function(m) {
             if (typeof m.content === 'string') {
                 return { role: m.role, content: m.content };
             }
             if (Array.isArray(m.content)) {
-                const text = m.content.filter(c => c.type === 'text').map(c => c.text).join(' ');
-                const image = m.content.find(c => c.type === 'image_url');
-                if (image) {
-                    return {
-                        role: m.role,
-                        content: text || 'این تصویر را تحلیل کن.',
-                        image_url: image.image_url.url
-                    };
-                }
-                return { role: m.role, content: text || '...' };
+                // محتوای چندبخشی (متن + تصویر)
+                return { role: m.role, content: m.content };
             }
-            return { role: m.role, content: String(m.content) };
+            return { role: m.role, content: String(m.content || '') };
         });
     }
-    
-    simpleMessages = simpleMessages.filter(m => m.content && m.content.trim());
-    
-    // استخراج system message (اگر وجود داشت)
-    let systemMessage = null;
-    const filteredMessages = simpleMessages.filter(m => {
-        if (m.role === 'system') {
-            systemMessage = m.content;
-            return false;
-        }
-        return true;
+    cfMessages = cfMessages.filter(function(m) {
+        return m.content && (typeof m.content === 'string' ? m.content.trim() : true);
     });
-    
-    // اگر system message وجود داشت، به ابتدای array اضافه کن
-    if (systemMessage) {
-        filteredMessages.unshift({ role: 'system', content: systemMessage });
+
+    // ✔️ max_tokens هوشمند: برای مدل‌های thinking حداقل ۴۰۹۶
+    var maxTokens = options.max_tokens || 8192;
+    var modelKey = null;
+    for (var k in CHAT_MODELS) {
+        if (CHAT_MODELS[k].id === modelId) { modelKey = k; break; }
     }
-    
-    const payload = {
-        messages: filteredMessages,
-        model: defaultModel,
-        max_tokens: options.max_tokens || 4096,
-        temperature: options.temperature || 0.7
+    if (modelKey && CHAT_MODELS[modelKey].thinking && maxTokens < 4096) {
+        maxTokens = 4096;
+    }
+
+    var payload = {
+        model: modelId,
+        messages: cfMessages,
+        max_tokens: maxTokens,
+        temperature: options.temperature || 0.7,
+        stream: !!onChunk  // ✔️ فقط اگر onChunk موجود است، استریم درخواست کن
     };
-    
+
+    var onChunk = (typeof options.onChunk === 'function') ? options.onChunk : null;
+
     try {
-        const response = await fetch(WORKER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            console.error('Worker error:', data);
-            throw new Error(data.error || `HTTP ${response.status}`);
-        }
-        
-        const text = data.choices?.[0]?.message?.content || '';
-        if (!text) throw new Error('پاسخی دریافت نشد');
-        
-        return { message: { content: [{ text }] } };
-        
+        return await this._cfChatAPI(payload, onChunk);
     } catch (error) {
         console.error('❌ _puterChat error:', error);
         throw error;

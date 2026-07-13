@@ -480,6 +480,10 @@ GermanDictionary.prototype.updateWord = async function(wordData) {
 
 GermanDictionary.prototype.deleteWord = async function(wordId) {
     this._invalidateAllWordsCache && this._invalidateAllWordsCache();
+    // ✔️ ZILLIZ: حذف از Zilliz هم
+    if (typeof this._zillizDeleteWord === 'function') {
+        try { this._zillizDeleteWord(wordId); } catch(e) { console.warn('[zilliz] delete error:', e.message); }
+    }
     return new Promise((resolve, reject) => {
         if (!this.db) {
             reject(new Error('دیتابیس در دسترس نیست'));

@@ -24,6 +24,7 @@
                 if (typeof dictionaryApp !== 'undefined' && dictionaryApp) {
                     try {
                         dictionaryApp._injectChatProStyles();
+                        dictionaryApp._injectCardStylesFix();
                         // Hook showSection
                         if (!dictionaryApp._acHookedShowSection) {
                             dictionaryApp._acHookedShowSection = true;
@@ -83,63 +84,83 @@
             var style = document.createElement('style');
             style.id = 'ac-pro-styles';
             style.textContent = `
-                /* ===== کارت لغت در چت (فشرده و ریسپانسیو) ===== */
+                /* ===== کارت لغت در چت (کوچک و ریسپانسیو) ===== */
                 .ac-word-card {
-                    background: #fff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 10px;
-                    padding: 8px 10px;
-                    margin: 6px 0;
-                    display: flex;
-                    gap: 10px;
-                    align-items: center;
-                    cursor: pointer;
-                    transition: all .15s ease;
-                    max-width: 100%;
+                    background: #fff !important;
+                    border: 1px solid #e2e8f0 !important;
+                    border-radius: 10px !important;
+                    padding: 8px !important;
+                    flex-shrink: 0 !important;
+                    width: 130px !important;
+                    max-width: 130px !important;
+                    min-width: 100px !important;
+                    cursor: pointer !important;
+                    transition: all .15s ease !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    gap: 4px !important;
+                    align-items: center !important;
+                    text-align: center !important;
+                    overflow: hidden !important;
+                    box-sizing: border-box !important;
                 }
                 .ac-word-card:hover {
                     border-color: #4361ee;
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(67,97,238,.15);
+                    box-shadow: 0 4px 12px rgba(67,97,238,.12);
                 }
+                /* ✔️ Container for multiple word cards — horizontal scroll */
+                .ac-word-cards-row {
+                    display: flex;
+                    gap: 8px;
+                    overflow-x: auto;
+                    padding: 4px 0;
+                    scrollbar-width: thin;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .ac-word-cards-row::-webkit-scrollbar { height: 5px; }
+                .ac-word-cards-row::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
                 .ac-word-card-img {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 8px;
-                    object-fit: cover;
-                    flex-shrink: 0;
-                    background: #e2e8f0;
+                    width: 80px !important;
+                    height: 80px !important;
+                    max-width: 80px !important;
+                    max-height: 80px !important;
+                    border-radius: 8px !important;
+                    object-fit: cover !important;
+                    flex-shrink: 0 !important;
+                    background: #e2e8f0 !important;
                 }
                 .ac-word-card-img-placeholder {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 8px;
-                    background: linear-gradient(135deg, #4361ee, #3a0ca3);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #fff;
-                    font-size: 18px;
-                    flex-shrink: 0;
+                    width: 80px !important;
+                    height: 80px !important;
+                    border-radius: 8px !important;
+                    background: linear-gradient(135deg, #4361ee, #3a0ca3) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    color: #fff !important;
+                    font-size: 28px !important;
+                    flex-shrink: 0 !important;
                 }
                 .ac-word-card-body {
-                    flex: 1;
-                    min-width: 0;
+                    width: 100%;
+                    text-align: center;
                 }
                 .ac-word-card-german {
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 700;
                     color: #0f172a;
                     margin: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                    flex-wrap: wrap;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
                 .ac-word-card-persian {
-                    font-size: 12px;
+                    font-size: 11px;
                     color: #64748b;
-                    margin: 0;
+                    margin: 2px 0 0;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
                 .ac-word-card-meta {
                     display: flex;
@@ -161,25 +182,24 @@
                 .ac-word-card-badge.srs-3 { background: #d1fae5; color: #065f46; }
                 .ac-word-card-badge.srs-4 { background: #a7f3d0; color: #064e3b; }
                 .ac-word-card-badge.srs-5 { background: #6ee7b7; color: #064e3b; }
-                .ac-word-card-actions {
-                    display: flex;
-                    gap: 4px;
-                    margin-top: 4px;
+                /* ✔️ Removed: view/pronounce buttons from chat cards */
+                /* ✔️ FIX: هر تصویری در حباب چت کوچک و کنترل‌شده باشد */
+                .ac-msg-bubble img {
+                    max-width: 100px !important;
+                    max-height: 100px !important;
+                    border-radius: 8px;
+                    object-fit: cover;
+                    display: inline-block;
+                    margin: 4px;
                 }
-                .ac-word-card-btn {
-                    font-size: 10px;
-                    padding: 3px 8px;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 5px;
-                    background: #fff;
-                    color: #64748b;
-                    cursor: pointer;
-                    transition: all .15s;
+                /* ✔️ If image is inside word card, it follows card rules */
+                .ac-word-card img.ac-word-card-img {
+                    max-width: 80px !important;
+                    max-height: 80px !important;
                 }
-                .ac-word-card-btn:hover {
-                    background: #4361ee;
-                    color: #fff;
-                    border-color: #4361ee;
+                @media (max-width: 640px) {
+                    .ac-msg-bubble img { max-width: 80px !important; max-height: 80px !important; }
+                    .ac-word-card img.ac-word-card-img { max-width: 64px !important; max-height: 64px !important; }
                 }
 
                 /* ===== کارت آمار ===== */
@@ -332,13 +352,12 @@
 
                 /* ===== موبایل ===== */
                 @media (max-width: 640px) {
-                    .ac-word-card { padding: 6px 8px; gap: 8px; }
-                    .ac-word-card-img, .ac-word-card-img-placeholder { width: 38px; height: 38px; border-radius: 6px; }
-                    .ac-word-card-img-placeholder { font-size: 14px; }
-                    .ac-word-card-german { font-size: 13px; }
-                    .ac-word-card-persian { font-size: 11px; }
-                    .ac-word-card-badge { font-size: 8px; padding: 1px 5px; }
-                    .ac-word-card-btn { font-size: 9px; padding: 2px 6px; }
+                    .ac-word-card { width: 100px !important; max-width: 100px !important; padding: 6px !important; }
+                    .ac-word-card-img, .ac-word-card-img-placeholder { width: 64px !important; height: 64px !important; max-width: 64px !important; max-height: 64px !important; }
+                    .ac-word-card-img-placeholder { font-size: 22px !important; }
+                    .ac-word-card-german { font-size: 12px !important; }
+                    .ac-word-card-persian { font-size: 10px !important; }
+                    .ac-word-card-badge { font-size: 8px !important; padding: 1px 5px !important; }
                     .ac-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
                     .ac-stat-value { font-size: 16px; }
                     .ac-stat-label { font-size: 9px; }
@@ -387,19 +406,13 @@
                 imgHTML = '<div class="ac-word-card-img-placeholder"><i class="fas ' + icon + '"></i></div>';
             }
 
-            var badges = '<span class="ac-word-card-badge">' + typeLabel + '</span>';
-            if (word.gender) { badges += '<span class="ac-word-card-badge">' + word.gender + '</span>'; }
-            badges += '<span class="ac-word-card-badge srs-' + srsLevel + '">SRS:' + srsLevel + '</span>';
-
-            return '<div class="ac-word-card" onclick="dictionaryApp._acViewWord(' + word.id + ')">' +
+            // ✔️ No view/pronounce buttons — just card with click
+            return '<div class="ac-word-card" onclick="dictionaryApp._acViewWord(' + word.id + ')" title="' + this._acAttr(word.german) + ' — ' + this._acAttr(word.persian) + '">' +
                 imgHTML +
                 '<div class="ac-word-card-body">' +
-                    '<div class="ac-word-card-german">' + this._acText(word.german) + ' <span class="ac-word-card-badge">' + typeLabel + '</span></div>' +
+                    '<div class="ac-word-card-german">' + this._acText(word.german) + '</div>' +
                     '<div class="ac-word-card-persian">' + this._acText(word.persian) + '</div>' +
-                    '<div class="ac-word-card-actions">' +
-                        '<button class="ac-word-card-btn" onclick="event.stopPropagation();dictionaryApp._acViewWord(' + word.id + ')"><i class="fas fa-eye"></i></button>' +
-                        '<button class="ac-word-card-btn" onclick="event.stopPropagation();dictionaryApp._acSpeakWord(' + word.id + ')"><i class="fas fa-volume-high"></i></button>' +
-                    '</div>' +
+                    '<span class="ac-word-card-badge srs-' + srsLevel + '">' + typeLabel + '</span>' +
                 '</div>' +
             '</div>';
         };
@@ -633,11 +646,26 @@
             try {
                 var self = this;
                 switch (cmd) {
+                    case 'SHOW_WORDS':
+                        // ✔️ NEW: نمایش چند لغت با کاما جدا شده
+                        var names = arg.split(',').map(function(s){return s.trim();}).filter(Boolean);
+                        var allW2 = await this.getAllWords();
+                        var cards2 = [];
+                        for (var n = 0; n < names.length; n++) {
+                            var found = allW2.find(function(x) { return x.german.toLowerCase() === names[n].toLowerCase(); });
+                            if (found) cards2.push(found);
+                        }
+                        if (cards2.length === 0) return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">هیچ لغت پیدا نشد</div></div>';
+                        var mh = '<div class="ac-word-cards-row">';
+                        for (var m = 0; m < cards2.length; m++) { mh += this._acRenderWordCard(cards2[m]); }
+                        mh += '</div>';
+                        return mh;
+                    
                     case 'SHOW_WORD':
                         // جستجوی لغت بر اساس نام
                         var words = await this.getAllWords();
                         var w = words.find(function(x) { return x.german.toLowerCase() === arg.toLowerCase(); });
-                        if (w) return this._acRenderWordCard(w);
+                        if (w) return '<div class="ac-word-cards-row">' + this._acRenderWordCard(w) + '</div>';
                         return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">لغت «' + this._acText(arg) + '» پیدا نشد</div></div>';
                     
                     case 'SHOW_WORD_ID':
@@ -646,14 +674,55 @@
                         if (word) return this._acRenderWordCard(word);
                         return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">لغت پیدا نشد</div></div>';
                     
+                    case 'SEMANTIC_SEARCH':
+                        // ✔️ ZILLIZ: جستجوی معنایی — پیدا کردن لغات مرتبط از نظر معنی
+                        if (typeof this._zillizSearch !== 'function') {
+                            return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">جستجوی معنایی در دسترس نیست</div></div>';
+                        }
+                        var semResults = await this._zillizSearch(arg, 5);
+                        if (!semResults || semResults.length === 0) {
+                            return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">لغت مرتبط پیدا نشد</div></div>';
+                        }
+                        // تبدیل نتایج Zilliz به کارت‌های لغت
+                        var semHTML = '<div style="font-weight:700;margin:4px 0;">🔍 لغات مرتبط معنایی:</div><div class="ac-word-cards-row">';
+                        for (var si = 0; si < semResults.length; si++) {
+                            var r = semResults[si];
+                            // پیدا کردن لغت کامل از IndexedDB
+                            var fullWord = null;
+                            try {
+                                fullWord = await this.getWord(r.word_id);
+                            } catch(e) {}
+                            if (fullWord) {
+                                semHTML += this._acRenderWordCard(fullWord);
+                            }
+                        }
+                        semHTML += '</div>';
+                        return semHTML;
+                    
+                    case 'RELATED_WORDS':
+                        // ✔️ ZILLIZ: لغات مرتبط با یک لغت خاص
+                        if (typeof this._zillizGetRelated === 'function') {
+                            var relResults = await this._zillizGetRelated(parseInt(arg, 10), 5);
+                            if (relResults && relResults.length > 0) {
+                                var relHTML = '<div style="font-weight:700;margin:4px 0;">🔗 لغات مرتبط:</div><div class="ac-word-cards-row">';
+                                for (var ri = 0; ri < relResults.length; ri++) {
+                                    var rw = await this.getWord(relResults[ri].word_id);
+                                    if (rw) relHTML += this._acRenderWordCard(rw);
+                                }
+                                relHTML += '</div>';
+                                return relHTML;
+                            }
+                        }
+                        return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">لغت مرتبط پیدا نشد</div></div>';
+                    
                     case 'SEARCH_WORDS':
                         var results = await this.getAllWords();
                         var q = arg.toLowerCase();
                         var filtered = results.filter(function(x) {
                             return (x.german||'').toLowerCase().indexOf(q) !== -1 || (x.persian||'').toLowerCase().indexOf(q) !== -1;
-                        }).slice(0, 5);
+                        }).slice(0, 10);
                         if (filtered.length === 0) return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">لغتی پیدا نشد</div></div>';
-                        var h = '<div style="margin:8px 0;">';
+                        var h = '<div class="ac-word-cards-row">';
                         for (var i = 0; i < filtered.length; i++) { h += this._acRenderWordCard(filtered[i]); }
                         h += '</div>';
                         return h;
@@ -665,7 +734,7 @@
                         var allWords = await this.getAllWords();
                         var favs = allWords.filter(function(x) { return self.favorites && self.favorites.has(x.id); });
                         if (favs.length === 0) return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">هیچ لغت علاقه‌مندی ندارید</div></div>';
-                        var fh = '<div style="margin:8px 0;"><div style="font-weight:700;margin-bottom:6px;">⭐ لغات علاقه‌مندی شما:</div>';
+                        var fh = '<div style="font-weight:700;margin:4px 0;">⭐ لغات علاقه‌مندی:</div><div class="ac-word-cards-row">';
                         for (var j = 0; j < favs.length; j++) { fh += this._acRenderWordCard(favs[j]); }
                         fh += '</div>';
                         return fh;
@@ -675,9 +744,9 @@
                         var review = allW.filter(function(x) {
                             var srs = (self.srsData && self.srsData[x.id] && self.srsData[x.id].level) ? self.srsData[x.id].level : 0;
                             return srs < 2;
-                        }).slice(0, 10);
+                        }).slice(0, 15);
                         if (review.length === 0) return '<div class="ac-action-card"><div class="ac-action-ic"><i class="fas fa-check"></i></div><div class="ac-action-body">همه‌ی لغات تسلط بالایی دارند! 🎉</div></div>';
-                        var rh = '<div style="margin:8px 0;"><div style="font-weight:700;margin-bottom:6px;">📖 لغاتی که نیاز به مرور دارند:</div>';
+                        var rh = '<div style="font-weight:700;margin:4px 0;">📖 لغات نیاز به مرور:</div><div class="ac-word-cards-row">';
                         for (var k = 0; k < review.length; k++) { rh += this._acRenderWordCard(review[k]); }
                         rh += '</div>';
                         return rh;
@@ -702,7 +771,7 @@
                             await this.addWord(newWord);
                             this._invalidateAllWordsCache && this._invalidateAllWordsCache();
                             var savedH = '<div class="ac-action-card"><div class="ac-action-ic"><i class="fas fa-check"></i></div><div class="ac-action-body">✅ لغت «' + this._acText(newWord.german) + '» با موفقیت ذخیره شد!</div></div>';
-                            savedH += this._acRenderWordCard(newWord);
+                            savedH += '<div class="ac-word-cards-row">' + this._acRenderWordCard(newWord) + '</div>';
                             return savedH;
                         } catch (e) {
                             return '<div class="ac-action-card error"><div class="ac-action-ic"><i class="fas fa-times"></i></div><div class="ac-action-body">خطا در ذخیره: ' + e.message + '</div></div>';
@@ -853,6 +922,40 @@
                 input.value = 'کدام لغات نیاز به مرور دارند؟';
                 input.dispatchEvent(new Event('input'));
             }
+        };
+
+
+
+        /* ============================================================
+           ✔️ SEPARATE CSS INJECTION — always runs, never conflicts
+           ============================================================ */
+        GermanDictionary.prototype._injectCardStylesFix = function () {
+            if (document.getElementById('ac-card-fix-styles')) return;
+            var s = document.createElement('style');
+            s.id = 'ac-card-fix-styles';
+            s.textContent = [
+                '.ac-word-cards-row { display:flex !important; gap:8px !important; overflow-x:auto !important; padding:4px 0 !important; scroll-behavior:smooth !important; -webkit-overflow-scrolling:touch !important; max-width:100% !important; }',
+                '.ac-word-cards-row::-webkit-scrollbar { height:5px !important; }',
+                '.ac-word-cards-row::-webkit-scrollbar-thumb { background:#cbd5e1 !important; border-radius:3px !important; }',
+                '.ac-word-card { background:#fff !important; border:1px solid #e2e8f0 !important; border-radius:10px !important; padding:8px !important; flex-shrink:0 !important; width:130px !important; max-width:130px !important; min-width:100px !important; cursor:pointer !important; display:flex !important; flex-direction:column !important; gap:4px !important; align-items:center !important; text-align:center !important; overflow:hidden !important; box-sizing:border-box !important; }',
+                '.ac-word-card-img { width:80px !important; height:80px !important; max-width:80px !important; max-height:80px !important; border-radius:8px !important; object-fit:cover !important; flex-shrink:0 !important; }',
+                '.ac-word-card-img-placeholder { width:80px !important; height:80px !important; border-radius:8px !important; display:flex !important; align-items:center !important; justify-content:center !important; color:#fff !important; font-size:28px !important; flex-shrink:0 !important; }',
+                '.ac-word-card-body { width:100% !important; text-align:center !important; }',
+                '.ac-word-card-german { font-size:13px !important; font-weight:700 !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }',
+                '.ac-word-card-persian { font-size:11px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }',
+                '.ac-word-card-badge { font-size:9px !important; padding:1px 6px !important; border-radius:4px !important; }',
+                '.ac-msg-bubble img { max-width:100px !important; max-height:100px !important; border-radius:8px !important; object-fit:cover !important; }',
+                '@media (max-width:640px) {',
+                '  .ac-word-card { width:100px !important; max-width:100px !important; padding:6px !important; }',
+                '  .ac-word-card-img, .ac-word-card-img-placeholder { width:64px !important; height:64px !important; max-width:64px !important; max-height:64px !important; }',
+                '  .ac-word-card-img-placeholder { font-size:22px !important; }',
+                '  .ac-word-card-german { font-size:12px !important; }',
+                '  .ac-word-card-persian { font-size:10px !important; }',
+                '  .ac-msg-bubble img { max-width:80px !important; max-height:80px !important; }',
+                '}'
+            ].join('\n');
+            document.head.appendChild(s);
+            console.log('✅ Card fix styles injected (separate)');
         };
 
         /* ============================================================

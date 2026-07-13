@@ -52,26 +52,28 @@
 
     // لیست Worker های Cloudflare — برای Failover استفاده می‌شود.
     // در صورت خطا/Rate-Limit اولی، دومی امتحان می‌شود و الی آخر.
-    const IMAGE_WORKERS = [
+  const IMAGE_WORKERS = [
     { url: 'https://image-gen-api.ez-3593a5.workers.dev', key: 'sk-kq9fbKQMOOCQOK8b4dx7RBuMuwswoblR' },
     { url: 'https://image-gen-ap4.image-gen-api-2c88mu.workers.dev', key: 'sk-HrjZqchoLTAia41PwlzWoaseIj4T7Auu' },
     { url: 'https://image-gen-ap21.ez-3593a5.workers.dev', key: 'sk-HrjZqchoLTAia41PwlzWoaseIj4T7Auu' },
     { url: 'https://image-gen-api.image-gen-api-sz3qkb.workers.dev', key: 'sk-lO0272becIVIQfBpSjzLvN8dhkK0uMio' },
     { url: 'https://image12.image12-a4f6io.workers.dev', key: 'sk-982GTd5u2inR41JjS8MBD8gL52iEZTh9' },
     { url: 'https://image786.image786-t92w4k.workers.dev', key: 'sk-LGONLhipEWRV8OulH7ITBytEXUhZsFgC' },
-    { url: 'https://hassancreate.hassancreate-bekp9i.workers.dev', key: 'sk-ISqjzZ6g5zW33tytBN3MymrB1dkphhFl' },
-    
+    { url: 'https://img-zxgeiv.ai-0y6z2u-ho67pc.workers.dev', key: 'sk-RzOLzbTdvu5beKUQ3bykXvfilNrUV370' },
+    { url: 'https://img-tec7ye.ai-u0blil-24d298.workers.dev', key: 'sk-HuBtrdFOUrEXoqEN99hKakWvfp2VFFDV' },
+    { url: 'https://img-w4iqcu.ai-multi-model-4zgxvo.workers.dev', key: 'sk-neQF1NBW9vpkhY0IGlsBeeJDWlQycU7k' }
+
 ];
 
     // ✔️ FIX: حداکثر تعداد تولید تصویر همزمان — از ۱۰ به ۳۰ افزایش یافت
-    const MAX_CONCURRENT = 15;
+    const MAX_CONCURRENT = 100;
 
     // تایم‌اوت هر درخواست به Worker (میلی‌ثانیه) — ۶۰ ثانیه
     const WORKER_TIMEOUT_MS = 60000;
 
     // ✔️ FIX: تاخیر بین درخواست‌ها از ۴۰۰ms به ۱۰۰ms کاهش یافت.
     // با ۸ Worker و ۳۰ کار همزمان، throughput از ~۲.۵ به ~۱۰ req/s افزایش می‌یابد.
-    const INTER_REQUEST_DELAY_MS = 100;
+    const INTER_REQUEST_DELAY_MS = 0;  // ✔️ Cloudflare handles rate limiting
 
     // ✔️ NEW: حداقل اندازه blob معتبر (۲KB) — رد تصاویر سیاه/خالی کوچک
     const MIN_VALID_BLOB_SIZE = 2048;
@@ -80,56 +82,80 @@
     // ✔️ NEW STYLE: هر کلمه با یک کاراکتر سه‌بعدی کارتونی نمایش داده می‌شود
     // الهام‌گرفته از سبک Pixar-early character design / modern educational 3D
     // هر کلمه = یک شخصیت که مفهوم آن را نمایش می‌دهد
+    /* ----- مرحله ۱: راهنمای سبک (نسخه ۷.۰ — Premium 3D Scene) ----- */
+    // ✔️ FIX: حذف 'character' که باعث ساخت عروسک می‌شد
+    // حالا: scene + object با کیفیت بالا — بدون کاراکتر انسانی/عروسکی
     const STYLE_GUIDE = {
-        name: 'Character 3D Cartoon',
-        // سبک کاراکتر — برای همه‌ی کلمات
-        character: [
-            'cheerful 3D cartoon character',
-            'stylized 3D animation style',
-            'smooth rounded organic shapes',
-            'soft matte material',
-            'big expressive eyes',
-            'friendly warm smile',
-            'character holding or interacting with the subject',
-            'soft diffused studio lighting',
-            'vibrant but soft pastel color palette',
-            'clean neutral background',
+        name: 'Premium 3D Scene',
+        // حالت ۱: اشیاء (اسم‌های غیرحیوانی) — object icon با کیفیت
+        object: [
+            'premium 3D rendered object icon',
+            'glossy high-quality 3D render',
+            'single main subject',
+            'studio lighting with soft shadows',
+            'vibrant saturated colors',
+            'clean white background',
             'centered composition',
-            'Pixar-early character design aesthetic',
-            'approachable and educational',
-            'no text on image',
-            'no watermark'
+            'high detail',
+            'octane render quality',
+            'no characters', 'no people', 'no mascot', 'no doll', 'no toy figure',
+            'no text', 'no watermark'
         ],
-        // حالت خاص: حیوانات (خود حیوان کاراکتر است)
+        // حالت ۲: افعال — scene با دست انسان فقط
+        action: [
+            'premium 3D rendered action scene',
+            'glossy high-quality 3D render',
+            'a single human hand performing the action',
+            'studio lighting',
+            'vibrant colors',
+            'clean white background',
+            'centered composition',
+            'high detail',
+            'no mascot', 'no doll', 'no toy', 'no cartoon character',
+            'no text', 'no watermark'
+        ],
+        // حالت ۳: حیوانات
         animal: [
-            'cheerful 3D cartoon animal character',
-            'stylized 3D animation style',
-            'smooth rounded organic shapes',
-            'cute and friendly anthropomorphic animal',
-            'big expressive eyes',
-            'soft diffused studio lighting',
-            'vibrant but soft pastel colors',
-            'clean neutral background',
+            'premium 3D rendered animal',
+            'glossy high-quality 3D render',
+            'realistic but stylized animal',
+            'studio lighting',
+            'vibrant natural colors',
+            'clean white background',
             'centered composition',
-            'Pixar character design',
-            'no text on image',
-            'no watermark'
+            'high detail',
+            'no text', 'no watermark'
         ],
-        background: 'clean neutral background, soft gradient',
+        // حالت ۴: صفات/مفاهیم
+        abstract: [
+            'premium 3D rendered conceptual illustration',
+            'glossy high-quality 3D render',
+            'single metaphorical object',
+            'studio lighting',
+            'vibrant colors',
+            'clean white background',
+            'centered composition',
+            'high detail',
+            'no characters', 'no people', 'no mascot', 'no doll',
+            'no text', 'no watermark'
+        ],
+        background: 'clean white background, minimal',
         negative: [
             'text', 'watermark', 'signature', 'logo',
-            'realistic photo', 'photographic', 'dark', 'scary',
-            'cluttered', 'busy background', 'multiple characters',
+            'realistic photo', 'dark', 'scary',
+            'cluttered', 'busy background', 'multiple objects',
             'low quality', 'blurry', 'distorted', 'cropped',
-            '2D anime', 'cel-shaded', 'flat illustration'
+            'doll', 'toy figure', 'plush toy', 'stuffed animal'
         ]
     };
 
     function getStyleForWord(type, category) {
-        // حیوانات: خود حیوان کاراکتر است
+        type = (type || '').toLowerCase();
+        category = category || '';
         if (category === 'Animal') return STYLE_GUIDE.animal;
-        // بقیه: کاراکتر انسانی که مفهوم را نمایش می‌دهد
-        return STYLE_GUIDE.character;
+        if (type === 'verb') return STYLE_GUIDE.action;
+        if (type === 'adjective' || type === 'adverb' || category === 'Abstract' || category === 'Emotion') return STYLE_GUIDE.abstract;
+        return STYLE_GUIDE.object;
     }
     /* ----- مرحله ۱.۵: Visual DNA — قوانین غیرقابل‌نقض همه‌ی پرامپت‌ها ----- */
     // ✔️ NEW: این قوانین در هر پرامپتی باید رعایت شوند — هیچ پرامپتی حق شکستن آن‌ها را ندارد
@@ -647,7 +673,7 @@
             setInterval(function () { self._refreshFabBadge(); }, 30000);
             // ✔️ NEW: Background sweeper — هر ۱۵ ثانیه، ۳۰ کلمه بدون تصویر را به صف اضافه کن
             // این کار باعث می‌شود تولید تصویر مستقل از صفحه‌ی فعلی کاربر پیش برود
-            setTimeout(function () { self._startBackgroundSweeper(); }, 5000);
+            setTimeout(function () { self._startBackgroundSweeper(); }, 2000);
         };
 
         /* ---------- ۴-۳) هوک کردن توابع رندر موجود ---------- */
@@ -799,7 +825,7 @@
 
         // ✔️ STYLE v6: fallback — کاراکتر کارتونی
         GermanDictionary.prototype._fallbackVisualConcept = function (word, meaning, type) {
-            var visual = 'A cheerful 3D cartoon character representing "' + word + '" (' + meaning + '), holding an object related to the word, big expressive eyes, friendly smile';
+            var visual = 'A premium 3D rendered "' + word + '" (' + meaning + ') as a high-quality object icon with studio lighting and soft shadows';
             // حدس ساده دسته بر اساس نوع کلمه + visual story غنی‌تر
             if (type === 'verb') {
                 category = 'Action';
@@ -880,9 +906,7 @@
                     console.warn('[img-gen] Worker ' + (i + 1) + ' ناموفق (' + worker.url + '):', err.message);
                     lastError = err;
                     // اگر 429 (Rate Limit) بود، کمی صبر کن و سپس Worker بعدی
-                    if (err && err.status === 429) {
-                        await delay(800);
-                    }
+                    // Cloudflare Workers AI بدون محدودیت Rate Limit
                     // در غیر این صورت بلافاصله Worker بعدی
                 }
             }
@@ -1062,10 +1086,7 @@
             var today = new Date().toDateString();
             if (!state.dailyCount) state.dailyCount = {};
             if (!state.dailyCount[today]) state.dailyCount[today] = 0;
-            if (state.dailyCount[today] >= 500) {
-                console.log('[img-gen] محدودیت روزانه (۵۰۰) رسید، تولید متوقف شد');
-                return Promise.reject(new Error('محدودیت روزانه (۵۰۰ تصویر) رسید'));
-            }
+            // ✔️ محدودیت روزانه حذف شد — Cloudflare بدون محدودیت
             var self = this;
 
             // اگر همین الان در صف یا در حال اجراست → همان Promise موجود را برگردان (dedup)
@@ -1078,7 +1099,7 @@
             var promise = new Promise(function (resolve, reject) {
                 state.queue.push({ wordId: wordId, resolve: resolve, reject: reject });
                 // ✔️ FIX: تاخیر ۱۵۰۰ms را به ۵۰ms کاهش دادیم — صف سریع‌تر پردازش می‌شود
-                setTimeout(function(){ self._processImageQueue(); }, 50);
+                setTimeout(function(){ self._processImageQueue(); }, 0);
             });
 
             state.promises.set(wordId, promise);
@@ -1189,7 +1210,7 @@
                 state.promises.delete(wordId);
                 // ادامه صف
                 var self2 = this;
-                setTimeout(function () { self2._processImageQueue(); }, 10);
+                setTimeout(function () { self2._processImageQueue(); }, 0);
                 // بروزرسانی نشان FAB و پیشرفت انبوه
                 this._refreshFabBadge();
                 this._tickBulkProgress();
@@ -1737,8 +1758,8 @@
            ============================================================ */
         GermanDictionary.prototype._startBackgroundSweeper = function () {
             var self = this;
-            var SWEEP_INTERVAL = 15000; // هر ۱۵ ثانیه
-            var SWEEP_BATCH = 30; // هر بار ۳۰ کلمه
+            var SWEEP_INTERVAL = 5000; // هر ۵ ثانیه
+            var SWEEP_BATCH = 100; // هر بار ۱۰۰ کلمه
 
             function sweep() {
                 try {

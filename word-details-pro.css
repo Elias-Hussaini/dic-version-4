@@ -1,0 +1,994 @@
+/* ================================================================
+   word-details-pro.css  —  کارت جزئیات لغت (نسخه حرفه‌ای)
+   برای DE.Dictionary
+   ----------------------------------------------------------------
+   • تمام کلاس‌ها با پیشوند .wd- نام‌گذاری شده تا با استایل‌های
+     قدیمی (.detail-word-card و ...) تداخل نداشته باشند.
+   • پشتیبانی کامل از حالت روشن و تاریک (body.dark-mode)
+   • فونت پیش‌فرض: Vazirmatn
+   • جدول‌های مرتب صرف فعل با ضمایر (ich/du/er/sie/es/wir/ihr/sie)
+   ================================================================ */
+
+/* ---------- توکن‌های اختصاصی کارت جزئیات ---------- */
+.wd-card {
+    /* رنگ‌ها */
+    --wd-emerald: #10b981;
+    --wd-emerald-d: #059669;
+    --wd-violet:   #8b5cf6;
+    --wd-violet-d:  #6d28d9;
+    --wd-amber:    #f59e0b;
+    --wd-amber-d:  #d97706;
+    --wd-rose:     #f43f5e;
+    --wd-rose-d:   #e11d48;
+    --wd-cyan:     #06b6d4;
+    --wd-cyan-d:   #0891b2;
+    --wd-sky:      #0ea5e9;
+
+    /* سطوح */
+    --wd-ink:      #0f172a;
+    --wd-ink-2:    #1e293b;
+    --wd-slate:    #334155;
+    --wd-muted:    #64748b;
+    --wd-line:     #e2e8f0;
+    --wd-line-2:   #f1f5f9;
+    --wd-card:     #ffffff;
+    --wd-card-2:   #f8fafc;
+    --wd-soft:     rgba(15, 23, 42, 0.02);
+
+    --wd-shadow-sm: 0 1px 2px rgba(15,23,42,.04);
+    --wd-shadow:    0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+    --wd-shadow-lg: 0 12px 40px rgba(15,23,42,.10);
+
+    --wd-radius:    22px;
+    --wd-radius-s:  14px;
+    --wd-radius-xs: 10px;
+
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    color: var(--wd-ink);
+    line-height: 1.6;
+}
+
+/* ---------- حالت تاریک ---------- */
+body.dark-mode .wd-card {
+    --wd-ink:      #f1f5f9;
+    --wd-ink-2:    #e2e8f0;
+    --wd-slate:    #cbd5e1;
+    --wd-muted:    #94a3b8;
+    --wd-line:     #1e293b;
+    --wd-line-2:   #1e293b;
+    --wd-card:     #1e293b;
+    --wd-card-2:   #0f172a;
+    --wd-soft:     rgba(255, 255, 255, 0.02);
+
+    --wd-shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --wd-shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    --wd-shadow-lg: 0 12px 40px rgba(0,0,0,.4);
+}
+
+/* ⚠️ آیکون‌های FontAwesome — فونت آیکون را قفل کن */
+.wd-card i,
+.wd-card i::before,
+.wd-card [class^="fa-"]::before,
+.wd-card [class*=" fa-"]::before {
+    font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
+}
+.wd-card i.fas, .wd-card i.fa-solid { font-weight: 900 !important; }
+.wd-card i.far, .wd-card i.fa-regular { font-weight: 400 !important; }
+.wd-card i.fab, .wd-card i.fa-brands { font-family: "Font Awesome 6 Brands", "Font Awesome 5 Brands", "FontAwesome" !important; font-weight: 400 !important; }
+
+/* ================================================================
+   نوار بالایی: دکمه بازگشت + شماره موقعیت + ناوبری قبلی/بعدی
+   ================================================================ */
+.wd-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.wd-topbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.wd-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-slate);
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all .2s ease;
+    box-shadow: var(--wd-shadow-sm);
+}
+.wd-back-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--wd-violet);
+    color: var(--wd-violet-d);
+    box-shadow: var(--wd-shadow);
+}
+
+.wd-position-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(139,92,246,.25);
+}
+
+.wd-nav-arrows { display: inline-flex; gap: 8px; }
+.wd-nav-btn {
+    width: 42px; height: 42px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-slate);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all .2s ease;
+    box-shadow: var(--wd-shadow-sm);
+}
+.wd-nav-btn:hover {
+    background: var(--wd-violet-d);
+    border-color: var(--wd-violet-d);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(139,92,246,.3);
+}
+.wd-nav-btn:active { transform: translateY(0); }
+
+/* ================================================================
+   هدر اصلی: عنوان + بج‌ها + اکشن‌ها
+   ================================================================ */
+.wd-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px dashed var(--wd-line);
+}
+.wd-info { flex: 1; min-width: 220px; }
+.wd-title {
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 800;
+    color: var(--wd-ink);
+    margin: 0 0 14px 0;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    direction: ltr;
+    text-align: right;
+}
+.wd-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.wd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(15,23,42,.1);
+}
+.wd-badge.gender-masculine { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.wd-badge.gender-feminine { background: linear-gradient(135deg, #ec4899, #db2777); }
+.wd-badge.gender-neuter  { background: linear-gradient(135deg, #10b981, #059669); }
+.wd-badge.type-noun        { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.wd-badge.type-verb        { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.wd-badge.type-adjective   { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.wd-badge.type-adverb      { background: linear-gradient(135deg, #84cc16, #65a30d); }
+.wd-badge.type-preposition { background: linear-gradient(135deg, #f97316, #ea580c); }
+.wd-badge.type-other       { background: linear-gradient(135deg, #64748b, #475569); }
+.wd-badge.plural           { background: linear-gradient(135deg, #334155, #1e293b); }
+
+.wd-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.wd-action {
+    width: 46px; height: 46px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 14px;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-slate);
+    cursor: pointer;
+    font-size: 17px;
+    transition: all .2s ease;
+    box-shadow: var(--wd-shadow-sm);
+}
+.wd-action:hover { transform: translateY(-3px); box-shadow: var(--wd-shadow); }
+.wd-action.favorite.active {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border-color: transparent;
+    color: #fff;
+}
+.wd-action.speak:hover     { background: var(--wd-sky); color: #fff; border-color: var(--wd-sky); }
+.wd-action.edit:hover      { background: var(--wd-violet-d); color: #fff; border-color: var(--wd-violet-d); }
+.wd-action.delete:hover    { background: var(--wd-rose-d); color: #fff; border-color: var(--wd-rose-d); }
+
+/* ================================================================
+   کارت معنی
+   ================================================================ */
+.wd-meaning {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px 24px;
+    background: linear-gradient(135deg, rgba(67,97,238,.06), rgba(139,92,246,.04));
+    border: 1px solid rgba(67,97,238,.12);
+    border-radius: var(--wd-radius);
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+}
+.wd-meaning::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--wd-violet), var(--wd-sky));
+}
+.wd-meaning-ic {
+    width: 50px; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--wd-violet), var(--wd-violet-d));
+    color: #fff;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px rgba(139,92,246,.3);
+}
+.wd-meaning-text {
+    font-size: clamp(18px, 2.5vw, 24px);
+    font-weight: 700;
+    color: var(--wd-ink);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ================================================================
+   تلفظ
+   ================================================================ */
+.wd-pron {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius-s);
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.wd-pron-ic {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: rgba(6,182,212,.12);
+    color: var(--wd-cyan-d);
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.wd-pron-text { color: var(--wd-slate); font-size: 14px; font-weight: 600; }
+.wd-pron-text b { color: var(--wd-ink); font-weight: 700; }
+.wd-listen-btn {
+    margin-inline-start: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--wd-cyan), var(--wd-cyan-d));
+    color: #fff;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s ease;
+    box-shadow: 0 4px 10px rgba(6,182,212,.3);
+}
+.wd-listen-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* ================================================================
+   برچسب‌ها (Tags)
+   ================================================================ */
+.wd-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.wd-tag {
+    padding: 5px 13px;
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wd-slate);
+    transition: all .15s ease;
+}
+.wd-tag:hover { background: var(--wd-violet-d); color: #fff; border-color: transparent; }
+
+/* ================================================================
+   گرید جزئیات تخصصی
+   ================================================================ */
+.wd-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin: 18px 0;
+}
+@media (min-width: 768px) {
+    .wd-grid { grid-template-columns: repeat(2, 1fr); }
+    .wd-grid .wd-panel.full { grid-column: 1 / -1; }
+}
+
+/* ---------- پنل جزئیات ---------- */
+.wd-panel {
+    background: var(--wd-card);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius);
+    padding: 20px;
+    box-shadow: var(--wd-shadow-sm);
+    transition: box-shadow .25s ease, transform .25s ease;
+}
+.wd-panel:hover { box-shadow: var(--wd-shadow); }
+.wd-panel.full { grid-column: 1 / -1; }
+
+.wd-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--wd-line);
+}
+.wd-panel-ic {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+.wd-panel-ic.ic-noun        { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.wd-panel-ic.ic-verb        { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.wd-panel-ic.ic-adjective   { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.wd-panel-ic.ic-prep        { background: linear-gradient(135deg, #f97316, #ea580c); }
+.wd-panel-ic.ic-info        { background: linear-gradient(135deg, #64748b, #475569); }
+
+.wd-panel-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--wd-ink);
+    margin: 0;
+}
+.wd-panel-sub {
+    font-size: 11px;
+    color: var(--wd-muted);
+    font-weight: 500;
+}
+
+/* ---------- ردیف‌های ساده (دو ستونه) ---------- */
+.wd-rows { display: flex; flex-direction: column; gap: 10px; }
+.wd-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius-s);
+    transition: all .15s ease;
+}
+.wd-row:hover { transform: translateX(-3px); border-color: var(--wd-violet); }
+.wd-row-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    color: var(--wd-muted);
+    font-weight: 600;
+}
+.wd-row-label i { color: var(--wd-violet); }
+.wd-row-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wd-ink);
+    direction: ltr;
+    text-align: left;
+}
+.wd-row-value.de { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+/* ================================================================
+   جدول صرف فعل — مرکزی‌ترین بخش
+   ================================================================ */
+.wd-conj-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.wd-conj-block {
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius-s);
+    overflow: hidden;
+}
+.wd-conj-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(139,92,246,.08), rgba(6,182,212,.05));
+    border-bottom: 1px solid var(--wd-line);
+}
+.wd-conj-block-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--wd-ink);
+}
+.wd-conj-block-title i { color: var(--wd-violet-d); }
+.wd-conj-block-sub {
+    font-size: 11px;
+    color: var(--wd-muted);
+    font-weight: 600;
+}
+
+/* جدول ضمایر */
+.wd-conj-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: inherit;
+}
+.wd-conj-table tr:nth-child(even) { background: var(--wd-soft); }
+.wd-conj-table tr:hover { background: rgba(139,92,246,.05); }
+.wd-conj-table th,
+.wd-conj-table td {
+    padding: 11px 16px;
+    text-align: right;
+    font-size: 13px;
+    border-bottom: 1px solid var(--wd-line);
+}
+.wd-conj-table tr:last-child td { border-bottom: none; }
+.wd-conj-table .wd-pron {
+    width: 90px;
+    padding: 4px 0;
+    background: transparent;
+    border: none;
+    margin: 0;
+    flex: none;
+}
+.wd-conj-table .wd-pron-cell {
+    font-weight: 800;
+    color: var(--wd-violet-d);
+    direction: ltr;
+    text-align: left;
+    width: 80px;
+    font-size: 13px;
+    background: rgba(139,92,246,.04);
+}
+.wd-conj-table .wd-form-cell {
+    color: var(--wd-ink);
+    font-weight: 600;
+    direction: ltr;
+    text-align: right;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+}
+.wd-conj-table .wd-form-cell.empty {
+    color: var(--wd-muted);
+    font-weight: 400;
+    font-style: italic;
+    opacity: .6;
+}
+.wd-conj-table .wd-speak-cell {
+    width: 40px;
+    text-align: center;
+}
+.wd-conj-speak {
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all .15s ease;
+}
+.wd-conj-speak:hover {
+    background: var(--wd-cyan);
+    color: #fff;
+    border-color: var(--wd-cyan);
+    transform: scale(1.08);
+}
+
+/* حالت تک‌خطی (مثلاً برای Perfekt که فقط فرم خلاصه است) */
+.wd-conj-single {
+    padding: 14px 16px;
+    direction: ltr;
+    text-align: right;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wd-ink);
+    background: rgba(16,185,129,.05);
+    border-inline-start: 3px solid var(--wd-emerald);
+}
+.wd-conj-single.empty { color: var(--wd-muted); font-style: italic; opacity: .6; background: var(--wd-soft); border-color: var(--wd-line); }
+
+/* نشانگر فعل کمکی و جداشدنی */
+.wd-verb-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.wd-verb-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.wd-verb-meta-pill.helper { background: rgba(6,182,212,.12); color: var(--wd-cyan-d); }
+.wd-verb-meta-pill.separable { background: rgba(16,185,129,.12); color: var(--wd-emerald-d); }
+.wd-verb-meta-pill.not-separable { background: rgba(100,116,139,.12); color: var(--wd-muted); }
+
+/* ================================================================
+   تب‌ها (مثال‌ها / تمرین / آمار)
+   ================================================================ */
+.wd-tabs {
+    display: flex;
+    gap: 6px;
+    margin: 24px 0 18px;
+    border-bottom: 2px solid var(--wd-line);
+    flex-wrap: wrap;
+}
+.wd-tab {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wd-muted);
+    cursor: pointer;
+    transition: all .2s ease;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+}
+.wd-tab:hover { color: var(--wd-violet-d); background: var(--wd-card-2); }
+.wd-tab.active {
+    color: var(--wd-violet-d);
+    background: transparent;
+}
+.wd-tab.active::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12px; bottom: -2px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--wd-violet), var(--wd-cyan));
+    border-radius: 3px 3px 0 0;
+}
+
+.wd-tab-content { display: none; animation: wd-fade .35s ease; }
+.wd-tab-content.active { display: block; }
+@keyframes wd-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ================================================================
+   مثال‌ها
+   ================================================================ */
+.wd-examples { display: flex; flex-direction: column; gap: 10px; }
+.wd-example {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius-s);
+    transition: all .2s ease;
+}
+.wd-example:hover { border-color: var(--wd-violet); transform: translateX(-3px); }
+.wd-example-body { flex: 1; min-width: 0; }
+.wd-example-de {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wd-ink);
+    margin-bottom: 4px;
+    direction: ltr;
+    text-align: right;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.wd-example-fa {
+    font-size: 13px;
+    color: var(--wd-muted);
+}
+.wd-example-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.wd-example-btn {
+    width: 34px; height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-slate);
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all .15s ease;
+}
+.wd-example-btn.speak:hover { background: var(--wd-cyan); color: #fff; border-color: var(--wd-cyan); }
+.wd-example-btn.delete:hover { background: var(--wd-rose-d); color: #fff; border-color: var(--wd-rose-d); }
+
+.wd-add-example {
+    margin-top: 14px;
+    padding: 16px;
+    background: var(--wd-card-2);
+    border: 1px dashed var(--wd-line);
+    border-radius: var(--wd-radius-s);
+}
+.wd-add-example h4 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wd-ink);
+    display: flex; align-items: center; gap: 8px;
+}
+.wd-add-example h4 i { color: var(--wd-emerald-d); }
+.wd-add-example-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+    align-items: stretch;
+}
+@media (max-width: 640px) { .wd-add-example-grid { grid-template-columns: 1fr; } }
+.wd-add-example textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-ink);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+}
+.wd-add-example textarea:focus { outline: none; border-color: var(--wd-violet); }
+.wd-add-btn {
+    align-self: stretch;
+    padding: 0 20px;
+    border: none;
+    background: linear-gradient(135deg, var(--wd-emerald), var(--wd-emerald-d));
+    color: #fff;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s ease;
+    box-shadow: 0 4px 10px rgba(16,185,129,.3);
+}
+.wd-add-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* ================================================================
+   توضیحات (Notes)
+   ================================================================ */
+.wd-notes {
+    margin-top: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, rgba(245,158,11,.05), rgba(244,63,94,.04));
+    border: 1px solid rgba(245,158,11,.18);
+    border-radius: var(--wd-radius-s);
+}
+.wd-notes-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wd-amber-d);
+}
+.wd-notes-body {
+    font-size: 14px;
+    color: var(--wd-slate);
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+.wd-notes-body.empty { color: var(--wd-muted); font-style: italic; opacity: .7; }
+
+/* ================================================================
+   آمار تمرین (دایره + اطلاعات)
+   ================================================================ */
+.wd-practice {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 20px;
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius-s);
+}
+.wd-practice-ring {
+    position: relative;
+    width: 110px; height: 110px;
+    flex-shrink: 0;
+}
+.wd-practice-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.wd-practice-ring .bg { fill: none; stroke: var(--wd-line); stroke-width: 8; }
+.wd-practice-ring .fg { fill: none; stroke: url(#wd-grad-practice); stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1s ease; }
+.wd-practice-ring-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    line-height: 1;
+}
+.wd-practice-ring-label b { font-size: 26px; font-weight: 800; color: var(--wd-ink); }
+.wd-practice-ring-label small { font-size: 10px; color: var(--wd-muted); margin-top: 2px; }
+.wd-practice-info { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.wd-practice-stat {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--wd-card);
+    border: 1px solid var(--wd-line);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--wd-slate);
+}
+.wd-practice-stat i { width: 28px; text-align: center; font-size: 14px; }
+.wd-practice-stat i.green { color: var(--wd-emerald-d); }
+.wd-practice-stat i.red { color: var(--wd-rose-d); }
+.wd-practice-stat i.blue { color: var(--wd-sky); }
+.wd-practice-stat b { color: var(--wd-ink); margin-inline-start: auto; font-weight: 800; }
+
+.wd-practice-cta {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--wd-violet), var(--wd-violet-d));
+    color: #fff;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s ease;
+    box-shadow: 0 6px 16px rgba(139,92,246,.3);
+}
+.wd-practice-cta:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+/* ================================================================
+   آمار (تب سوم)
+   ================================================================ */
+.wd-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.wd-stat {
+    padding: 18px 16px;
+    background: var(--wd-card-2);
+    border: 1px solid var(--wd-line);
+    border-radius: var(--wd-radius-s);
+    text-align: center;
+    transition: all .2s ease;
+}
+.wd-stat:hover { transform: translateY(-3px); box-shadow: var(--wd-shadow); }
+.wd-stat-ic {
+    width: 44px; height: 44px;
+    margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+    font-size: 18px;
+    color: #fff;
+}
+.wd-stat-ic.c-violet { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.wd-stat-ic.c-amber  { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.wd-stat-ic.c-emerald{ background: linear-gradient(135deg, #10b981, #059669); }
+.wd-stat-label { font-size: 11px; color: var(--wd-muted); margin-bottom: 4px; }
+.wd-stat-value { font-size: 20px; font-weight: 800; color: var(--wd-ink); }
+
+/* ================================================================
+   حالت خالی
+   ================================================================ */
+.wd-empty {
+    text-align: center;
+    padding: 28px 18px;
+    color: var(--wd-muted);
+    background: var(--wd-card-2);
+    border: 1px dashed var(--wd-line);
+    border-radius: var(--wd-radius-s);
+}
+.wd-empty i { font-size: 30px; opacity: .4; display: block; margin-bottom: 8px; }
+
+/* ================================================================
+   ریسپانسیو
+   ================================================================ */
+@media (max-width: 640px) {
+    .wd-header { flex-direction: column; align-items: flex-start; }
+    .wd-actions { width: 100%; justify-content: flex-start; }
+    .wd-conj-table th, .wd-conj-table td { padding: 9px 10px; font-size: 12px; }
+    .wd-conj-table .wd-pron-cell { width: 60px; }
+    .wd-practice { flex-direction: column; align-items: stretch; }
+    .wd-practice-ring { margin: 0 auto; }
+}
+
+/* اسکرول‌بار سفارشی */
+.wd-card ::-webkit-scrollbar { width: 8px; height: 8px; }
+.wd-card ::-webkit-scrollbar-thumb { background: var(--wd-line); border-radius: 8px; }
+.wd-card ::-webkit-scrollbar-thumb:hover { background: var(--wd-muted); }
+
+/* ================================================================
+   هدر چسبان (Sticky Header) — هنگام اسکرول پایین
+   ----------------------------------------------------------------
+   نوار اطلاعاتی که وقتی کاربر پایین می‌رود (بیش از ۲۸۰px)، در
+   بالای صفحه ثابت می‌ماند و شامل: لغت + معنی + نوع + شماره موقعیت
+   + دکمه‌های تلفظ/قبلی/بعدی/بستن است.
+   ================================================================ */
+.wd-sticky {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    border-bottom: 1px solid var(--wd-line);
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: transform .35s cubic-bezier(.22, 1, .36, 1), opacity .25s ease;
+    pointer-events: none;
+}
+.wd-sticky.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.wd-sticky:focus {
+    outline: 2px solid var(--wd-violet);
+    outline-offset: -2px;
+}
+body.dark-mode .wd-sticky {
+    background: rgba(15, 23, 42, 0.85);
+    border-bottom-color: var(--wd-line);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+.wd-sticky-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+/* لغت */
+.wd-sticky-word {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--wd-ink);
+    direction: ltr;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* معنی */
+.wd-sticky-meaning {
+    font-size: 13px;
+    color: var(--wd-muted);
+    font-weight: 500;
+    flex: 1;
+    min-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* بج نوع کلمه */
+.wd-sticky-pos {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+}
+.wd-sticky-pos.type-noun        { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.wd-sticky-pos.type-verb        { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.wd-sticky-pos.type-adjective   { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.wd-sticky-pos.type-adverb      { background: linear-gradient(135deg, #84cc16, #65a30d); }
+.wd-sticky-pos.type-preposition { background: linear-gradient(135deg, #f97316, #ea580c); }
+.wd-sticky-pos.type-other       { background: linear-gradient(135deg, #64748b, #475569); }
+
+/* شماره موقعیت */
+.wd-sticky-position {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--wd-violet-d);
+    background: rgba(139, 92, 246, 0.12);
+    flex-shrink: 0;
+}
+body.dark-mode .wd-sticky-position {
+    color: #c4b5fd;
+    background: rgba(139, 92, 246, 0.18);
+}
+
+/* دکمه‌های عملیات */
+.wd-sticky-actions {
+    display: flex;
+    gap: 6px;
+    margin-inline-start: auto;
+    flex-shrink: 0;
+}
+.wd-sticky-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--wd-line);
+    background: var(--wd-card);
+    color: var(--wd-slate);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all .15s ease;
+}
+.wd-sticky-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+}
+.wd-sticky-btn:active { transform: translateY(0); }
+.wd-sticky-btn:focus-visible {
+    outline: 2px solid var(--wd-violet);
+    outline-offset: 2px;
+}
+.wd-sticky-speak:hover { background: var(--wd-cyan); color: #fff; border-color: var(--wd-cyan); }
+.wd-sticky-btn:not(.wd-sticky-speak):not(.wd-sticky-close):hover {
+    background: var(--wd-violet-d); color: #fff; border-color: var(--wd-violet-d);
+}
+.wd-sticky-close:hover { background: var(--wd-rose-d); color: #fff; border-color: var(--wd-rose-d); }
+
+/* ریسپانسیو */
+@media (max-width: 640px) {
+    .wd-sticky-inner { padding: 8px 12px; gap: 8px; }
+    .wd-sticky-word { font-size: 16px; max-width: 140px; }
+    .wd-sticky-meaning { font-size: 12px; min-width: 40px; }
+    .wd-sticky-pos, .wd-sticky-position { font-size: 10px; padding: 4px 9px; }
+    .wd-sticky-btn { width: 32px; height: 32px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+    .wd-sticky-pos span, .wd-sticky-position span { display: none; }
+    .wd-sticky-meaning { display: none; }
+    .wd-sticky-word { max-width: 100px; }
+}

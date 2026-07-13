@@ -6,7 +6,6 @@ if (typeof LanguageSystem === 'undefined') {
         isEnglish: function() { return false; },
         t: function(key) { return key; }
     };
-    var LanguageSystem = window.LanguageSystem;
 }
 
 class APIKeyManager {
@@ -259,7 +258,7 @@ this.prepositionsDB = [
     }
 
 async init() {
-    console.log('🚀 راه‌اندازی Elias.Dictionary...');
+    console.log('🚀 راه‌اندازی LINGO...');
     
     this._updateLoadingProgress(5, 'در حال راه‌اندازی...');
     
@@ -374,97 +373,18 @@ async init() {
 
 hideLoadingScreen() {
     if (this._loadingHidden) return;
-    
     const loadingScreen = document.getElementById('loading-screen');
     const barFill = document.getElementById('loading-bar-fill');
     const percentEl = document.getElementById('loading-percent');
     const statusEl = document.getElementById('loading-status');
-    
-    // کامل کردن نوار پیشرفت
     if (barFill) barFill.style.width = '100%';
     if (percentEl) percentEl.textContent = '۱۰۰٪';
     if (statusEl) statusEl.textContent = '✅ آماده!';
-    
-    // تزریق استایل‌های لودینگ (یک بار)
-    if (!document.getElementById('ls-pro-styles')) {
-        const style = document.createElement('style');
-        style.id = 'ls-pro-styles';
-        style.textContent = `
-            #loading-screen {
-                position: fixed; inset: 0; z-index: 99999;
-                background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #134e4a 100%);
-                display: flex; align-items: center; justify-content: center;
-                transition: opacity .5s ease;
-            }
-            #loading-screen.fade-out { opacity: 0; pointer-events: none; }
-            .loading-content { text-align: center; max-width: 360px; padding: 20px; }
-            .loading-logo {
-                width: 80px; height: 80px; margin: 0 auto 20px;
-                border-radius: 24px;
-                background: linear-gradient(135deg, #4361ee, #3a0ca3);
-                display: flex; align-items: center; justify-content: center;
-                font-size: 36px; color: #fff;
-                box-shadow: 0 10px 30px rgba(67,97,238,.4);
-                animation: ls-pulse 2s ease-in-out infinite;
-            }
-            @keyframes ls-pulse {
-                0%,100% { transform: scale(1); box-shadow: 0 10px 30px rgba(67,97,238,.4); }
-                50% { transform: scale(1.05); box-shadow: 0 15px 40px rgba(67,97,238,.6); }
-            }
-            .loading-title {
-                font-size: 28px; font-weight: 800; color: #f8fafc;
-                margin: 0 0 6px; letter-spacing: -0.5px;
-                font-family: 'Segoe UI', system-ui, sans-serif;
-            }
-            .loading-subtitle {
-                font-size: 14px; color: rgba(248,250,252,.6);
-                margin: 0 0 28px; font-weight: 500;
-            }
-            .loading-bar-wrap {
-                display: flex; align-items: center; gap: 12px;
-                margin-bottom: 12px;
-            }
-            .loading-bar-track {
-                flex: 1; height: 6px;
-                background: rgba(255,255,255,.1);
-                border-radius: 999px; overflow: hidden;
-            }
-            .loading-bar-fill {
-                height: 100%; width: 0%;
-                background: linear-gradient(90deg, #4361ee, #06b6d4, #10b981);
-                background-size: 200% 100%;
-                border-radius: 999px;
-                transition: width .4s cubic-bezier(.22,1,.36,1);
-                animation: ls-shimmer 2s linear infinite;
-            }
-            @keyframes ls-shimmer {
-                0% { background-position: 200% 0; }
-                100% { background-position: -200% 0; }
-            }
-            .loading-percent {
-                font-size: 13px; font-weight: 800; color: #4361ee;
-                min-width: 40px; text-align: left;
-                font-family: 'Segoe UI', system-ui, sans-serif;
-            }
-            .loading-status {
-                font-size: 12px; color: rgba(248,250,252,.5);
-                font-weight: 500; margin: 0;
-            }
-            @media (max-width: 480px) {
-                .loading-title { font-size: 24px; }
-                .loading-logo { width: 64px; height: 64px; font-size: 28px; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
     setTimeout(() => {
         this._loadingHidden = true;
         if (loadingScreen) {
             loadingScreen.classList.add('fade-out');
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 500);
+            setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
         }
     }, 400);
 }

@@ -1007,7 +1007,7 @@ GermanDictionary.prototype.exportData = async function() {
             exportTheme: localStorage.getItem('exportTheme') || 'light',
             exportShowGender: localStorage.getItem('exportShowGender') !== 'false',
             exportShowType: localStorage.getItem('exportShowType') !== 'false',
-            exportHeaderTitle: localStorage.getItem('exportHeaderTitle') || 'Elias.Dictionary'
+            exportHeaderTitle: localStorage.getItem('exportHeaderTitle') || 'LINGO.Dictionary'
         };
         
         const allChats = localStorage.getItem('all_chats');
@@ -1057,7 +1057,7 @@ GermanDictionary.prototype.exportData = async function() {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = `elias-dictionary-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `LINGO-dictionary-backup-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -1121,3 +1121,101 @@
   }
 }
 
+/* ================================================
+   دکمه تغییر حالت تاریک (Dark Mode Toggle) — ریسپانسیو موبایل
+   ================================================ */
+@media (max-width: 640px) {
+  .dark-mode-btn {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    gap: 6px !important;
+    border-radius: 30px !important;
+  }
+  .dark-mode-btn i { font-size: 13px !important; }
+  .dark-mode-btn span { font-size: 12px !important; }
+  /* سوییچ تنظیمات: متن داخل آن در موبایل مخفی شود تا ظاهر سوییچ حفظ شود */
+  #dark-mode-toggle-btn.st-switch,
+  .st-switch#dark-mode-toggle-btn {
+    width: 46px !important;
+    height: 26px !important;
+    overflow: hidden !important;
+    flex-shrink: 0;
+  }
+  #dark-mode-toggle-btn.st-switch span,
+  #dark-mode-toggle-btn.st-switch i,
+  .st-switch#dark-mode-toggle-btn span,
+  .st-switch#dark-mode-toggle-btn i {
+    display: none !important;
+  }
+  #dark-mode-toggle-btn.st-switch::after,
+  .st-switch#dark-mode-toggle-btn::after {
+    width: 20px !important;
+    height: 20px !important;
+    top: 3px !important;
+    right: 3px !important;
+  }
+  #dark-mode-toggle-btn.st-switch.active::after,
+  .st-switch#dark-mode-toggle-btn.active::after {
+    transform: translateX(-20px) !important;
+  }
+}
+
+/* ================================================
+   ریسپانسیو آیکون‌های شناور و دکمه‌های ثابت در موبایل
+   ================================================ */
+@media (max-width: 640px) {
+  /* آیکون شناور موسیقی — کوچک‌تر و در دسترس */
+  .music-floating-icon {
+    width: 42px !important;
+    height: 42px !important;
+    top: 14px !important;
+    right: 14px !important;
+    z-index: 9999 !important;
+  }
+  .music-floating-icon i { font-size: 18px !important; }
+  [dir="rtl"] .music-floating-icon { right: 14px !important; left: auto !important; }
+
+  /* دکمه شناور منو (FAB) — کوچک‌تر و بالاتر برای جلوگیری از تداخل با نوار ورودی چت */
+  .fm-trigger, #fm-trigger {
+    width: 52px !important;
+    height: 52px !important;
+    bottom: 18px !important;
+    left: 18px !important;
+    font-size: 19px !important;
+    border-radius: 16px !important;
+    z-index: 9998 !important;
+  }
+
+  /* دکمه مرتب‌سازی شناور */
+  .sort-floating-btn, #sort-floating-btn {
+    width: 44px !important;
+    height: 44px !important;
+    bottom: 18px !important;
+  }
+
+  /* دکمه سورت گرد بالای لیست لغات — اندازه لمسی مناسب */
+  .sort-circle-btn, #floating-sort-btn {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .sort-circle-btn i, #floating-sort-btn i { font-size: 16px !important; }
+
+  /* هدر چت هوش مصنوعی قدیمی (در صورت نمایش) — آیکون‌ها لمسی */
+  .ai-chat-header .header-btn {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 15px !important;
+  }
+
+  /* جلوگیری از تداخل FAB با نوار ورودی چت هوش مصنوعی */
+  #ai-chat-section .ac-input-bar { padding-bottom: 10px !important; }
+}
+
+/* وقتی چت هوش مصنوعی فعال است، FAB کمی بالاتر بیاید تا با نوار ورودی تداخل نکند */
+@media (max-width: 640px) {
+  body:has(#ai-chat-section.content-section.active) .fm-trigger,
+  body:has(#ai-chat-section.content-section.active) #fm-trigger {
+    bottom: 88px !important;
+  }
+}
+

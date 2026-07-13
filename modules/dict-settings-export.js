@@ -759,6 +759,24 @@ GermanDictionary.prototype._injectSettingsProStyles = function() {
             .st-upload-area i { font-size: 28px; }
             .st-upload-area h4 { font-size: 14px; }
         }
+        @media (max-width: 640px) {
+            /* آیتم‌های موسیقی آپلود شده — فشرده‌تر در موبایل */
+            .st-music-item {
+                padding: 8px 10px;
+                gap: 8px;
+                border-radius: 10px;
+                margin-bottom: 5px;
+            }
+            .st-music-item-icon {
+                width: 28px; height: 28px;
+                border-radius: 7px;
+                font-size: 11px;
+            }
+            .st-music-item-name { font-size: 12px; }
+            .st-music-item-size { font-size: 10px; }
+            .st-music-item-del { width: 26px; height: 26px; font-size: 11px; }
+            .st-music-list { max-height: 180px; }
+        }
         @media (max-width: 480px) {
             .st-theme-grid { grid-template-columns: 1fr; }
             .st-font-grid { flex-direction: column; }
@@ -948,7 +966,7 @@ GermanDictionary.prototype.renderSettings = function() {
                         </div>
                         <div class="st-music-info">
                             <div class="st-music-track" id="player-track-name">هیچ آهنگی در حال پخش نیست</div>
-                            <div class="st-music-artist">Elias.Dictionary</div>
+                            <div class="st-music-artist">LINGO.Dictionary</div>
                         </div>
                         <div class="st-music-controls">
                             <button id="player-prev-btn" class="st-music-btn" title="قبلی"><i class="fas fa-backward"></i></button>
@@ -1032,6 +1050,8 @@ GermanDictionary.prototype.renderSettings = function() {
                     </button>
                 </div>
             </div>
+
+
 
             <!-- ========== امنیت ========== -->
             <div class="st-group">
@@ -1152,7 +1172,7 @@ GermanDictionary.prototype.renderSettings = function() {
                     <div class="st-about-logo">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
-                    <h4>Elias.Dictionary</h4>
+                    <h4>LINGO.Dictionary</h4>
                     <p>دیکشنری هوشمند آلمانی-فارسی</p>
                     <p>طراحی و توسعه توسط Elias Hussaini</p>
                     <div class="st-about-version">
@@ -1360,6 +1380,8 @@ document.getElementById('export-words-to-image-btn')?.addEventListener('click', 
             this.resetData();
         }
     });
+
+
 };
 
 GermanDictionary.prototype.showExportWordsModal = async function() {
@@ -1374,7 +1396,7 @@ GermanDictionary.prototype.showExportWordsModal = async function() {
         theme: localStorage.getItem('exportTheme') || 'light',
         showGender: localStorage.getItem('exportShowGender') !== 'false',
         showType: localStorage.getItem('exportShowType') !== 'false',
-        headerTitle: localStorage.getItem('exportHeaderTitle') || 'Elias.Dictionary'
+        headerTitle: localStorage.getItem('exportHeaderTitle') || 'LINGO.Dictionary'
     };
     
     // مقداردهی اولیه
@@ -1870,7 +1892,7 @@ GermanDictionary.prototype.renderPreviewPageWithTheme = function(pageIndex) {
             <div class="preview-page-header">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 18px;">📋</span>
-                    <span class="preview-title editable-title" data-page="${pageIndex}" style="cursor: pointer;" onclick="dictionaryApp.startEditTitle(this)">${this.escapeHtml(this.exportSettings.headerTitle || 'Elias.Dictionary')}</span>
+                    <span class="preview-title editable-title" data-page="${pageIndex}" style="cursor: pointer;" onclick="dictionaryApp.startEditTitle(this)">${this.escapeHtml(this.exportSettings.headerTitle || 'LINGO.Dictionary')}</span>
                     <input type="text" class="edit-title-input" data-page="${pageIndex}" style="display: none; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; padding: 4px 12px; color: white; font-family: Vazirmatn; font-weight: 700; font-size: 16px;">
                 </div>
                 <div class="preview-page-num">صفحه ${pageIndex + 1} از ${this.exportPages.length}</div>
@@ -1939,7 +1961,7 @@ GermanDictionary.prototype.renderPreviewPageWithTheme = function(pageIndex) {
             
             <div class="preview-footer">
                 <div>📅 ${new Date().toLocaleDateString('fa-IR')}</div>
-                <div>📖 Elias.Dictionary - دیکشنری هوشمند آلمانی-فارسی</div>
+                <div>📖 LINGO.Dictionary - دیکشنری هوشمند آلمانی-فارسی</div>
             </div>
         </div>
     `;
@@ -2095,7 +2117,7 @@ GermanDictionary.prototype.generateAndDownloadImagesWithTheme = async function()
             });
             
             const link = document.createElement('a');
-            link.download = `elias-dictionary-page-${i + 1}.png`;
+            link.download = `LINGO-dictionary-page-${i + 1}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             

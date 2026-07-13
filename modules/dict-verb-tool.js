@@ -939,13 +939,24 @@ GermanDictionary.prototype._conjugateVerbWithAI = async function(verb) {
         // ساخت prompt برای AI
         const prompt = self._buildConjugationPrompt(verb);
 
-        // فراخوانی AI
+        // فراخوانی AI — ✔️ FIX: model و taskType اضافه شد
         const response = await this._puterChat([
             { role: 'system', content: 'You are a German language expert. You conjugate verbs accurately and provide grammar tips in Persian. Always respond in valid JSON format only, no markdown, no extra text.' },
             { role: 'user', content: prompt }
-        ], { temperature: 0.3, max_tokens: 3000 });
+        ], { model: 'llama-4-scout', taskType: 'conjugation', temperature: 0.3, max_tokens: 4000 });
 
-        const text = response.message.content[0].text;
+        // ✔️ FIX: استخراج متن مقاوم
+        var text = '';
+        if (response && response.message && response.message.content) {
+            if (Array.isArray(response.message.content)) {
+                text = response.message.content.map(function(c){ return c.text || ''; }).join('');
+            } else if (typeof response.message.content === 'string') {
+                text = response.message.content;
+            }
+        } else if (typeof response === 'string') {
+            text = response;
+        }
+        if (!text) throw new Error('پاسخ خالی از هوش مصنوعی');
         const conjugation = self._parseAIConjugation(text, verb);
 
         if (!conjugation) {
@@ -1016,16 +1027,23 @@ IMPORTANT:
    ============================================================ */
 GermanDictionary.prototype._parseAIConjugation = function(text, verb) {
     try {
+        // ✔️ FIX: اگر text از قبل object است، مستقیم استفاده کن
+        if (typeof text === 'object' && text !== null) {
+            if (text.verb && text.present) return text;
+            text = JSON.stringify(text);
+        }
         // حذف markdown code blocks اگر وجود داشت
-        let clean = text.trim();
+        let clean = String(text || '').trim();
         clean = clean.replace(/^```json\s*/i, '').replace(/^```\s*/i, '');
         clean = clean.replace(/\s*```$/i, '');
+        // حذف leading/trailing تکراری
+        clean = clean.replace(/^[\s\n]+/, '').replace(/[\s\n]+$/, '');
 
         // پیدا کردن اولین { و آخرین }
         const start = clean.indexOf('{');
         const end = clean.lastIndexOf('}');
         if (start === -1 || end === -1) {
-            console.error('JSON markers not found in:', text);
+            console.error('JSON markers not found in:', clean.substring(0, 200));
             return null;
         }
         clean = clean.substring(start, end + 1);
