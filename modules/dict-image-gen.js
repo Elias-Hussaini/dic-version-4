@@ -50,112 +50,143 @@
        ۲) پیکربندی ماژول (Configuration)
        ============================================================ */
 
-    // لیست Worker های Cloudflare — برای Failover استفاده می‌شود.
-    // در صورت خطا/Rate-Limit اولی، دومی امتحان می‌شود و الی آخر.
-  const IMAGE_WORKERS = [
+    // لیست Worker های Cloudflare — با سیستم هوشمند Circuit Breaker + Parallel Race
+    // ✔️ UPDATED v9: آخرین لیست از کاربر (URLهای جدید)
+    const IMAGE_WORKERS = [
     { url: 'https://image-gen-api.ez-3593a5.workers.dev', key: 'sk-kq9fbKQMOOCQOK8b4dx7RBuMuwswoblR' },
-    { url: 'https://image-gen-ap4.image-gen-api-2c88mu.workers.dev', key: 'sk-HrjZqchoLTAia41PwlzWoaseIj4T7Auu' },
+    { url: 'https://img-hltp8r.image-gen-api-2c88mu.workers.dev', key: 'sk-hmx3fAOKvkkrcQelF1FUTL9ZZ0CVpv7s' },
     { url: 'https://image-gen-ap21.ez-3593a5.workers.dev', key: 'sk-HrjZqchoLTAia41PwlzWoaseIj4T7Auu' },
-    { url: 'https://image-gen-api.image-gen-api-sz3qkb.workers.dev', key: 'sk-lO0272becIVIQfBpSjzLvN8dhkK0uMio' },
-    { url: 'https://image12.image12-a4f6io.workers.dev', key: 'sk-982GTd5u2inR41JjS8MBD8gL52iEZTh9' },
-    { url: 'https://image786.image786-t92w4k.workers.dev', key: 'sk-LGONLhipEWRV8OulH7ITBytEXUhZsFgC' },
+    { url: 'https://img-1zz3jl.image-gen-api-sz3qkb.workers.dev', key: 'sk-8WCfc9egFFZ5O0yQo5DivEsya7lBFrtB' },
+    { url: 'https://img-lilh6v.image12-a4f6io.workers.dev', key: 'sk-QJaRiFsUw1WAlqvpFW4SJJwXGVOPD9au' },
+    { url: 'https://img-i0f84x.image786-t92w4k.workers.dev', key: 'sk-2suJlIjbDM7i0EbDksQ7qmlBf5BHETzs' },
     { url: 'https://img-zxgeiv.ai-0y6z2u-ho67pc.workers.dev', key: 'sk-RzOLzbTdvu5beKUQ3bykXvfilNrUV370' },
     { url: 'https://img-tec7ye.ai-u0blil-24d298.workers.dev', key: 'sk-HuBtrdFOUrEXoqEN99hKakWvfp2VFFDV' },
     { url: 'https://img-w4iqcu.ai-multi-model-4zgxvo.workers.dev', key: 'sk-neQF1NBW9vpkhY0IGlsBeeJDWlQycU7k' }
-
 ];
 
-    // ✔️ FIX: حداکثر تعداد تولید تصویر همزمان — از ۱۰ به ۳۰ افزایش یافت
+    // ✔️ FIX: حداکثر تعداد تولید تصویر همزمان
     const MAX_CONCURRENT = 100;
 
-    // تایم‌اوت هر درخواست به Worker (میلی‌ثانیه) — ۶۰ ثانیه
-    const WORKER_TIMEOUT_MS = 60000;
+    // ✔️ v9 SMART: تایم‌اوت کاهش یافت از ۶۰s به ۲۰s — FLUX.2-dev معمولاً ۱۰-۱۵s طول می‌کشد
+    // اگر Worker در ۲۰s جواب نداد، احتمالاً هنگ کرده — سریع به بعدی برو
+    const WORKER_TIMEOUT_MS = 20000;
 
-    // ✔️ FIX: تاخیر بین درخواست‌ها از ۴۰۰ms به ۱۰۰ms کاهش یافت.
-    // با ۸ Worker و ۳۰ کار همزمان، throughput از ~۲.۵ به ~۱۰ req/s افزایش می‌یابد.
-    const INTER_REQUEST_DELAY_MS = 0;  // ✔️ Cloudflare handles rate limiting
+    // ✔️ v9 SMART: تعداد Worker های همزمان در Parallel Race
+    // ۳ Worker همزمان امتحان می‌شوند — اولین موفق برنده است
+    const PARALLEL_RACE_COUNT = 3;
+
+    // ✔️ v9 SMART: Circuit Breaker — بعد از ۲ خطای متوالی، Worker برای ۵ دقیقه غیرفعال می‌شود
+    const CIRCUIT_FAILURE_THRESHOLD = 2;
+    const CIRCUIT_COOLDOWN_MS = 5 * 60 * 1000; // 5 دقیقه
 
     // ✔️ NEW: حداقل اندازه blob معتبر (۲KB) — رد تصاویر سیاه/خالی کوچک
     const MIN_VALID_BLOB_SIZE = 2048;
 
+    // ✔️ v9 SMART: سیستم سلامت Worker — Circuit Breaker
+    // هر Worker یک رکورد سلامت دارد: { failures, disabledUntil, lastSuccess, totalRequests }
+    var _workerHealth = {};
+    function getWorkerHealth(url) {
+        if (!_workerHealth[url]) {
+            _workerHealth[url] = { failures: 0, disabledUntil: 0, lastSuccess: 0, totalRequests: 0, totalSuccess: 0 };
+        }
+        return _workerHealth[url];
+    }
+    function isWorkerHealthy(url) {
+        var h = getWorkerHealth(url);
+        if (h.disabledUntil > Date.now()) return false; // در دوره‌ی cooldown
+        return true;
+    }
+    function markWorkerSuccess(url) {
+        var h = getWorkerHealth(url);
+        h.failures = 0;
+        h.lastSuccess = Date.now();
+        h.totalRequests++;
+        h.totalSuccess++;
+    }
+    function markWorkerFailure(url) {
+        var h = getWorkerHealth(url);
+        h.failures++;
+        h.totalRequests++;
+        if (h.failures >= CIRCUIT_FAILURE_THRESHOLD) {
+            h.disabledUntil = Date.now() + CIRCUIT_COOLDOWN_MS;
+            console.warn('[img-gen] 🚫 Worker غیرفعال شد برای ' + (CIRCUIT_COOLDOWN_MS / 1000 / 60) + ' دقیقه: ' + url);
+        }
+    }
+    function getHealthyWorkers() {
+        return IMAGE_WORKERS.filter(function(w) { return isWorkerHealthy(w.url); });
+    }
+    function getWorkerStats() {
+        var stats = [];
+        IMAGE_WORKERS.forEach(function(w) {
+            var h = getWorkerHealth(w.url);
+            var healthy = isWorkerHealthy(w.url);
+            var cooldownLeft = h.disabledUntil > Date.now() ? Math.ceil((h.disabledUntil - Date.now()) / 1000) : 0;
+            stats.push({
+                url: w.url.substring(8, 30),
+                healthy: healthy,
+                failures: h.failures,
+                successRate: h.totalRequests > 0 ? Math.round((h.totalSuccess / h.totalRequests) * 100) : 0,
+                cooldownLeft: cooldownLeft
+            });
+        });
+        return stats;
+    }
+
     /* ----- مرحله ۱: راهنمای سبک (نسخه ۶.۰ — Character 3D Cartoon) ----- */
-    // ✔️ NEW STYLE: هر کلمه با یک کاراکتر سه‌بعدی کارتونی نمایش داده می‌شود
+    // ✔️ THE STYLE: سبکی که کاربر با عکس‌های مرجع تایید کرد
+    // هر کلمه با یک کاراکتر سه‌بعدی کارتونی نمایش داده می‌شود
     // الهام‌گرفته از سبک Pixar-early character design / modern educational 3D
     // هر کلمه = یک شخصیت که مفهوم آن را نمایش می‌دهد
-    /* ----- مرحله ۱: راهنمای سبک (نسخه ۷.۰ — Premium 3D Scene) ----- */
-    // ✔️ FIX: حذف 'character' که باعث ساخت عروسک می‌شد
-    // حالا: scene + object با کیفیت بالا — بدون کاراکتر انسانی/عروسکی
     const STYLE_GUIDE = {
-        name: 'Premium 3D Scene',
-        // حالت ۱: اشیاء (اسم‌های غیرحیوانی) — object icon با کیفیت
-        object: [
-            'premium 3D rendered object icon',
-            'glossy high-quality 3D render',
-            'single main subject',
-            'studio lighting with soft shadows',
-            'vibrant saturated colors',
-            'clean white background',
+        name: 'Character 3D Cartoon',
+        // سبک کاراکتر — برای همه‌ی کلمات
+        character: [
+            'cheerful 3D cartoon character',
+            'stylized 3D animation style',
+            'smooth rounded organic shapes',
+            'soft matte material',
+            'big expressive eyes',
+            'friendly warm smile',
+            'character holding or interacting with the subject',
+            'soft diffused studio lighting',
+            'vibrant but soft pastel color palette',
+            'clean neutral background',
             'centered composition',
-            'high detail',
-            'octane render quality',
-            'no characters', 'no people', 'no mascot', 'no doll', 'no toy figure',
-            'no text', 'no watermark'
+            'Pixar-early character design aesthetic',
+            'approachable and educational',
+            'no text on image',
+            'no watermark'
         ],
-        // حالت ۲: افعال — scene با دست انسان فقط
-        action: [
-            'premium 3D rendered action scene',
-            'glossy high-quality 3D render',
-            'a single human hand performing the action',
-            'studio lighting',
-            'vibrant colors',
-            'clean white background',
-            'centered composition',
-            'high detail',
-            'no mascot', 'no doll', 'no toy', 'no cartoon character',
-            'no text', 'no watermark'
-        ],
-        // حالت ۳: حیوانات
+        // حالت خاص: حیوانات (خود حیوان کاراکتر است)
         animal: [
-            'premium 3D rendered animal',
-            'glossy high-quality 3D render',
-            'realistic but stylized animal',
-            'studio lighting',
-            'vibrant natural colors',
-            'clean white background',
+            'cheerful 3D cartoon animal character',
+            'stylized 3D animation style',
+            'smooth rounded organic shapes',
+            'cute and friendly anthropomorphic animal',
+            'big expressive eyes',
+            'soft diffused studio lighting',
+            'vibrant but soft pastel colors',
+            'clean neutral background',
             'centered composition',
-            'high detail',
-            'no text', 'no watermark'
+            'Pixar character design',
+            'no text on image',
+            'no watermark'
         ],
-        // حالت ۴: صفات/مفاهیم
-        abstract: [
-            'premium 3D rendered conceptual illustration',
-            'glossy high-quality 3D render',
-            'single metaphorical object',
-            'studio lighting',
-            'vibrant colors',
-            'clean white background',
-            'centered composition',
-            'high detail',
-            'no characters', 'no people', 'no mascot', 'no doll',
-            'no text', 'no watermark'
-        ],
-        background: 'clean white background, minimal',
+        background: 'clean neutral background, soft gradient',
         negative: [
             'text', 'watermark', 'signature', 'logo',
-            'realistic photo', 'dark', 'scary',
-            'cluttered', 'busy background', 'multiple objects',
+            'realistic photo', 'photographic', 'dark', 'scary',
+            'cluttered', 'busy background', 'multiple characters',
             'low quality', 'blurry', 'distorted', 'cropped',
-            'doll', 'toy figure', 'plush toy', 'stuffed animal'
+            '2D anime', 'cel-shaded', 'flat illustration'
         ]
     };
 
     function getStyleForWord(type, category) {
-        type = (type || '').toLowerCase();
-        category = category || '';
+        // حیوانات: خود حیوان کاراکتر است
         if (category === 'Animal') return STYLE_GUIDE.animal;
-        if (type === 'verb') return STYLE_GUIDE.action;
-        if (type === 'adjective' || type === 'adverb' || category === 'Abstract' || category === 'Emotion') return STYLE_GUIDE.abstract;
-        return STYLE_GUIDE.object;
+        // بقیه: کاراکتر انسانی که مفهوم را نمایش می‌دهد
+        return STYLE_GUIDE.character;
     }
     /* ----- مرحله ۱.۵: Visual DNA — قوانین غیرقابل‌نقض همه‌ی پرامپت‌ها ----- */
     // ✔️ NEW: این قوانین در هر پرامپتی باید رعایت شوند — هیچ پرامپتی حق شکستن آن‌ها را ندارد
@@ -376,8 +407,7 @@
     };
 
     /* ----- مرحله ۲: قالب پرامپت (نسخه ۴.۰ — خلاصه‌شده با Alias) ----- */
-    // ✔️ ARCHITECTURE: پرامپت از ~۱۸۰۰ کاراکتر به ~۶۰۰ کاهش یافت
-    // سبک "Neo Clay Premium" یک Alias است که همه‌ی قوانین Visual DNA را در بر می‌گیرد
+    // ✔️ بازگشت به قالب قبلی (با کیفیت FLUX.2-dev)
     const PROMPT_TEMPLATE =
         '{{VISUAL_STORY}}. ' +
         'Style: {{STYLE}}. ' +
@@ -770,6 +800,7 @@
             }
 
             // ✔️ STYLE v6: Character 3D Cartoon — هر کلمه با یک کاراکتر نمایش داده می‌شود
+            // (بازگشت به استایل قبلی)
             var systemPrompt =
                 'You are a character designer for a 3D cartoon educational app. Given a German word and its meaning, describe a CHEERFUL 3D CARTOON CHARACTER that represents this word. The character should be holding or interacting with an object related to the word. Write ONE vivid English sentence (15-30 words). Respond with ONLY a JSON object.';
 
@@ -823,9 +854,9 @@
             }
         };
 
-        // ✔️ STYLE v6: fallback — کاراکتر کارتونی
+        // ✔️ STYLE v6: fallback — کاراکتر کارتونی (Character 3D Cartoon)
         GermanDictionary.prototype._fallbackVisualConcept = function (word, meaning, type) {
-            var visual = 'A premium 3D rendered "' + word + '" (' + meaning + ') as a high-quality object icon with studio lighting and soft shadows';
+            var visual = 'A cheerful 3D cartoon character representing "' + word + '" (' + meaning + '), holding an object related to the word, big expressive eyes, friendly smile';
             // حدس ساده دسته بر اساس نوع کلمه + visual story غنی‌تر
             if (type === 'verb') {
                 category = 'Action';
@@ -882,32 +913,96 @@
             }
 
             var lastError = null;
-            var body = JSON.stringify({ prompt: prompt });
+            // ✔️ UPDATED: مدل FLUX.2 Dev با steps 25-30 و guidance 10
+            // FLUX.2 Dev کیفیت بسیار بالاتری نسبت به SDXL دارد
+            var body = JSON.stringify({
+                prompt: prompt,
+                model: '@cf/black-forest-labs/flux-2-dev',
+                steps: 28,        // 25-30 — 28 میانگین خوب
+                guidance: 10      // راهنما 10 — کیفیت بالا
+            });
 
-            // امتحان کردن Worker ها به ترتیب
-            for (var i = 0; i < IMAGE_WORKERS.length; i++) {
-                var worker = IMAGE_WORKERS[i];
+            // ✔️ v9 SMART: سیستم هوشمند تولید تصویر
+            // ۱. فقط Worker های سالم را انتخاب کن (نه آن‌هایی که در cooldown هستند)
+            // ۲. PARALLEL_RACE_COUNT Worker همزمان امتحان کن — اولین موفق برنده
+            // ۳. اگر همه fail شدند، Worker های غیرفعال را reset کن و دوباره امتحان کن
+            var self = this;
+
+            // مرحله ۱: گرفتن لیست Worker های سالم
+            var healthyWorkers = getHealthyWorkers();
+            if (healthyWorkers.length === 0) {
+                // همه غیرفعال شده‌اند — reset کن و دوباره شروع کن
+                console.warn('[img-gen] ⚠️ همه Worker ها غیرفعال شده‌اند — reset کردن circuit breakers');
+                IMAGE_WORKERS.forEach(function(w) {
+                    getWorkerHealth(w.url).disabledUntil = 0;
+                    getWorkerHealth(w.url).failures = 0;
+                });
+                healthyWorkers = IMAGE_WORKERS.slice();
+            }
+
+            // مرحله ۲: انتخاب N Worker اول برای parallel race
+            var raceWorkers = healthyWorkers.slice(0, Math.min(PARALLEL_RACE_COUNT, healthyWorkers.length));
+            console.log('[img-gen] 🏁 شروع parallel race با ' + raceWorkers.length + ' Worker از ' + healthyWorkers.length + ' سالم');
+
+            // مرحله ۳: race کردن Worker ها — اولین موفق برنده
+            // ✔️ v9 FIX: raceToSuccess — فقط اولین موفقیت برنده است، نه اولین خطا
+            // Promise.race در اولین reject هم reject می‌کند — ما نمی‌خواهیم این کار را بکند
+            var raceControllers = raceWorkers.map(function() { return new AbortController(); });
+            var raceWinner = false;
+
+            var racePromise = new Promise(function(resolve, reject) {
+                var remaining = raceWorkers.length;
+                var lastErr = null;
+                raceWorkers.forEach(function(worker, idx) {
+                    self._fetchImageFromWorker(worker, body, raceControllers[idx].signal).then(function(blob) {
+                        if (raceWinner) return; // برنده‌ی دیگری هست
+                        raceWinner = true;
+                        // بقیه‌ی Worker های در حال اجرا را cancel کن
+                        raceControllers.forEach(function(c, i) { if (i !== idx) c.abort(); });
+                        markWorkerSuccess(worker.url);
+                        console.log('[img-gen] ✅ Worker برنده: ' + worker.url.substring(8, 30));
+                        resolve({ blob: blob, winner: worker });
+                    }).catch(function(err) {
+                        if (err.name === 'AbortError' || raceWinner) return; // cancel شده — نادیده بگیر
+                        markWorkerFailure(worker.url);
+                        console.warn('[img-gen] ❌ Worker ناموفق (' + worker.url.substring(8, 30) + '):', err.message);
+                        lastErr = err;
+                        remaining--;
+                        if (remaining === 0 && !raceWinner) {
+                            reject(lastErr); // همه fail شدند
+                        }
+                    });
+                });
+            });
+
+            try {
+                var winner = await racePromise;
+                if (winner && winner.blob) {
+                    return winner.blob;
+                }
+            } catch (raceErr) {
+                lastError = raceErr;
+                console.warn('[img-gen] ⚠️ Race ناموفق — ادامه با بقیه‌ی Worker ها');
+            }
+
+            // مرحله ۴: اگر race ناموفق بود، بقیه‌ی Worker های سالم را یکی یکی امتحان کن
+            var remainingWorkers = healthyWorkers.slice(PARALLEL_RACE_COUNT);
+            for (var i = 0; i < remainingWorkers.length; i++) {
+                var worker = remainingWorkers[i];
+                if (!isWorkerHealthy(worker.url)) continue; // شاید در حین race غیرفعال شده
                 try {
-                    // فاصله‌گذاری زمانی برای جلوگیری از Rate-Limit
-                    var self = this;
-                    var now = Date.now();
-                    var elapsed = now - (this._igState.lastRequestAt || 0);
-                    if (elapsed < INTER_REQUEST_DELAY_MS) {
-                        await delay(INTER_REQUEST_DELAY_MS - elapsed);
-                    }
-                    this._igState.lastRequestAt = Date.now();
-
                     var blob = await this._fetchImageFromWorker(worker, body);
                     if (blob && blob.size > 0) {
+                        markWorkerSuccess(worker.url);
+                        console.log('[img-gen] ✅ Worker موفق (sequential): ' + worker.url.substring(8, 30));
                         return blob;
                     }
-                    lastError = new Error('پاسخ Worker خالی بود: ' + worker.url);
+                    markWorkerFailure(worker.url);
+                    lastError = new Error('پاسخ Worker خالی بود');
                 } catch (err) {
-                    console.warn('[img-gen] Worker ' + (i + 1) + ' ناموفق (' + worker.url + '):', err.message);
+                    markWorkerFailure(worker.url);
+                    console.warn('[img-gen] ❌ Worker ناموفق (' + worker.url.substring(8, 30) + '):', err.message);
                     lastError = err;
-                    // اگر 429 (Rate Limit) بود، کمی صبر کن و سپس Worker بعدی
-                    // Cloudflare Workers AI بدون محدودیت Rate Limit
-                    // در غیر این صورت بلافاصله Worker بعدی
                 }
             }
 
@@ -915,15 +1010,27 @@
         };
 
         // فراخوانی یک Worker با تایم‌اوت
-        GermanDictionary.prototype._fetchImageFromWorker = function (worker, body) {
+        // ✔️ v9: externalSignal برای cancel کردن از بیرون (parallel race winner cancel)
+        GermanDictionary.prototype._fetchImageFromWorker = function (worker, body, externalSignal) {
             return new Promise(function (resolve, reject) {
                 var controller = new AbortController();
                 var timer = setTimeout(function () {
                     controller.abort();
-                    var e = new Error('تایم‌اوت درخواست به Worker (' + WORKER_TIMEOUT_MS + 'ms)');
+                    var e = new Error('تایم‌اوت (' + (WORKER_TIMEOUT_MS / 1000) + 's)');
                     e.status = 0;
                     reject(e);
                 }, WORKER_TIMEOUT_MS);
+
+                // ✔️ اگر externalSignal داده شد و از بیرون abort شد، controller ما هم abort کن
+                if (externalSignal) {
+                    if (externalSignal.aborted) {
+                        controller.abort();
+                    } else {
+                        externalSignal.addEventListener('abort', function() {
+                            controller.abort();
+                        });
+                    }
+                }
 
                 fetch(worker.url, {
                     method: 'POST',
@@ -937,13 +1044,14 @@
                 }).then(function (response) {
                     clearTimeout(timer);
                     if (!response.ok) {
-                        var err = new Error('Worker خطای HTTP ' + response.status + ' برگرداند');
+                        var err = new Error('HTTP ' + response.status);
                         err.status = response.status;
                         // تلاش برای خواندن پیام خطا
                         response.text().then(function (txt) {
                             try {
                                 var j = JSON.parse(txt);
                                 if (j && j.error) err.message = j.error;
+                                if (j && j.details) err.message = j.details;
                             } catch (e) {}
                             reject(err);
                         }).catch(function () { reject(err); });
@@ -954,7 +1062,7 @@
                     if (ct && ct.indexOf('image') === -1 && ct.indexOf('octet-stream') === -1) {
                         // ممکن است JSON خطا باشد
                         response.text().then(function (txt) {
-                            var msg = 'پاسخ Worker تصویر نیست (content-type: ' + ct + ')';
+                            var msg = 'پاسخ تصویر نیست (ct: ' + ct + ')';
                             try {
                                 var j = JSON.parse(txt);
                                 if (j && j.error) msg = j.error;
@@ -968,11 +1076,11 @@
                     response.blob().then(function (blob) {
                         // ✔️ FIX: رد کردن blob های خیلی کوچک (تصاویر سیاه/خالی)
                         if (!blob || blob.size === 0) {
-                            reject(new Error('Blob خالی از Worker دریافت شد'));
+                            reject(new Error('Blob خالی'));
                             return;
                         }
                         if (blob.size < MIN_VALID_BLOB_SIZE) {
-                            reject(new Error('تصویر دریافتی خیلی کوچک است (' + blob.size + ' bytes) — احتمالاً سیاه/خراب'));
+                            reject(new Error('تصویر خیلی کوچک (' + blob.size + 'B)'));
                             return;
                         }
                         resolve(blob);
@@ -980,7 +1088,9 @@
                 }).catch(function (err) {
                     clearTimeout(timer);
                     if (err.name === 'AbortError') {
-                        var e = new Error('درخواست به Worker قطع شد (تایم‌اوت)');
+                        // ✔️ v9: AbortError را با نام AbortError پاس بده تا race آن را نادیده بگیرد
+                        var e = new Error('AbortError');
+                        e.name = 'AbortError';
                         e.status = 0;
                         reject(e);
                     } else {

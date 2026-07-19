@@ -433,12 +433,12 @@
             /* ریسپانسیو موبایل: دکمه کوچک‌تر */
             @media (max-width: 600px) {
                 .fm-trigger {
-                    width: 56px;
-                    height: 56px;
-                    bottom: 20px;
-                    left: 20px;
-                    font-size: 20px;
-                    border-radius: 18px;
+                    width: 40px;
+                    height: 40px;
+                    bottom: 28px;
+                    left: 28px;
+                    font-size: 16px;
+                    border-radius: 12px;
                 }
                 .fm-item { padding: 12px 14px; gap: 12px; }
                 .fm-item-ic { width: 42px; height: 42px; font-size: 16px; }

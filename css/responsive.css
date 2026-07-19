@@ -799,17 +799,17 @@
     flex: 1;
   }
   .floating-menu-btn {
-    bottom: 20px !important;
-    left: 20px !important;
-    width: 50px !important;
-    height: 50px !important;
+    bottom: 28px !important;
+    left: 28px !important;
+    width: 40px !important;
+    height: 40px !important;
   }
   .floating-menu-btn i {
-    font-size: 22px !important;
+    font-size: 18px !important;
   }
   .floating-menu-container {
-    left: 16px !important;
-    bottom: 85px !important;
+    left: 28px !important;
+    bottom: 76px !important;
   }
   .floating-menu-item {
     width: 46px !important;
@@ -1175,14 +1175,14 @@
   .music-floating-icon i { font-size: 18px !important; }
   [dir="rtl"] .music-floating-icon { right: 14px !important; left: auto !important; }
 
-  /* دکمه شناور منو (FAB) — کوچک‌تر و بالاتر برای جلوگیری از تداخل با نوار ورودی چت */
+  /* دکمه شناور منو (FAB) — ✔️ UPDATED v8: هم‌تراز با دکمه تمام‌صفحه (40×40, bottom 28px) */
   .fm-trigger, #fm-trigger {
-    width: 52px !important;
-    height: 52px !important;
-    bottom: 18px !important;
-    left: 18px !important;
-    font-size: 19px !important;
-    border-radius: 16px !important;
+    width: 40px !important;
+    height: 40px !important;
+    bottom: 28px !important;
+    left: 28px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
     z-index: 9998 !important;
   }
 

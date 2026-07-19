@@ -477,7 +477,9 @@
                 .ac-model-select{flex:1; width:100%; max-width:none; font-size:13px; padding:10px 32px 10px 14px; min-height:42px; border-radius:10px;}
                 .ac-welcome-features{display:none;}
                 .ac-input-bar{padding:8px 8px; gap:6px;}
-                .ac-input-action{width:36px; height:40px; font-size:13px;}
+                /* ✔️ UPDATED: دکمه آپلود تصویر بزرگ‌تر و برجسته‌تر در موبایل */
+                .ac-input-action{width:44px; height:44px; font-size:16px; flex-shrink:0;}
+                #upload-image-btn{background:var(--ac-primary-l); border-color:var(--ac-primary); color:var(--ac-primary);}
                 .ac-textarea{font-size:14px; padding:11px 12px; min-height:44px;}
                 .ac-send-btn{width:44px; height:44px; font-size:14px;}
             }

@@ -5,6 +5,10 @@ const AI_WORKERS = [
     { url: 'https://ai-7wegga.ai-multi-model-4zgxvo.workers.dev', key: 'sk-63C3hGQVXXXA3yGcG3wp3Ay21A79wO2A' },
     { url: 'https://ai-0y6z2u.ai-0y6z2u-ho67pc.workers.dev', key: 'sk-WC9cMgYvCaESvWPhqtt89UmCUmhHwWFe' },
     { url: 'https://ai-u0blil.ai-u0blil-24d298.workers.dev', key: 'sk-SXxAlOgktXjY9xBPaXswgAP1um17OmBZ' },
+    { url: 'https://ai-xdaaf0.image12-a4f6io.workers.dev', key: 'sk-wyee7rhqTQvEiGbBAvBTVqiXFVbmljNA' },
+     { url: 'https://ai-4s8rly.image-gen-api-sz3qkb.workers.dev', key: 'sk-lYeGYB9usYEFtLGRjvCIDvDuLXMW6nFS' },
+     { url: 'https://ai-qqxqda.image-gen-api-2c88mu.workers.dev', key: 'sk-Yfh1coXfZpDCVNgREehXYo5DhhZsIll5' },
+      { url: 'https://ai-9zwd0f.image786-t92w4k.workers.dev', key: 'sk-DVd3hTcRA6WpFggCemAjlaX3jyLLxlsy' },
     // ورکرهای بیشتر بعداً اضافه می‌شوند
 ];
 
