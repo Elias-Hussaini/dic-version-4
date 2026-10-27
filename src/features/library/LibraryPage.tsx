@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Plus, BookOpen, CheckSquare, Square, Trash2, Folder, Sparkles, Flame } from 'lucide-react';
 import { GlassCard, GlassButton, GlassInput, EmptyState, Badge } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { GlassDialog } from '@/design-system/GlassDialog';
 import { WordRow } from '@/features/search/SearchPage';
 import { useWords, useSrs, useInvalidate } from '@/hooks/useData';
@@ -94,15 +95,18 @@ export default function LibraryPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <h1 className="text-xl font-extrabold">{t('library.title')}</h1>
-        <Link to="/add">
-          <GlassButton variant="primary" size="sm">
-            <Plus className="size-4" /> {t('dashboard.quickAdd')}
-          </GlassButton>
-        </Link>
-      </div>
-
+      <PageHero
+        icon={<BookOpen />}
+        title={t('library.title')}
+        subtitle="مجموعه لغات شما"
+        action={
+          <Link to="/add">
+            <GlassButton size="sm" className="!bg-white/15 !border !border-white/25 !text-white hover:!bg-white/25 !shadow-none backdrop-blur-sm">
+              <Plus className="size-4" /> {t('dashboard.quickAdd')}
+            </GlassButton>
+          </Link>
+        }
+      />
       {/* Folders */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label={t('library.folders')}>
         {folders.map((f) => (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ImageIcon, Sparkles, Download } from 'lucide-react';
 import { GlassCard, GlassButton, GlassInput, EmptyState, Skeleton } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { useTranslate } from '@/hooks/useTranslate';
 import { remoteEnabled, generateImage } from '@/services/apiClient';
 import { useToast } from '@/design-system/Toast';
@@ -35,7 +36,7 @@ export default function StudioPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <h1 className="text-xl font-extrabold pt-1">{t('studio.title')}</h1>
+      <PageHero icon={<ImageIcon />} title={t('studio.title')} subtitle="تصویرسازی لغات با هوش مصنوعی" />
 
       <GlassCard className="space-y-3">
         <GlassInput

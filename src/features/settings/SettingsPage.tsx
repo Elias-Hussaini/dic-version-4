@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Sun, Moon, Monitor, Palette, Languages, Accessibility, Database, ChevronLeft, LanguagesIcon } from 'lucide-react';
 import { GlassCard, GlassSelect, Badge } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { useSettings, type FontSize } from '@/hooks/useSettings';
 import { useTranslate } from '@/hooks/useTranslate';
 import { uiLangs, type UiLang } from '@/i18n';
@@ -18,7 +19,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <h1 className="text-xl font-extrabold pt-1">{t('settings.title')}</h1>
+      <PageHero icon={<Palette />} title={t('settings.title')} subtitle="شخصی‌سازی برنامه" />
 
       {/* Theme */}
       <GlassCard>

@@ -59,7 +59,7 @@ export function FloatingNav({ items, moreLabel }: { items: NavItem[]; moreLabel:
             )}
             aria-label="ناوبری اصلی"
           >
-            <div className="glass-strong glass-hi rounded-full flex items-center gap-1 px-2 py-1.5 pointer-events-auto shadow-[var(--shadow-nav)]">
+            <div className="glass-strong glass-hi rounded-full flex items-center gap-1 px-2 py-1.5 pointer-events-auto shadow-[var(--shadow-nav)] ring-1 ring-[color-mix(in_srgb,var(--color-accent)_18%,transparent)]">
               {items.map((item) => {
                 const active =
                   item.match?.(location.pathname) ?? location.pathname === item.to;
@@ -71,13 +71,13 @@ export function FloatingNav({ items, moreLabel }: { items: NavItem[]; moreLabel:
                     aria-current={active ? 'page' : undefined}
                     className={cn(
                       'relative flex flex-col items-center justify-center min-w-16 h-14 px-2 rounded-full text-[11px] font-semibold transition-colors duration-200',
-                      active ? 'text-[var(--color-accent)]' : 'text-[var(--color-ink-faint)] hover:text-[var(--color-ink-soft)]',
+                      active ? 'text-white' : 'text-[var(--color-ink-faint)] hover:text-[var(--color-ink-soft)]',
                     )}
                   >
                     {active && (
                       <motion.span
                         layoutId="nav-pill"
-                        className="absolute inset-0 rounded-full bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)]"
+                        className="absolute inset-0 rounded-full grad-indigo shadow-[0_6px_18px_rgba(102,126,234,0.5)]"
                         transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                       />
                     )}
@@ -123,15 +123,15 @@ function ToolsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   }, [open, onClose]);
 
   const tools = [
-    { to: '/tutor', icon: MessageCircle, label: t('tutor.title') },
-    { to: '/studio', icon: ImageIcon, label: t('studio.title') },
-    { to: '/music', icon: Music4, label: t('music.title') },
-    { to: '/stats', icon: BarChart3, label: t('stats.title') },
-    { to: '/learn/verbs', icon: BookOpenText, label: t('learn.verbs') },
-    { to: '/learn/prepositions', icon: Scale, label: t('learn.prepositions') },
-    { to: '/learn/speaking', icon: Mic, label: t('learn.speaking') },
-    { to: '/favorites', icon: BookMarked, label: t('favorites.title') },
-  ];
+    { to: '/tutor', icon: MessageCircle, label: t('tutor.title'), tone: 'violet' },
+    { to: '/studio', icon: ImageIcon, label: t('studio.title'), tone: 'pink' },
+    { to: '/music', icon: Music4, label: t('music.title'), tone: 'cyan' },
+    { to: '/stats', icon: BarChart3, label: t('stats.title'), tone: 'indigo' },
+    { to: '/learn/verbs', icon: BookOpenText, label: t('learn.verbs'), tone: 'blue' },
+    { to: '/learn/prepositions', icon: Scale, label: t('learn.prepositions'), tone: 'sunset' },
+    { to: '/learn/speaking', icon: Mic, label: t('learn.speaking'), tone: 'emerald' },
+    { to: '/favorites', icon: BookMarked, label: t('favorites.title'), tone: 'gold' },
+  ] as const;
 
   return (
     <AnimatePresence>
@@ -175,9 +175,11 @@ function ToolsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                         onClose();
                         navigate(tool.to);
                       }}
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl glass-subtle hover:brightness-105 active:scale-[0.97] transition-[transform,filter]"
+                      className="flex flex-col items-center gap-2.5 p-4 rounded-2xl glass-subtle hover:brightness-105 active:scale-[0.97] transition-[transform,filter]"
                     >
-                      <Icon className="size-6 text-[var(--color-accent)]" />
+                      <span className={`icon-tile icon-tile--${tool.tone} size-11 rounded-xl`}>
+                        <Icon className="size-5" />
+                      </span>
                       <span className="text-xs font-semibold text-[var(--color-ink-soft)] text-center leading-4">
                         {tool.label}
                       </span>

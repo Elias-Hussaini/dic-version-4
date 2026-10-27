@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, Upload, History, Trash2, AlertTriangle, FileJson } from 'lucide-react';
 import { GlassCard, GlassButton, Badge } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { GlassDialog } from '@/design-system/GlassDialog';
 import { backupRepo } from '@/db/repositories';
 import { legacyExportSchema, type LegacyExport } from '@/types';
@@ -92,7 +93,7 @@ export default function DataPage() {
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
       <div className="flex items-center justify-between pt-1">
-        <h1 className="text-xl font-extrabold">{t('settings.data')}</h1>
+        <PageHero icon={<FileJson />} title={t('settings.data')} subtitle="پشتیبان‌گیری و انتقال داده" />
         <Link to="/settings" className="text-sm text-[var(--color-accent)]">
           {t('settings.title')}
         </Link>

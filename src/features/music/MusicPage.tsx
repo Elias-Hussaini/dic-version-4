@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Music4, Play, Pause, Trash2, Upload, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { GlassCard, GlassButton, EmptyState } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { useTranslate } from '@/hooks/useTranslate';
 import { db } from '@/db/schema';
 import type { MusicTrack } from '@/types';
@@ -80,10 +81,7 @@ export default function MusicPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <h1 className="text-xl font-extrabold pt-1 flex items-center gap-2">
-        <Music4 className="size-6 text-[var(--color-accent)]" />
-        {t('music.title')}
-      </h1>
+      <PageHero icon={<Music4 />} title={t('music.title')} subtitle="موسیقی حین مطالعه" />
 
       <audio ref={audioRef} onEnded={nextTrack} />
 

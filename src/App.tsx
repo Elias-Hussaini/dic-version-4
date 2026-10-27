@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { FloatingNav, type NavItem } from '@/design-system/FloatingNav';
 import { Aurora } from '@/design-system/Aurora';
@@ -9,6 +9,18 @@ import { useSettings } from '@/hooks/useSettings';
 /** App shell: aurora background, page container with bottom padding for the nav. */
 export function AppLayout({ navItems, children }: { navItems: NavItem[]; children: ReactNode }) {
   const onboardingDone = useSettings((s) => s.onboardingDone);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Wait for zustand persist rehydration before redirecting,
+  // otherwise a refresh always bounces the user back to onboarding.
+  useEffect(() => {
+    const t = window.setTimeout(() => setHydrated(true), 60);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  if (!hydrated) {
+    return <Aurora />;
+  }
 
   if (!onboardingDone) {
     return <Navigate to="/onboarding" replace />;

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Volume2, Search } from 'lucide-react';
+import { Volume2, Search, Scale } from 'lucide-react';
 import { GlassCard, GlassInput, Badge, GlassButton } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { PREPOSITIONS_DB, type PrepositionEntry } from '@/lib/prepositionsData';
 import { useTranslate } from '@/hooks/useTranslate';
 import { speak } from '@/services/tts';
@@ -42,7 +43,7 @@ export default function PrepositionsPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <h1 className="text-xl font-extrabold pt-1">{t('learn.prepositions')}</h1>
+      <PageHero icon={<Scale />} title={t('learn.prepositions')} subtitle="حروف اضافه با حالت‌ها" />
 
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
         {filters.map((f) => (

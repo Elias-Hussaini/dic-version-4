@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Send, Trash2, MessageCircle } from 'lucide-react';
 import { GlassCard, GlassButton, EmptyState } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { useTranslate } from '@/hooks/useTranslate';
 import { remoteEnabled, streamChat } from '@/services/apiClient';
 import type { ChatMessage } from '@/types';
@@ -85,7 +86,7 @@ export default function TutorPage() {
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
       <div className="flex items-center justify-between gap-3 pt-1">
-        <h1 className="text-xl font-extrabold">{t('tutor.title')}</h1>
+        <PageHero icon={<MessageCircle />} title={t('tutor.title')} subtitle="دستیار هوشمند زبان" />
         {messages.length > 0 && (
           <GlassButton
             variant="ghost"

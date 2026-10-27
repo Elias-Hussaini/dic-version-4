@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Mic, MicOff, Volume2, Check, X } from 'lucide-react';
 import { GlassCard, GlassButton, Badge, EmptyState, GlassSelect, ProgressRing } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { useWords } from '@/hooks/useData';
 import { useTranslate } from '@/hooks/useTranslate';
 import { speak, stopSpeaking } from '@/services/tts';
@@ -72,7 +73,7 @@ export default function SpeakingPage() {
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
       <div className="flex items-center justify-between gap-3 pt-1">
-        <h1 className="text-xl font-extrabold">{t('learn.speaking')}</h1>
+        <PageHero icon={<Mic />} title={t('learn.speaking')} subtitle="تمرین تلفظ" />
         <Badge tone="accent">
           {index + 1} / {pool.length}
         </Badge>

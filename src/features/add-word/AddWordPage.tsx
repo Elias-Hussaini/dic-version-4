@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Save, Sparkles, Plus } from 'lucide-react';
-import { GlassCard, GlassButton, GlassInput, GlassTextarea, GlassSelect, Badge } from '@/design-system/Glass';
+import { Save, Sparkles, Plus, Languages } from 'lucide-react';
+import { GlassCard, GlassButton, GlassInput, GlassTextarea, GlassSelect, Badge, IconTile } from '@/design-system/Glass';
 import { useInvalidate, useWords } from '@/hooks/useData';
 import { useTranslate } from '@/hooks/useTranslate';
 import { wordsRepo } from '@/db/repositories';
@@ -192,15 +192,31 @@ export default function AddWordPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <h1 className="text-xl font-extrabold">
-          {editId !== undefined ? t('common.edit') : t('add.title')}
-        </h1>
-        {remoteEnabled() && (
-          <GlassButton variant="secondary" size="sm" onClick={aiFill} loading={aiLoading}>
-            <Sparkles className="size-4" /> {t('add.aiFill')}
-          </GlassButton>
-        )}
+      {/* Gradient page header */}
+      <div className="hero-panel p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="grid place-items-center size-11 rounded-2xl bg-white/15 border border-white/20 backdrop-blur-sm">
+              <Plus className="size-5.5 text-white" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-lg font-extrabold text-white">
+                {editId !== undefined ? t('common.edit') : t('add.title')}
+              </h1>
+              <p className="text-xs text-white/65">لغت جدید به دیکشنری خود اضافه کنید</p>
+            </div>
+          </div>
+          {remoteEnabled() && (
+            <button
+              onClick={aiFill}
+              disabled={aiLoading}
+              className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-full bg-white/15 border border-white/25 backdrop-blur-sm text-xs font-bold text-white hover:bg-white/25 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="size-3.5" />
+              {aiLoading ? '…' : t('add.aiFill')}
+            </button>
+          )}
+        </div>
       </div>
 
       <GlassCard className="space-y-4">
@@ -215,13 +231,31 @@ export default function AddWordPage() {
         </GlassSelect>
 
         {form.type === 'noun' && (
-          <div className="grid grid-cols-2 gap-3">
-            <GlassSelect label={t('word.gender')} value={form.gender ?? ''} onChange={set('gender')}>
-              <option value="">—</option>
-              <option value="der">der (مذکر)</option>
-              <option value="die">die (مؤنث)</option>
-              <option value="das">das (خنثی)</option>
-            </GlassSelect>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-[var(--color-ink-soft)]">{t('word.gender')}</label>
+            <div className="grid grid-cols-4 gap-2">
+              {(
+                [
+                  { v: undefined, label: '—', cls: 'glass-subtle text-[var(--color-ink-faint)]' },
+                  { v: 'der' as Gender, label: 'der', cls: 'gender-der text-white' },
+                  { v: 'die' as Gender, label: 'die', cls: 'gender-die text-white' },
+                  { v: 'das' as Gender, label: 'das', cls: 'gender-das text-white' },
+                ]
+              ).map((g) => (
+                <button
+                  key={g.label}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, gender: g.v }))}
+                  className={`h-10 rounded-xl font-latin font-bold text-sm transition-all duration-150 ${g.cls} ${
+                    form.gender === g.v || (g.v === undefined && !form.gender)
+                      ? 'ring-2 ring-offset-2 ring-[var(--color-accent)] scale-[1.03]'
+                      : 'opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
             <GlassInput label={t('word.plural')} value={form.plural} onChange={set('plural')} latin dir="ltr" placeholder="Häuser" />
           </div>
         )}

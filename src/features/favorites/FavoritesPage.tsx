@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Star, BookOpen } from 'lucide-react';
 import { GlassCard, GlassButton, EmptyState } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { WordRow } from '@/features/search/SearchPage';
 import { useWords, useFavorites } from '@/hooks/useData';
 import { useTranslate } from '@/hooks/useTranslate';
@@ -14,14 +15,11 @@ export default function FavoritesPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <h1 className="text-xl font-extrabold pt-1 flex items-center gap-2">
-        <Star className="size-6 fill-[var(--color-warning)] text-[var(--color-warning)]" />
-        {t('favorites.title')}
-      </h1>
+      <PageHero icon={<Star />} title={t('favorites.title')} subtitle="لغات نشان‌شده شما" />
 
       {favWords.length === 0 ? (
         <EmptyState
-          icon={<BookOpen className="size-8" />}
+          icon={<BookOpen />}
           title={t('favorites.empty')}
           description="با زدن آیکون ستاره در صفحه لغت، آن را به علاقه‌مندی‌ها اضافه کنید."
           action={

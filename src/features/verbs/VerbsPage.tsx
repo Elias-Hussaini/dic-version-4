@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { BookOpenText, Volume2 } from 'lucide-react';
 import { GlassCard, GlassButton, GlassInput, EmptyState, Skeleton } from '@/design-system/Glass';
+import { PageHero } from '@/design-system/PageHero';
 import { useWords } from '@/hooks/useData';
 import { useTranslate } from '@/hooks/useTranslate';
 import { speak } from '@/services/tts';
@@ -23,7 +24,7 @@ export default function VerbsPage() {
 
   return (
     <div className="space-y-4 animate-[var(--animate-slide-up)]">
-      <h1 className="text-xl font-extrabold pt-1">{t('learn.verbs')}</h1>
+      <PageHero icon={<BookOpenText />} title={t('learn.verbs')} subtitle="جدول صرف افعال" />
 
       <GlassInput
         value={query}

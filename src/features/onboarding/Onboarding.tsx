@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Languages, Target, Upload, Sparkles, ArrowRight, BookOpenText } from 'lucide-react';
-import { GlassCard, GlassButton } from '@/design-system/Glass';
+import { Upload, Sparkles, ArrowRight, BookOpenText, Languages, Target, Flame } from 'lucide-react';
+import { GlassCard, GlassButton, IconTile } from '@/design-system/Glass';
+import { Aurora } from '@/design-system/Aurora';
 import { useSettings } from '@/hooks/useSettings';
 import { useTranslate } from '@/hooks/useTranslate';
 import { backupRepo } from '@/db/repositories';
@@ -43,39 +44,77 @@ export default function Onboarding() {
   };
 
   const steps = [
-    // Step 0 — welcome
-    <div key="welcome" className="text-center py-8">
+    // Step 0 — welcome (full hero treatment)
+    <div key="welcome" className="text-center py-6">
       <motion.div
         initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-        className="mx-auto mb-6 grid place-items-center size-24 rounded-[2rem] bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] shadow-[0_20px_60px_color-mix(in_srgb,var(--color-accent)_40%,transparent)]"
+        className="relative mx-auto mb-7"
       >
-        <BookOpenText className="size-12 text-white" />
+        {/* glow behind the logo */}
+        <div aria-hidden className="absolute inset-0 -z-10 grid place-items-center">
+          <div className="size-44 rounded-full blur-3xl opacity-50 grad-indigo" />
+          <div className="absolute size-28 translate-x-14 translate-y-8 rounded-full blur-2xl opacity-40 grad-pink" />
+          <div className="absolute size-24 -translate-x-14 translate-y-10 rounded-full blur-2xl opacity-40 grad-cyan" />
+        </div>
+        <div className="mx-auto grid place-items-center size-26 rounded-[2.25rem] grad-indigo shadow-[0_24px_64px_rgba(102,126,234,0.5)] animate-float-soft">
+          <BookOpenText className="size-13 text-white" strokeWidth={1.8} />
+        </div>
       </motion.div>
-      <h1 className="text-2xl font-extrabold">{t('onboarding.welcome')}</h1>
-      <p className="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{t('onboarding.welcomeDesc')}</p>
+
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <span className="grad-text text-3xl font-black tracking-tight">LINGO</span>
+      </div>
+      <h1 className="text-xl font-extrabold text-[var(--color-ink)]">{t('onboarding.welcome')}</h1>
+      <p className="mt-2.5 text-sm leading-7 text-[var(--color-ink-soft)]">{t('onboarding.welcomeDesc')}</p>
+
+      {/* feature chips */}
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-subtle text-xs font-bold text-[var(--color-ink-soft)]">
+          <span className="size-2 rounded-full grad-emerald" /> SRS
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-subtle text-xs font-bold text-[var(--color-ink-soft)]">
+          <span className="size-2 rounded-full grad-pink" /> AI Tutor
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-subtle text-xs font-bold text-[var(--color-ink-soft)]">
+          <span className="size-2 rounded-full grad-cyan" /> Practice
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full glass-subtle text-xs font-bold text-[var(--color-ink-soft)]">
+          <span className="size-2 rounded-full grad-gold" /> Offline
+        </span>
+      </div>
     </div>,
 
     // Step 1 — language
-    <div key="lang" className="space-y-4">
-      <h1 className="text-xl font-extrabold text-center">{t('onboarding.chooseLang')}</h1>
+    <div key="lang" className="space-y-5">
+      <div className="text-center">
+        <IconTile tone="violet" size="lg" className="mx-auto mb-4">
+          <Languages className="size-7" />
+        </IconTile>
+        <h1 className="text-xl font-extrabold">{t('onboarding.chooseLang')}</h1>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {(
           [
-            { id: 'de' as LearningLang, name: 'Deutsch', flag: '🇩🇪', desc: 'آلمانی' },
-            { id: 'en' as LearningLang, name: 'English', flag: '🇬🇧', desc: 'انگلیسی' },
+            { id: 'de' as LearningLang, name: 'Deutsch', flag: '🇩🇪', desc: 'آلمانی', tone: 'indigo' },
+            { id: 'en' as LearningLang, name: 'English', flag: '🇬🇧', desc: 'انگلیسی', tone: 'cyan' },
           ]
         ).map((l) => (
           <button
             key={l.id}
             onClick={() => setLang(l.id)}
-            className={`p-6 rounded-3xl text-center transition-all ${
+            className={`relative p-6 rounded-3xl text-center transition-all duration-200 ${
               lang === l.id
-                ? 'bg-[color-mix(in_srgb,var(--color-accent)_12%,transparent)] ring-2 ring-[var(--color-accent)]'
+                ? 'grad-border ring-2 ring-[var(--color-accent)] scale-[1.02]'
                 : 'glass-subtle hover:brightness-105'
             }`}
           >
+            {lang === l.id && (
+              <span className="absolute top-3 end-3 grid place-items-center size-5 rounded-full grad-indigo">
+                <Sparkles className="size-3 text-white" />
+              </span>
+            )}
             <div className="text-4xl mb-2">{l.flag}</div>
             <div className="font-latin font-bold">{l.name}</div>
             <div className="text-xs text-[var(--color-ink-faint)] mt-1">{l.desc}</div>
@@ -87,6 +126,9 @@ export default function Onboarding() {
     // Step 2 — goal + import
     <div key="goal" className="space-y-6">
       <div className="text-center">
+        <IconTile tone="sunset" size="lg" className="mx-auto mb-4">
+          <Target className="size-7" />
+        </IconTile>
         <h1 className="text-xl font-extrabold">{t('onboarding.goal')}</h1>
         <p className="mt-1 text-sm text-[var(--color-ink-soft)]">{t('onboarding.goalDesc')}</p>
       </div>
@@ -95,13 +137,16 @@ export default function Onboarding() {
           <button
             key={n}
             onClick={() => setGoal(n)}
-            className={`py-4 rounded-2xl font-extrabold text-lg transition-all ${
+            className={`relative py-4 rounded-2xl font-extrabold text-lg transition-all duration-200 ${
               goal === n
-                ? 'bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-2))] text-white'
-                : 'glass-subtle'
+                ? 'btn-grad text-white scale-[1.03]'
+                : 'glass-subtle hover:brightness-105'
             }`}
           >
-            {n}
+            <span className="relative flex flex-col items-center gap-0.5">
+              {n}
+              {goal === n && <Flame className="size-3.5 text-amber-200" />}
+            </span>
           </button>
         ))}
       </div>
@@ -116,21 +161,26 @@ export default function Onboarding() {
   ];
 
   return (
-    <div className="min-h-dvh grid place-items-center p-4">
+    <div className="relative min-h-dvh grid place-items-center p-4 overflow-hidden">
+      <Aurora />
       <div className="w-full max-w-md">
-        {/* progress dots */}
+        {/* progress dots — gradient pills */}
         <div className="flex justify-center gap-2 mb-6" role="progressbar" aria-valuenow={step + 1} aria-valuemax={3}>
           {steps.map((_, i) => (
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === step ? 'w-8 bg-[var(--color-accent)]' : i < step ? 'w-3 bg-[var(--color-accent)] opacity-50' : 'w-3 bg-[var(--color-glass-secondary)]'
+                i === step
+                  ? 'w-9 grad-indigo shadow-[0_2px_10px_rgba(102,126,234,0.5)]'
+                  : i < step
+                    ? 'w-3 grad-indigo opacity-50'
+                    : 'w-3 bg-[var(--color-glass-secondary)]'
               }`}
             />
           ))}
         </div>
 
-        <GlassCard level="strong">
+        <GlassCard level="strong" className="glass-hi">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -150,7 +200,7 @@ export default function Onboarding() {
             >
               {step === 0 ? t('onboarding.skip') : 'قبلی'}
             </GlassButton>
-            <GlassButton variant="primary" onClick={() => (step === 2 ? finish() : setStep((s) => s + 1))}>
+            <GlassButton variant="primary" size="lg" onClick={() => (step === 2 ? finish() : setStep((s) => s + 1))}>
               {step === 2 ? (
                 <>
                   <Sparkles className="size-4" /> {t('onboarding.finish')}
