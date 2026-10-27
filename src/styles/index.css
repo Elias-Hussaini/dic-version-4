@@ -1,0 +1,283 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/vazirmatn';
+@import '@fontsource-variable/inter';
+
+/* ════════════════════════════════════════════════════════════════
+   LINGO — Premium Glass Design System
+   Tokens are the single source of truth. No component hard-codes colours.
+   ════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* Light theme (default) */
+  --color-bg: #f7f8fc;
+  --color-bg-soft: #eef0f8;
+  --color-ink: #171827;
+  --color-ink-soft: #4b4d63;
+  --color-ink-faint: #8b8da3;
+  --color-accent: #635bff;
+  --color-accent-2: #8b5cf6;
+  --color-accent-soft: #eeecff;
+  --color-success: #0f9d76;
+  --color-warning: #d97706;
+  --color-danger: #e5484d;
+  --color-info: #2f7ff6;
+
+  --color-glass: rgba(255, 255, 255, 0.72);
+  --color-glass-secondary: rgba(255, 255, 255, 0.48);
+  --color-glass-strong: rgba(255, 255, 255, 0.85);
+  --color-glass-border: rgba(255, 255, 255, 0.65);
+  --color-glass-border-strong: rgba(120, 120, 160, 0.22);
+
+  --shadow-glass: 0 8px 32px rgba(23, 24, 39, 0.08), 0 2px 8px rgba(23, 24, 39, 0.04);
+  --shadow-glass-lg: 0 16px 48px rgba(23, 24, 39, 0.12), 0 4px 16px rgba(23, 24, 39, 0.06);
+  --shadow-nav: 0 12px 40px rgba(23, 24, 39, 0.16);
+
+  --font-fa: 'Vazirmatn Variable', 'Vazirmatn', system-ui, sans-serif;
+  --font-latin: 'Inter Variable', 'Inter', system-ui, sans-serif;
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-fade-in: fade-in 0.3s var(--ease-ios) both;
+  --animate-slide-up: slide-up 0.35s var(--ease-ios) both;
+  --animate-pop-in: pop-in 0.3s var(--ease-ios) both;
+}
+
+/* ── Dark theme ─────────────────────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  --color-bg: #0d0f1a;
+  --color-bg-soft: #141728;
+  --color-ink: #f4f4fc;
+  --color-ink-soft: #b8b9d0;
+  --color-ink-faint: #6f7190;
+  --color-accent: #8b83ff;
+  --color-accent-2: #a78bfa;
+  --color-accent-soft: #23204a;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #ff6b6e;
+  --color-info: #60a5fa;
+
+  --color-glass: rgba(30, 33, 55, 0.72);
+  --color-glass-secondary: rgba(30, 33, 55, 0.48);
+  --color-glass-strong: rgba(22, 24, 42, 0.88);
+  --color-glass-border: rgba(255, 255, 255, 0.09);
+  --color-glass-border-strong: rgba(255, 255, 255, 0.16);
+
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-glass-lg: 0 16px 48px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-nav: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Accessibility: reduced transparency ────────────────────────── */
+.reduce-transparency {
+  --color-glass: var(--color-bg);
+  --color-glass-secondary: var(--color-bg);
+  --color-glass-strong: var(--color-bg);
+  --color-glass-border: var(--color-glass-border-strong);
+}
+
+.high-contrast {
+  --color-ink-soft: var(--color-ink);
+  --color-ink-faint: var(--color-ink);
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-fa);
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-latin {
+  font-family: var(--font-latin);
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Aurora background — static, low-cost */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 45% at 18% 12%, rgba(99, 91, 255, 0.13), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 82% 8%, rgba(139, 92, 246, 0.10), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 50% 100%, rgba(99, 91, 255, 0.08), transparent 70%);
+}
+.dark .aurora {
+  background:
+    radial-gradient(ellipse 60% 45% at 18% 12%, rgba(139, 131, 255, 0.09), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 82% 8%, rgba(167, 139, 250, 0.07), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 50% 100%, rgba(139, 131, 255, 0.05), transparent 70%);
+}
+
+/* ── Glass utilities ────────────────────────────────────────────── */
+.glass-subtle {
+  background: var(--color-glass-secondary);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass {
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-strong {
+  background: var(--color-glass-strong);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  box-shadow: var(--shadow-glass-lg);
+}
+
+/* Inner top highlight — signature of the glass language */
+.glass-hi {
+  position: relative;
+}
+.glass-hi::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 24%);
+  mask: linear-gradient(180deg, #000 1px, transparent 1px) content-box,
+    linear-gradient(#0000, #0000);
+  -webkit-mask: linear-gradient(180deg, #000, transparent 30%);
+  mask: linear-gradient(180deg, #000, transparent 30%);
+  opacity: 0.5;
+}
+.dark .glass-hi::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), transparent 24%);
+}
+
+/* Solid fallback when backdrop-filter unsupported */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-subtle,
+  .glass-strong {
+    background: var(--color-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.reduce-transparency .glass,
+.reduce-transparency .glass-subtle,
+.reduce-transparency .glass-strong {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ── Inputs ─────────────────────────────────────────────────────── */
+.glass-input {
+  background: var(--color-glass-secondary);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.2s var(--ease-ios), box-shadow 0.2s var(--ease-ios);
+}
+.glass-input:focus,
+.glass-input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* ── Focus ring (a11y) ──────────────────────────────────────────── */
+:where(a, button, [role='button'], input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Scrollbars ─────────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-ink-faint) 40%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-ink-faint) 40%, transparent);
+  border-radius: 3px;
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-glass-secondary) 25%,
+    color-mix(in srgb, var(--color-glass-secondary) 60%, var(--color-accent-soft)) 50%,
+    var(--color-glass-secondary) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 10px;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── RTL/LTR helpers ────────────────────────────────────────────── */
+[dir='rtl'] .flip-rtl {
+  transform: scaleX(-1);
+}
+
+/* Virtualized list container */
+.virtual-list {
+  contain: strict;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Safe areas */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}

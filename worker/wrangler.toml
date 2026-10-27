@@ -1,0 +1,15 @@
+name = "lingo-proxy"
+main = "index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://elias-hussaini.github.io"
+
+# Secrets — set with `wrangler secret put <NAME>`:
+#   AI_GATEWAY_URL   — your AI gateway base URL
+#   AI_API_KEY       — provider key for chat/complete
+#   IMAGE_API_URL    — image provider endpoint
+#   IMAGE_API_KEY    — image provider key
+#   EMBED_API_URL    — embedding provider endpoint
+#   EMBED_API_KEY    — embedding provider key
+# NEVER put these values in this file.

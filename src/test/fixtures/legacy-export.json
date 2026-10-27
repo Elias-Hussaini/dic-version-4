@@ -1,0 +1,85 @@
+{
+  "version": 5,
+  "exportedAt": "2025-06-01T10:00:00.000Z",
+  "words": [
+    {
+      "id": 1,
+      "german": "Haus",
+      "persian": "خانه",
+      "type": "noun",
+      "gender": "das",
+      "plural": "Häuser",
+      "notes": "Very common word",
+      "tags": ["A1", "Alltag"],
+      "createdAt": "2025-05-01T08:00:00.000Z",
+      "updatedAt": "2025-05-01T08:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "german": "gehen",
+      "persian": "رفتن",
+      "type": "verb",
+      "verbForms": {
+        "present": "ich gehe",
+        "past": "ich ging",
+        "perfect": "ich bin gegangen",
+        "helper": "sein"
+      },
+      "createdAt": "2025-05-02T08:00:00.000Z",
+      "updatedAt": "2025-05-02T08:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "german": "schnell",
+      "persian": "سریع",
+      "type": "adjective",
+      "comparative": "schneller",
+      "superlative": "am schnellsten",
+      "createdAt": "2025-05-03T08:00:00.000Z",
+      "updatedAt": "2025-05-03T08:00:00.000Z"
+    }
+  ],
+  "favorites": [1, 3],
+  "examples": [
+    { "id": 1, "wordId": 1, "german": "Das Haus ist groß.", "persian": "خانه بزرگ است." }
+  ],
+  "practiceHistory": [
+    { "id": 1, "wordId": 1, "correct": true, "mode": "writing", "date": "2025-05-10T09:00:00.000Z" },
+    { "id": 2, "wordId": 1, "correct": true, "mode": "gender", "date": "2025-05-11T09:00:00.000Z" },
+    { "id": 3, "wordId": 2, "correct": false, "mode": "listening", "date": "2025-05-12T09:00:00.000Z" },
+    { "id": 4, "wordId": 2, "correct": false, "mode": "srs", "date": "2025-05-13T09:00:00.000Z" }
+  ],
+  "tags": [
+    ["tag-1", { "name": "درس ۱", "color": "#635BFF" }],
+    ["tag-2", { "name": "سفر", "color": "#8B5CF6" }]
+  ],
+  "srsData": {
+    "1": {
+      "level": 2,
+      "correctCount": 2,
+      "wrongCount": 0,
+      "lastPractice": "2025-05-11T09:00:00.000Z",
+      "nextReviewDate": "2025-05-13T09:00:00.000Z",
+      "totalCorrect": 2,
+      "totalWrong": 0
+    },
+    "2": {
+      "level": 0,
+      "correctCount": 0,
+      "wrongCount": 2,
+      "lastPractice": "2025-05-13T09:00:00.000Z",
+      "nextReviewDate": "2025-05-14T09:00:00.000Z",
+      "totalCorrect": 0,
+      "totalWrong": 2
+    }
+  },
+  "settings": {
+    "darkMode": "true",
+    "fontSize": "medium",
+    "theme": "default",
+    "learningLang": "de"
+  },
+  "totalWords": 3,
+  "totalPractice": 4,
+  "totalTags": 2
+}
